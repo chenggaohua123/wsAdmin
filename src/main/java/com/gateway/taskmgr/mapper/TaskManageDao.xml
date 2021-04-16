@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gateway.taskmgr.mapper.TaskManageDao">
+    <sql id="where_task_info">
+       <where>
+			<if test="condition.jobName != null and condition.jobName != ''">
+				and jobName = #{condition.jobName}
+			</if>
+			<if test="condition.jobGroup != null and condition.jobGroup != ''">
+				and jobGroup = #{condition.jobGroup}
+			</if>
+			<if test="condition.triggerName != null and condition.triggerName != ''">
+				and triggerName = #{condition.triggerName}
+			</if>
+			<if test="condition.triggerGroupName != null and condition.triggerGroupName != ''">
+				and triggerGroupName =#{condition.triggerGroupName}
+			</if>
+			<if test="condition.processClass != null and condition.processClass != ''">
+				and processClass = #{condition.processClass}
+			</if>
+			<if test="condition.status != null and condition.status != ''">
+				and status = #{condition.status}
+			</if>
+		</where>
+    </sql>
+
+	<select id="queryTaskInfoList" resultType="com.gateway.taskmgr.model.TaskInfo">
+		select * from gw_task_info
+		<include refid="where_task_info"/>
+	</select>
+	
+	<select id="countTaskInfo" resultType="int">
+	    select count(*) from gw_task_info
+		<include refid="where_task_info"/>
+	</select>
+	
+
+	<insert id="addTaskInfo">
+		INSERT INTO gw_task_info (
+		jobName,
+		jobGroup,
+		triggerName,
+		triggerGroupName,
+		processClass,
+		cronExpression,
+		status,
+		lastexcutime,
+		remark
+		)
+		VALUES(
+		#{taskInfo.jobName},
+		#{taskInfo.jobGroup},
+		#{taskInfo.triggerName},
+		#{taskInfo.triggerGroupName},
+		#{taskInfo.processClass},
+		#{taskInfo.cronExpression},
+		#{taskInfo.status},
+		SYSDATE(),
+		#{taskInfo.remark})
+	</insert>
+
+	<select id="queryTaskInfoByJobNo" resultType="com.gateway.taskmgr.model.TaskInfo">
+		select * from
+		gw_task_info where id = #{id} limit 1
+	</select>
+
+	<update id="updateTaskInfo">
+		update gw_task_info set
+		triggerName =#{taskInfo.triggerName},
+		triggerGroupName =#{taskInfo.triggerGroupName},
+		processClass =#{taskInfo.processClass},
+		cronExpression =#{taskInfo.cronExpression},
+		status =#{taskInfo.status},
+		lastexcutime =SYSDATE(),
+		remark =#{taskInfo.remark}
+		where id = #{taskInfo.id}
+	</update>
+	
+	
+	<sql id="where_task_info_log">
+	   <where>
+			<if test="condition.jobName != null and condition.jobName != ''">
+				and jobName = #{condition.jobName}
+			</if>
+			<if test="condition.jobGroup != null and condition.jobGroup != ''">
+				and jobGroup = #{condition.jobGroup}
+			</if>
+			<if test="condition.triggerName != null and condition.triggerName != ''">
+				and triggerName = #{condition.triggerName}
+			</if>
+			<if test="condition.triggerGroupName != null and condition.triggerGroupName != ''">
+				and triggerGroupName =#{condition.triggerGroupName}
+			</if>
+			<if test="condition.processClass != null and condition.processClass != ''">
+				and processClass = #{condition.processClass}
+			</if>
+			<if test="condition.status != null and condition.status != ''">
+				and status = #{condition.status}
+			</if>
+		</where>
+		order by lastexcutime desc
+	</sql>
+
+	<select id="queryTaskInfoLogList" resultType="com.gateway.taskmgr.model.TaskInfoLog">
+		select * from gw_task_excu_log
+		<include refid="where_task_info_log"/>
+	</select>
+	
+	<select id="countTaskExcuLog" resultType="int">
+	  select count(*) from gw_task_excu_log
+	 <include refid="where_task_info_log"/>
+	</select>
+	
+	<sql id="where_card_bin">
+	   <where>
+	      <if test="condition.bankName !=null and condition.bankName!=''">
+	         and bankName like CONCAT(CONCAT('%',#{condition.bankName}),'%')
+	      </if>
+	      <if test="condition.cardName !=null and condition.cardName!=''">
+	        and cardName like CONCAT(CONCAT('%',#{condition.cardName}),'%')
+	      </if>
+	      <if test="condition.cardType !=null and condition.cardType!=''">
+	        and cardType like CONCAT(CONCAT('%',#{condition.cardType}),'%')
+	      </if>
+	   </where>
+	</sql>
+	
+	<select id="queryCardBin" resultType="com.gateway.taskmgr.model.CardBinInfo">
+	   select * from gw_card_bin_info
+	   <include refid="where_card_bin"/>
+	</select>
+	
+	<select id="countCardBin" resultType="int">
+	   select count(*) from gw_card_bin_info
+	   <include refid="where_card_bin"/>
+	</select>
+	
+	<insert id="addCardBin">
+	  INSERT INTO gw_card_bin_info (
+		bankName,
+		cardName,
+		cardBin,
+		cardType
+		)
+		VALUES(
+		#{card.bankName},
+		#{card.cardName},
+		#{card.cardBin},
+		#{card.cardType})
+	</insert>
+	
+	<update id="updateCardBin">
+	  update gw_card_bin_info set 
+	  bankName=#{card.bankName},
+	  cardName=#{card.cardName},
+	  cardBin=#{card.cardBin},
+	  cardType=#{card.cardType}  
+	  where id=#{card.id}
+	</update>
+   
+    <select id="queryCardBinById" resultType="com.gateway.taskmgr.model.CardBinInfo">
+       select * from gw_card_bin_info where id=#{id}
+    </select>
+
+</mapper>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<properties fileName="core/app-core.properties" />
+
+	<xml fileName="utils/app-validation-code.xml"/>
+	<xml fileName="utils/app-session-config.xml" />
+
+	<additional>
+		
+	</additional>
+</configuration>

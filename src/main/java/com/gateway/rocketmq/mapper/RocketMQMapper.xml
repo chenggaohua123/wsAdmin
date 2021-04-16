@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+<mapper namespace="com.gateway.rocketmq.mapper.RocketMQMapper">
+	<!-- 查询消费 -->
+	<select id="getTransInfo" resultType="com.gateway.rocketmq.model.ResultPayment">
+			SELECT 
+			 a.merNo,
+			 a.terNo,
+			 a.tradeNo,
+			 a.orderNo,
+			 a.merBusCurrency AS currencyCode,
+			 a.merTransAmount AS amount,
+			 a.transType,
+			 a.respCode,
+			 a.respMsg,
+			 b.shaKey
+			FROM gw_trans_info a
+			  LEFT JOIN gw_merchant_terno_info b
+			    ON a.merNo = b.merNo
+			      AND a.terNo = b.terNo
+			WHERE 
+				a.merNo=#{resultPayment.merNo}
+				AND a.terNo=#{resultPayment.terNo}
+				AND a.tradeNo=#{resultPayment.tradeNo}
+				AND a.orderNo=#{resultPayment.orderNo}
+	   		 LIMIT 1
+	</select>
+	
+</mapper>

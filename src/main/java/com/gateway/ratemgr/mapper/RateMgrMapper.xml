@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="com.gateway.ratemgr.mapper.RateMgrMapper">
+
+	<sql id="Where_Clause_Rate_Info">
+		<where>
+			<if test="condition.merNo != null and condition.merNo != ''">
+				and r.merNo = #{condition.merNo}
+			</if>
+			<if test="condition.bankName != null and condition.bankName != ''">
+				
+				and b.bankName like CONCAT(CONCAT('%', '${condition.bankName}'),'%')
+			</if>
+			<if test="condition.terNo != null and condition.terNo != ''">
+			   and r.terNo=#{condition.terNo}
+			</if>
+			<if test="condition.status != null and condition.status != ''">
+			  and r.status=#{condition.status}
+			</if>
+			<if test="condition.createDateStart != null and condition.createDateStart != ''">
+		     and r.createDate >= '${condition.createDateStart} 00:00:00'
+		    </if>
+		    <if test="condition.createDateEnd != null and condition.createDateEnd != ''">
+		      and r.createDate &lt;='${condition.createDateEnd} 23:59:59'
+		    </if>
+		    <if test="condition.createBy != null and condition.createBy != ''">
+		      and r.createBy like CONCAT(CONCAT('%', '${condition.createBy}'),'%')
+		    </if>
+		   <if test="condition.isEUR != null and condition.isEUR != ''">
+		      and r.isEUR=#{condition.isEUR}
+		    </if>
+		</where>
+	</sql>
+	
+	<select id="getListRateInfo" resultType="com.gateway.ratemgr.model.RateInfo">
+		select r.*,b.bankName  from gw_rate_info r left join gw_bank_info b on r.bankId=b.id
+		<include refid="Where_Clause_Rate_Info"/>
+		order by r.createDate DESC
+	</select>
+	
+	<!-- 导出费率内容 -->
+	<select id="exportRateInfo" resultType="com.gateway.ratemgr.model.RateInfo">
+		select r.*,b.bankName  from gw_rate_info r left join gw_bank_info b on r.bankId=b.id
+		<include refid="Where_Clause_Rate_Info"/>
+		order by r.createDate DESC
+	</select>
+	
+	<select id="countListRateInfo" resultType="int">
+		select count(*) from gw_rate_info r left join gw_bank_info b on r.bankId=b.id
+		<include refid="Where_Clause_Rate_Info"/>
+		order by r.createDate DESC
+	</select>
+	
+	<!-- 通道名称与通道id查询 -->
+	<select id="getCurrencyName" resultType="com.gateway.ratemgr.model.RateInfo">
+		SELECT id,currencyName as bankName from gw_currency_info
+	</select>
+	
+	<insert id="addRateInfo">
+	   insert into gw_rate_info
+	   (
+	   merNo,
+	   terNo,
+	   merRate,
+	   bankId,
+	   createDate,
+	   createBy,
+	   lastUpdateDate,
+	   lastUpdateBy,
+	   bondRate,
+	   singleFee,
+	   cardType,
+	   countrys,
+	   isEUR
+	   )
+	   values
+	   (
+	     #{rate.merNo},
+	     #{rate.terNo},
+	     #{rate.merRate},
+	     #{rate.bankId},
+	     SYSDATE(),
+	     #{rate.createBy},
+	     SYSDATE(),
+	     #{rate.lastUpdateBy},
+	     #{rate.bondRate},
+	     #{rate.singleFee},
+	     #{rate.cardType},
+	     #{rate.countrys},
+	     #{rate.isEUR}
+	   )
+	</insert>
+	
+	<update id="updateRateInfo" parameterType="com.gateway.ratemgr.model.RateInfo">
+	  update gw_rate_info
+	  set
+		   merRate=#{rate.merRate},
+		   singleFee=#{rate.singleFee},
+		   bondRate=#{rate.bondRate},
+		   cardType=#{rate.cardType},
+		   bankId=#{rate.bankId},
+		   lastUpdateBy=#{rate.lastUpdateBy},
+		   lastUpdateDate=SYSDATE(),
+		   countrys=#{rate.countrys},
+		   isEUR=#{rate.isEUR}
+	   where
+	   	 id=#{rate.id}
+	</update>
+	
+	<insert id="addRateLogInfo">
+	insert into  gw_rate_info_log
+	   (
+	   rateId,
+	   merNo,
+	   terNo,
+	   merRate,
+	   bankId,
+	   createDate,
+	   createBy,
+	   lastUpdateDate,
+	   lastUpdateBy,
+	   bondRate,
+	   singleFee,
+	   cardType
+	   ) select  id,
+	   merNo,
+	   terNo,
+	   merRate,
+	   bankId,
+	   createDate,
+	   createBy,
+	   lastUpdateDate,
+	   lastUpdateBy,
+	   bondRate,
+	   singleFee,
+	   cardType from gw_rate_info where id=#{id}
+	</insert>
+	
+	<select id="queryRateInfoById"  resultType="com.gateway.ratemgr.model.RateInfo">
+	  select r.*,b.bankName  from gw_rate_info r left join gw_bank_info b on r.bankId=b.id where r.id=#{id}
+	</select>
+	
+	<select id="queryRateInfoLogById" resultType="com.gateway.ratemgr.model.RateInfo">
+	  select r.*,b.bankName  from gw_rate_info_log r left join gw_bank_info b on r.bankId=b.id where r.rateId=#{rateId} order by r.lastUpdateDate DESC
+	</select>
+	
+	<select id="queryRateInfoByTerNo" resultType="com.gateway.ratemgr.model.RateInfo">
+	  select * from gw_rate_info where 
+	  merNo=#{rate.merNo} and terNo=#{rate.terNo} and cardType = #{rate.cardType} and countrys=#{rate.countrys}
+	  and bankId=#{rate.bankId}
+	</select>
+	
+	<select id="queryBankInfoList" resultType="com.gateway.ratemgr.model.RateInfo">
+		select id bankId,bankName from gw_bank_info
+	</select>
+</mapper>
+

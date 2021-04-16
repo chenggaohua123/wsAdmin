@@ -1,0 +1,1386 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.gateway.suspicious.mapper.SuspiciousManageDao">
+	<sql id="Mysql_Pagination_Limit" >
+    	<if test="offset != null and rows != null" >
+     		 <![CDATA[ LIMIT #{offset} , #{rows} ]]>
+    	</if>
+  	</sql>
+	 <sql id="Example_Where_Params_Clause" >
+	   <where>
+		<if test="condition.paramId != null and condition.paramId != ''">
+			AND paramId = #{condition.paramId}
+		</if>
+		<if test="condition.paramName != null and condition.paramName != ''">
+			AND paramName = #{condition.paramName}
+		</if>
+		<if test="condition.paramDescName != null and condition.paramDescName != ''">
+			AND paramDescName = #{condition.paramDescName}
+		</if>
+		<if test="condition.comFrom != null and condition.comFrom != ''">
+			AND comFrom = #{condition.comFrom}
+		</if>
+ 		<if test="condition.createDateStart != null and condition.createDateStart != ''">
+ 			AND createDate > '${condition.createDateStart} 00:00:00'
+ 		</if>
+ 		<if test="condition.createDateEnd != null and condition.createDateEnd != ''">
+ 			AND createDate &lt; '${condition.createDateEnd} 23:59:59'
+ 		</if>
+	</where>
+	 </sql>
+	 <sql id="Where_RuleInfo_Clause">
+	 	<where>
+		 	<if test="condition.ruleId != null and condition.ruleId != ''">
+				AND r.ruleId = #{condition.ruleId}
+			</if>
+		 		<if test="condition.ruleName != null and condition.ruleName != ''">
+				AND r.ruleName like CONCAT(CONCAT('%', '${condition.ruleName}'),'%')
+			</if>
+			<if test="condition.status != null and condition.status != ''">
+				AND r.status = #{condition.status}
+			</if>
+			<if test="condition.paramName != null and condition.paramName != ''">
+				AND p.paramName = #{condition.paramName}
+			</if>
+			<if test="condition.ruleParamName != null and condition.ruleParamName != ''">
+				AND p1.paramName = #{condition.ruleParamName}
+			</if>
+			<if test="condition.processClass != null and condition.processClass != ''">
+				AND p2.beanName = #{condition.processClass}
+			</if>
+			 <if test="condition.action != null and condition.action != ''">
+				AND r.action = #{condition.action}
+			</if>
+	 		<if test="condition.createDateStart != null and condition.createDateStart != ''">
+	 			AND r.createDate > '${condition.createDateStart} 00:00:00'
+	 		</if>
+	 		<if test="condition.createDateEnd != null and condition.createDateEnd != ''">
+	 			AND r.createDate &lt; '${condition.createDateEnd} 23:59:59'
+	 		</if>
+	 	</where>
+	 </sql>
+	 <sql id="Where_Rule_Ref_Profole_Clause">
+	 	<where>
+	 		<if test="condition.profileId != null and condition.profileId != ''">
+				AND p.profileid = #{condition.profileId}
+			</if>
+			<if test="condition.ruleId != null and condition.ruleId != '0' and condition.ruleId != ''">
+				AND r.ruleId= #{condition.ruleId} 
+			</if>
+			<if test="condition.ruleName != null and condition.ruleName != ''">
+				AND r.ruleName LIKE CONCAT(CONCAT('%', '${condition.ruleName}'),'%')
+			</if>
+			<if test="condition.statusDate != null and condition.statusDate != ''">
+				AND p.createDate > '${condition.statusDate} 00:00:00'
+			</if>
+			<if test="condition.endDate != null and condition.endDate != ''">
+				AND p.createDate &lt; '${condition.endDate} 23:59:59'
+			</if>
+	 	</where>
+	 </sql>
+	 <sql id="Where_Rule_Profile">
+	 		<where>
+	 		<if test="condition.profileId != null and condition.profileId != ''">
+	 			AND profileId = #{condition.profileId}
+	 		</if>
+	 		<if test="condition.profileName != null and condition.profileName != ''">
+	 			AND profileName = #{condition.profileName}
+	 		</if>
+	 		<if test="condition.status != null and condition.status != ''">
+	 			AND status  = #{condition.status}
+	 		</if>
+	 		<if test="condition.createDateStart != null and condition.createDateStart != ''">
+	 			AND createDate > '${condition.createDateStart} 00:00:00'
+	 		</if>
+	 		<if test="condition.createDateEnd != null and condition.createDateEnd != ''">
+	 			AND createDate &lt; '${condition.createDateEnd} 23:59:59'
+	 		</if>
+	 	</where>
+	 </sql>
+	 <sql id="Where_Account_Ref_Profole_Clause">
+	 	<where>
+	 		<if test="condition.terNo != null and condition.terNo != ''">
+	 			AND ar.terNo=#{condition.terNo}
+	 		</if>
+	 		<if test="condition.merNo != null and condition.merNo != ''">
+	 			AND ar.merNo=#{condition.merNo}
+	 		</if>
+	 		<if test="condition.createDateStart != null and condition.createDateStart != ''">
+	 			AND ar.createDate > '${condition.createDateStart} 00:00:00'
+	 		</if>
+	 		<if test="condition.createDateEnd != null and condition.createDateEnd != ''">
+	 			AND ar.createDate &lt; '${condition.createDateEnd} 23:59:59'
+	 		</if>
+	 	</where>
+	 </sql>
+	 <sql id="Where_Fraud_Info_Clause">
+	 	<where>
+	 		<if test="condition.txId != null and condition.txId != ''">
+	 			AND txId = #{condition.txId}
+	 		</if>
+	 		<if test="condition.orderNo != null and condition.orderNo != ''">
+	 			AND orderNo =#{condition.orderNo}
+	 		</if>
+	 		<if test="condition.ret != null and condition.ret != ''">
+	 			AND ret = #{condition.ret}
+	 		</if>	 		
+	 		<if test="condition.accountNo != null and condition.accountNo != ''">
+	 			AND accountNo=#{condition.accountNo}
+	 		</if>
+	 		<if test="condition.createDateStart != null and condition.createDateStart != ''">
+	 			AND createDate > '${condition.createDateStart} 00:00:00'
+	 		</if>
+	 		<if test="condition.createDateEnd != null and condition.createDateEnd != ''">
+	 			AND createDate &lt; '${condition.createDateEnd} 23:59:59'
+	 		</if>
+	 	</where>
+	 </sql>
+	 <sql id="Where_BlackText_Info_Clause">
+		 <where>
+		 		<if test="condition.blackId != null and condition.blackId != ''">
+		 			AND blackId =#{condition.blackId}
+		 		</if>
+		 		<if test="condition.blackType != null and condition.blackType != ''">
+		 			AND blackType =#{condition.blackType}
+		 		</if>
+		 		<if test="condition.blackText != null and condition.blackText != ''">
+		 			AND blackText=#{condition.blackText}
+		 		</if>
+		 		<if test="condition.createDateStart != null and condition.createDateStart != ''">
+		 			AND createDate > '${condition.createDateStart} 00:00:00'
+		 		</if>
+		 		<if test="condition.createDateEnd != null and condition.createDateEnd != ''">
+		 			AND createDate &lt; '${condition.createDateEnd} 23:59:59'
+		 		</if>
+		 		<if test="condition.merNo != null and condition.merNo != ''">
+		 			AND merNo=#{condition.merNo}
+		 		</if>
+		 </where>
+	 </sql>
+	 <sql id="Where_Bin_Info_Clause">
+	 	<where>
+	 		<if test="condition.id != null and condition.id != ''">
+	 			AND id =#{condition.id}
+	 		</if>
+	 		<if test="condition.type != null and condition.type != ''">
+	 			AND type =#{condition.type}
+	 		</if>
+	 		<if test="condition.startNum != null and condition.startNum != ''">
+	 			AND startNum=#{condition.startNum}
+	 		</if>
+	 		<if test="condition.endNum != null and condition.endNum != ''">
+	 			AND endNum=#{condition.endNum}
+	 		</if>	 		
+	 		<if test="condition.createDateStart != null and condition.createDateStart != ''">
+	 			AND createDate > '${condition.createDateStart} 00:00:00'
+	 		</if>
+	 		<if test="condition.createDateEnd != null and condition.createDateEnd != ''">
+	 			AND createDate &lt; '${condition.createDateEnd} 23:59:59'
+	 		</if>
+	 		
+	 	</where>
+	 </sql>
+	 
+	 <sql id="Where_BlackText_Query_Record_Clause">
+	 	<where>
+	 		<if test="condition.tradeNo != null and condition.tradeNo != ''">
+	 			AND tradeNo =#{condition.tradeNo}
+	 		</if>
+	 		<if test="condition.accountNo != null and condition.accountNo != ''">
+	 			AND accountNo =#{condition.accountNo}
+	 		</if>
+	 		<if test="condition.respCode != null and condition.respCode != ''">
+	 			AND respCode=#{condition.respCode}
+	 		</if>
+	 		<if test="condition.shaCardNo != null and condition.shaCardNo != ''">
+	 			AND shaCardNo =#{condition.shaCardNo}
+	 		</if>
+	 		<if test="condition.email != null and condition.email != ''">
+	 			AND email =#{condition.email}
+	 		</if>
+	 		<if test="condition.ipAddress != null and condition.ipAddress != ''">
+	 			AND ipAddress=#{condition.ipAddress}
+	 		</if>
+	 		<if test="condition.createDateStart != null and condition.createDateStart != ''">
+	 			AND queryTime > '${condition.createDateStart} 00:00:00'
+	 		</if>
+	 		<if test="condition.createDateEnd != null and condition.createDateEnd != ''">
+	 			AND queryTime &lt; '${condition.createDateEnd} 23:59:59'
+	 		</if>
+	 	</where>
+	 </sql>
+  	
+  	<select id="queryParamInfoList" parameterType="com.gateway.common.adapter.web.model.Criteria" resultType="com.gateway.fraud.model.ParamInfo">
+  		SELECT 
+  			* 
+  		FROM 
+  			gw_suspicious_rule_param 
+  		<include refid="Example_Where_Params_Clause"/>
+  		<include refid="Mysql_Pagination_Limit" />
+  	</select>
+  	
+  	<select id="countParamsByCriteria" parameterType="com.gateway.common.adapter.web.model.Criteria" resultType="int">
+  		SELECT 
+  			count(*) 
+  		FROM 
+  			gw_suspicious_rule_param 
+  		<include refid="Example_Where_Params_Clause"/>
+  	</select>
+  	<insert id="addParam">
+  		INSERT INTO 
+  			gw_suspicious_rule_param 
+  			(
+  				paramName,
+  				paramDescName,
+  				type,
+  				comFrom,
+  				createDate,
+  				createBy,
+  				remark
+  			) 
+  		VALUES
+  			(
+  				#{info.paramName},
+  				#{info.paramDescName},
+  				#{info.type},
+  				#{info.comFrom},
+  				SYSDATE(),
+  				#{info.createBy},
+  				#{info.remark}
+  			)
+  	</insert>
+  	<update id="updateParamInfo">
+  		UPDATE 
+  			gw_suspicious_rule_param 
+  		SET 
+  			paramName = #{info.paramName},
+  			paramDescName = #{info.paramDescName},
+  			type=#{info.type},
+  			comFrom=#{info.comFrom},
+  			remark=#{info.remark},
+  			createDate = SYSDATE(),
+  			createBy = #{info.createBy} 
+  		WHERE 
+  			paramId = #{info.paramId}
+  	</update>	
+  	<select id="queryParamInfoByParamId" resultType="com.gateway.fraud.model.ParamInfo">
+  		SELECT 
+  			* 
+  		FROM 
+  			gw_suspicious_rule_param 
+  		WHERE 
+  			paramId = #{paramId}
+  	</select>
+  	
+  	<select id="queryParamListValuesByParamId" resultType="String">
+  		SELECT 
+  			value 
+  		FROM 
+  			gw_suspicious_rule_param_value 
+  		WHERE 
+  			paramId = #{paramId} 
+  	</select>
+  	<select id="queryParamValuesInfoByParamId" resultType="com.gateway.fraud.model.ParamValueInfo">
+  		SELECT 
+  			* 
+  		FROM 
+  			gw_suspicious_rule_param_value 
+  		WHERE 
+  			paramId = #{paramId} 
+  	</select>
+  	<select id="queryParamTableValues" resultType="java.util.HashMap">
+  		SELECT 
+  			colKey as ${colKey},
+  			colValue as ${colValue} 
+  		FROM 
+  			gw_suspicious_base_table_info 
+  		WHERE 
+  			tableName = #{tableName}
+  	</select>
+  	<delete id="delBaseTableInfoByTableName">
+  		DELETE FROM 
+  			gw_suspicious_base_table_info 
+  		WHERE 
+  			tableName = #{tableName}
+  	</delete>
+  	
+  	<delete id="delParamValuesByParamId">
+  		DELETE FROM 
+  			gw_suspicious_rule_param_value 
+  		WHERE 
+  			paramId =#{paramId}
+  	</delete>
+  	
+  	<delete id="delParamByParamId">
+  		DELETE FROM 
+  			gw_suspicious_rule_param 
+  		WHERE 
+  			paramId = #{paramId}
+  	</delete>
+  	
+  	<insert id="insertParamListValues">
+  		INSERT INTO 
+  			gw_suspicious_rule_param_value 
+  			(	
+  				paramId,
+  				value,
+  				tableName,
+  				colKey,
+  				colValue
+  			) 
+  		VALUES
+  			(
+  				#{info.paramId},
+  				#{info.value},
+  				#{info.tableName},
+  				#{info.colKey},
+  				#{info.colValue}
+  			)
+  	</insert>
+  	<insert id="insertBaseTableInfo">
+  		INSERT INTO 
+  			gw_suspicious_base_table_info
+  			(
+  				tableName,
+  				colkey,
+  				colValue,
+  				createDate,
+  				createBy
+  			) 
+  		VALUES 
+  			(
+  				#{info.tableName},
+  				#{info.colKey},
+  				#{info.colValue},
+  				SYSDATE(),
+  				#{info.createBy}
+  			)
+  	</insert>
+  	<select id="queryRulesList" parameterType="com.gateway.common.adapter.web.model.Criteria" resultType="com.gateway.fraud.model.RulesInfo">
+  		SELECT
+			r.*,
+			p.paramDescName,
+			p1.paramDescName AS ruleParamValueDescName,
+			p2.classDesc AS processClassName
+		FROM
+			gw_suspicious_rule_info r
+			LEFT JOIN gw_suspicious_rule_param p ON r.paramId = p.paramId
+			LEFT JOIN gw_suspicious_rule_param p1 ON r.ruleParamValueId = p1.paramId
+			LEFT JOIN gw_suspicious_rule_processClass p2 ON r.processClassId = p2.processClassId 
+  			<include refid="Where_RuleInfo_Clause"/>
+  		ORDER BY 
+  			r.createDate 
+  		DESC
+  			<include refid="Mysql_Pagination_Limit" />
+  	</select>
+  	<select id="queryProcessClassList" resultType="com.gateway.fraud.model.RuleProcessClass">
+  		SELECT 
+  			* 
+  		FROM 
+  			gw_suspicious_rule_processClass
+  	</select>
+  	<insert id="addRuleInfo">
+  		INSERT INTO 
+  			gw_suspicious_rule_info 
+  			(
+  				ruleName,
+  				paramId,
+  				ruleParamValueId,
+  				processClassId,
+  				status,
+  				createDate,
+  				createBy,
+  				action
+  			)
+  		VALUES
+  			(
+  				#{info.ruleName},
+  				#{info.paramId},
+  				#{info.ruleParamValueId},
+  				#{info.processClassId},
+  				#{info.status},
+  				SYSDATE(),
+  				#{info.createBy},
+  				#{info.action}
+  			)
+  	</insert>
+  	
+  	<update id="updateRuleInfo">
+  		UPDATE 
+  			gw_suspicious_rule_info 
+  		SET 
+  			ruleName = #{info.ruleName},
+  			paramId =#{info.paramId},
+  			ruleParamValueId = #{info.ruleParamValueId},
+  			action = #{info.action},
+  			processClassId = #{info.processClassId},
+  			status = #{info.status},
+  			createDate = SYSDATE(),
+  			createBy = #{info.createBy} 
+  		WHERE 
+  			ruleId = #{info.ruleId}
+  	</update>
+  	
+  	<select id="countRuleInfoByCriteria" resultType="int">
+  		SELECT
+			count(*)
+		FROM
+			gw_suspicious_rule_info r
+			LEFT JOIN gw_suspicious_rule_param p ON r.paramId = p.paramId
+			LEFT JOIN gw_suspicious_rule_param p1 ON r.ruleParamValueId = p1.paramId
+			LEFT JOIN gw_suspicious_rule_processClass p2 ON r.processClassId = p2.processClassId
+  		<include refid="Where_RuleInfo_Clause"/>
+  	</select>
+  	<select id="queryRulesInfoDetailByRuleId" resultType="com.gateway.fraud.model.RulesInfo">
+  		SELECT
+			r.*, p.paramDescName,
+			p1.paramDescName AS ruleParamValueDescName,
+			p2.classDesc AS processClassName
+		FROM
+			gw_suspicious_rule_info r
+			LEFT JOIN gw_suspicious_rule_param p ON r.paramId = p.paramId
+			LEFT JOIN gw_suspicious_rule_param p1 ON r.ruleParamValueId = p1.paramId
+			LEFT JOIN gw_suspicious_rule_processClass p2 ON r.processClassId = p2.processClassId 
+  		WHERE 
+  			r.ruleId = #{ruleId}
+  	</select>
+  	
+  	<select id="queryRuleProfileList" parameterType="com.gateway.common.adapter.web.model.Criteria" resultType="com.gateway.fraud.model.RuleProfileInfo">
+  		SELECT * 
+  		FROM 
+  			gw_suspicious_rule_profile 
+  			<include refid="Where_Rule_Profile"/>
+  			<include refid="Mysql_Pagination_Limit" />
+  	</select>
+  	<select id="countRuleProfileInfo" parameterType="com.gateway.common.adapter.web.model.Criteria" resultType="int">
+  		SELECT 
+  			count(*) 
+  		FROM 
+  			gw_suspicious_rule_profile
+  		<include refid="Where_Rule_Profile"/>
+  	</select>
+  	<select id="queryRuleProFileInfoByProfileId" resultType="com.gateway.fraud.model.RuleProfileInfo">
+  		SELECT 
+  			* 
+  		FROM 
+  			gw_suspicious_rule_profile 
+  		WHERE 
+  			profileId = #{proFileId}
+  	</select>
+  	<insert id="addRuleProFileInfo">
+  		INSERT INTO 
+  			gw_suspicious_rule_profile
+  			(
+  				proFileName,
+  				status,
+  				createDate,
+  				createBy
+  			)
+  		VALUES
+  			(
+  				#{info.proFileName},
+  				#{info.status},
+  				SYSDATE(),
+  				#{info.createBy}
+  			)
+  	</insert>
+  	<update id="updateRuleProfileInfo">
+  		UPDATE 
+  			gw_suspicious_rule_profile 
+  		SET 
+  			proFileName = #{info.proFileName},
+  			status = #{info.status},
+  			createDate = SYSDATE(),
+  			createBy =#{info.createBy} 
+  		WHERE 
+  			profileId = #{info.proFileId}
+  	</update>
+  	<insert id="addRulesToRuleProfile">
+  		INSERT INTO 
+  			gw_suspicious_rule_profile_ref_ruleinfo
+  			(
+  				profileId,
+  				ruleId,
+  				createDate,
+  				createBy
+  			)
+  		VALUES
+  			(
+  				#{info.profileId},
+  				#{info.ruleId},
+  				SYSDATE(),
+  				#{info.createBy}
+  			)
+  	</insert>
+  	<select id="queryRefRulesInfoByProFileIdAndRuleId" resultType="com.gateway.fraud.model.RulesRefProFileInfo">
+  		SELECT 
+  			* 
+  		FROM 
+  			gw_suspicious_rule_profile_ref_ruleinfo 
+  		WHERE 
+  			profileId = #{profileId} 
+  		AND 
+  			ruleId = #{ruleId}
+  	</select>
+  	
+  	<select id="queryRefRuleProfileLits" parameterType="com.gateway.common.adapter.web.model.Criteria" resultType="com.gateway.fraud.model.RulesInfo">
+  		SELECT
+			r.ruleName,
+			r.paramId,
+			r.processClassId,
+			r.ruleId,
+			r.ruleParamValueId,
+			r.`status`,
+			r.action,
+			p.createBy,
+			p.createDate,
+			p2.paramDescName,
+			p2.paramDescName AS ruleParamValueDescName,
+			p3.classDesc AS processClassName
+		FROM
+			gw_suspicious_rule_profile_ref_ruleinfo p
+			LEFT JOIN gw_suspicious_rule_info r ON p.ruleId = r.ruleId
+			LEFT JOIN gw_suspicious_rule_param p1 on r.paramId = p1.paramId
+			LEFT JOIN gw_suspicious_rule_param p2 on r.ruleParamValueId = p2.paramId
+			LEFT JOIN gw_suspicious_rule_processClass p3 ON r.processClassId = p3.processClassId 
+		<include refid="Where_Rule_Ref_Profole_Clause"/>
+		<include refid="Mysql_Pagination_Limit" />	
+  	</select>
+  	
+  	<select id="countRefRuleProfileList" parameterType="com.gateway.common.adapter.web.model.Criteria" resultType="int">
+  		SELECT
+			count(*)
+		FROM
+			gw_suspicious_rule_profile_ref_ruleinfo p
+			LEFT JOIN gw_suspicious_rule_info r ON p.ruleId = r.ruleId
+			LEFT JOIN gw_suspicious_rule_param p1 on r.paramId = p1.paramId
+			LEFT JOIN gw_suspicious_rule_param p2 on r.ruleParamValueId = p2.paramId
+			LEFT JOIN gw_suspicious_rule_processClass p3 ON r.processClassId = p3.processClassId 
+		<include refid="Where_Rule_Ref_Profole_Clause"/>
+		<include refid="Mysql_Pagination_Limit" />	
+  	</select>
+  	
+  	<delete id="delRulesFromRulesProFile">
+  		DELETE FROM 
+  			gw_suspicious_rule_profile_ref_ruleinfo 
+  		WHERE 
+  			profileId = #{profileId} 
+  		AND 
+  			ruleId = #{ruleId}
+  	</delete>
+  	
+  	<select id="queryAccountRefProfileList" parameterType="com.gateway.common.adapter.web.model.Criteria" resultType="com.gateway.fraud.model.MerchantRefRuleProfileInfo">
+  		SELECT
+  			ar.id,
+			ar.merNo,
+			ar.terNo,
+			ar.createBy,
+			ar.status,
+			ar.createDate,
+			r.profileName,
+			r.profileId
+		FROM
+			gw_suspicious_mer_ref_ruleprofie ar
+			LEFT JOIN gw_suspicious_rule_profile r ON ar.profileId = r.profileId
+		<include refid="Where_Account_Ref_Profole_Clause"/>
+		<include refid="Mysql_Pagination_Limit" />
+  	</select>
+  	
+  	<select id="countAccountRefProfile" parameterType="com.gateway.common.adapter.web.model.Criteria" resultType="int">
+  		SELECT
+			count(*)
+		FROM
+			gw_suspicious_mer_ref_ruleprofie ar
+			LEFT JOIN gw_suspicious_rule_profile r ON ar.profileId = r.profileId
+		<include refid="Where_Account_Ref_Profole_Clause"/>
+		<include refid="Mysql_Pagination_Limit" />  		
+  	</select>
+  	
+  	<insert id="addProfileToAccount">
+  		INSERT INTO 
+  			gw_suspicious_mer_ref_ruleprofie
+  			(
+  				profileId,
+  				merNo,
+  				terNo,
+  				status,
+  				createDate,
+  				createBy
+  			)
+  		VALUES
+  			(
+  				#{info.proFileId},
+  				#{info.merNo},
+  				#{info.terNo},
+  				#{info.status},
+  				SYSDATE(),
+  				#{info.createBy}
+  			)
+  	</insert>
+  	<select id="queryProfileInfoByMerNoAndTerNo"  resultType="com.gateway.fraud.model.MerchantRefRuleProfileInfo">
+  		SELECT
+  			ar.id,
+			ar.merNo,
+			ar.terNo,
+			ar.createBy,
+			ar.status,
+			ar.createDate,
+			r.profileName,
+			r.profileId
+		FROM
+			gw_suspicious_mer_ref_ruleprofie ar
+			LEFT JOIN gw_suspicious_rule_profile r ON ar.profileId = r.profileId
+		WHERE 
+			ar.merNo =#{merNo} 
+		AND 
+			ar.terNo =#{terNo} 
+		AND 
+			ar.profileId = #{profileId}
+  	</select>
+  	
+  	<select id="queryProfileInfoById"  resultType="com.gateway.fraud.model.MerchantRefRuleProfileInfo">
+  		SELECT
+  			ar.id,
+			ar.merNo,
+			ar.terNo,
+			ar.createBy,
+			ar.status,
+			ar.createDate,
+			r.profileName,
+			r.profileId
+		FROM
+			gw_suspicious_mer_ref_ruleprofie ar
+			LEFT JOIN gw_suspicious_rule_profile r ON ar.profileId = r.profileId
+		WHERE 
+			ar.id=#{id}
+  	</select>
+  	
+  	<update id="updateAccountRefProfileInfoById">
+  		UPDATE 
+  			gw_suspicious_mer_ref_ruleprofie 
+  		SET 
+  			status = #{info.status},
+  			profileid = #{info.proFileId},
+  			createDate =SYSDATE(),
+  			createBy = #{info.createBy} 
+  		WHERE 
+  			id = #{info.id}
+  	</update>
+  	
+  	<delete id="delAccountFromList">
+  		DELETE FROM 
+  			gw_suspicious_mer_ref_ruleprofie 
+  		WHERE 
+  			id = #{id}
+  	</delete>
+  	
+  	<select id="queryRuleProcessClassByClassId" resultType="com.gateway.fraud.model.RuleProcessClass">
+  		SELECT 
+  			* 
+  		FROM 
+  			gw_suspicious_rule_processClass 
+  		WHERE 
+  			processClassID = #{classId}
+  	</select>
+  	
+  	<select id="queryBlackText" resultType="int">
+  		SELECT 
+  			count(*) 
+  		FROM 
+  			gw_suspicious_blacktext_info 
+  		WHERE 
+  			blackText = #{blackText} 
+  		AND 
+  			blackType = #{blackType}
+  	</select>
+  	
+  	<select id="queryIntervalInfo" resultType="int">
+  		SELECT 
+  			count(*) 
+  		FROM 
+  			gw_suspicious_Interval_info 
+  		WHERE 
+  			type=#{type} 
+  		AND 
+  			startNum &lt;= #{paramValue} 
+  		AND 
+  			endNum >= #{paramValue}
+  	</select>
+  	
+  	<select id="queryBlackInfoList" resultType="com.gateway.fraud.model.BlackTextInfo">
+  		SELECT 
+  			* 
+  		FROM 
+  			gw_suspicious_blacktext_info
+  		<include refid="Where_BlackText_Info_Clause"/>
+  		ORDER BY 
+  			createDate 
+  		DESC
+		<include refid="Mysql_Pagination_Limit" />  
+  	</select>
+  	<select id="countBlackInfoList" resultType="int">
+  		SELECT 
+  			count(*) 
+  		FROM 
+  			gw_suspicious_blacktext_info
+  		<include refid="Where_BlackText_Info_Clause"/>
+  	</select>
+  	<select id="queryBinList" resultType="com.gateway.fraud.model.BinInfo">
+  		SELECT 
+  			* 
+  		FROM 
+  			gw_suspicious_Interval_info
+  		<include refid="Where_Bin_Info_Clause"/>
+  		ORDER BY 
+  			createDate 
+  		DESC
+		<include refid="Mysql_Pagination_Limit" />  
+  	</select>
+  	<select id="countBinInfoList" resultType="int">
+  	  	SELECT 
+  	  		count(*) 
+  	  	FROM 
+  	  		gw_suspicious_Interval_info
+  		<include refid="Where_Bin_Info_Clause"/>
+  	</select>
+  	<insert id="addBlackTextInfo">
+  		INSERT INTO 
+  			gw_suspicious_blacktext_info
+  			(
+  				blackText,
+  				blackType,
+  				createDate,
+  				createBy
+  			)
+  		VALUES
+  			(
+  				#{info.blackText},
+  				#{info.blackType},
+  				SYSDATE(),
+  				#{info.createBy}
+  			)
+  	</insert>
+  	
+  	<delete id="delBlackTextById">
+  		DELETE FROM 
+  			gw_suspicious_blacktext_info 
+  		WHERE 
+  			blackId = #{blackId}
+  	</delete>
+  	
+  	<insert id="addBinInfo">
+  		INSERT INTO 
+  			gw_suspicious_Interval_info
+  			(
+  				startNum,
+  				endNum,
+  				type,
+  				createDate,
+  				createBy
+  			) 
+  		VALUES
+  			(
+  				#{info.startNum},
+  				#{info.endNum},
+  				#{info.type},
+  				SYSDATE(),
+  				#{info.createBy}
+  			)
+  	</insert>
+  	
+  	<delete id="deleteBinInfoById">
+  		DELETE FROM 
+  			gw_suspicious_Interval_info 
+  		WHERE 
+  			id = #{id}
+  	</delete>
+  	
+  	<select id="queryBlackTextInfoByValueAndType" resultType="com.gateway.fraud.model.BlackTextInfo">
+  		SELECT 
+  			* 
+  		FROM 
+  			gw_suspicious_blacktext_info 
+  		WHERE 
+  			blackType = #{blackType} 
+  		AND 
+  			blackText = #{blackText} 
+  		AND 
+  			merNo is null 
+  		LIMIT 1
+  	</select>
+  	
+  	<select id="queryRuleValueName" parameterType="com.gateway.fraud.model.RulesInfo" resultType="com.gateway.fraud.model.RulesInfo">
+  		SELECT 
+  			* 
+  		FROM 
+  			gw_suspicious_rule_info 
+  		WHERE 
+  			ruleName = #{ruleName} 
+  		LIMIT 1
+  	</select>
+  	<sql id="WHERE_SUSPICIOUS_ORDER_CLAUSE">
+  		<where>
+  			<if test="condition.createDateStart!=null and condition.createDateStart!=''">
+  				<![CDATA[AND c.transDate>=DATE_ADD(CONCAT(#{condition.createDateStart}, ' ', '00:00:00'),INTERVAL -1 DAY)]]>
+  			</if>
+  			<if test="condition.createDateEnd!=null and condition.createDateEnd!=''">
+  				<![CDATA[AND c.transDate<=DATE_ADD(CONCAT(#{condition.createDateEnd}, ' ', '23:59:59'),INTERVAL -1 DAY)]]>
+  			</if>
+	  		<if test="condition.merNo!=null and condition.merNo!=''">
+	  			AND c.merNo=#{condition.merNo}
+	  		</if>
+	  		<if test="condition.terNo!=null and condition.terNo!=''">
+	  			AND c.terNo=#{condition.terNo}
+	  		</if>
+	  		<if test="condition.email!=null and condition.email!=''">
+	  			AND c.email=#{condition.email}
+	  		</if>
+	  		<if test="condition.IPAddress!=null and condition.IPAddress!=''">
+	  			AND c.IPAddress=#{condtion.IPAddress}
+	  		</if>
+	  		<if test="condition.cardFullPhone!=null and condition.cardFullPhone!=''">
+	  			AND a.cardFullPhone=#{condition.cardFullPhone}
+	  		</if>
+	  		<if test="condition.grAddress!=null and condition.grAddress!=''">
+	  			AND a.grAddress=#{condition.grAddress}
+	  		</if>
+	  		<if test="condition.cardFullName!=null and condition.cardFullName!=''">
+	  			AND a.cardFullName=#{condition.cardFullName}
+	  		</if>
+	  		<if test="condition.cardStart!=null and condition.cardStart!=''">
+	  			AND c.checkNo=#{condition.cardStart}
+	  		</if>
+	  		<if test="condition.cardEnd!=null and condition.cardEnd!=''">
+	  			AND c.last=#{condition.cardEnd}
+	  		</if>
+	  		<if test="condition.susType!=null and condition.susType!=''">
+	  			AND b.susType=#{condition.susType}
+	  		</if>
+	  		<if test="condition.createDateStart!=null">
+	  			AND <![CDATA[b.createDate>=CONCAT(#{condition.createDateStart},' ','00:00:00')]]>
+	  		</if>
+	  		<if test="condition.createDateEnd!=null">
+	  			AND <![CDATA[b.createDate<=CONCAT(#{condition.createDateEnd},' ','23:59:59')]]>
+	  		</if>
+	  		<if test="condition.ruleId!=null and condition.ruleId!=''">
+	  			AND #{condition.ruleId} LIKE CONCAT('%', b.ruleId, '%')
+	  		</if>
+	  		<if test="condition.tradeNo!=null and condition.tradeNo!=''">
+	  			AND a.tradeNo=#{condition.tradeNo}
+	  		</if>
+	  		<if test="condition.status!=null and condition.status!=''">
+	  			AND a.status=#{condition.status}
+	  		</if>
+  		</where>
+  	</sql>
+  	<select id="querySuspiciousOrderInfo" resultType="com.gateway.suspicious.model.SuspiciousOrderInfo">
+  		SELECT
+  			c.merNo,
+  			c.terNo,
+  			c.tradeNo,
+  			c.transDate,
+  			c.merTransAmount,
+  			c.isDishonor,
+  			c.isRefund,
+  			c.merBusCurrency,
+  			a.info,
+  			GROUP_CONCAT(DISTINCT b.ruleId) AS ruleIds,
+  			a.syspId,
+  			b.susType,
+  			a.Id AS susOrderId,
+  			b.createDate
+  		FROM
+  			gw_suspicious_trans_order_info a
+  			LEFT JOIN gw_suspicious_mer_trans_info b ON b.Id=a.syspId
+			LEFT JOIN gw_trans_info c ON c.tradeNo=a.tradeNo
+  		<include refid="WHERE_SUSPICIOUS_ORDER_CLAUSE"/>
+  		GROUP BY
+  			b.createDate,b.susType,c.tradeNo
+  		ORDER BY
+  			c.transDate
+  		DESC
+  	</select>
+  	<select id="querySuspiciousOrderCount" resultType="java.lang.Integer">
+		  	SELECT
+		  		COUNT(e.id)
+		  	FROM
+		  		(
+				  	SELECT
+				  		a.id
+				  	FROM
+				  		gw_suspicious_trans_order_info a
+				  		LEFT JOIN gw_suspicious_mer_trans_info b ON b.Id=a.syspId
+						LEFT JOIN gw_trans_info c ON c.tradeNo=a.tradeNo
+				  	<include refid="WHERE_SUSPICIOUS_ORDER_CLAUSE"/>
+				  	GROUP BY
+		  				b.createDate,b.susType,c.tradeNo
+		  		) AS e
+  	</select>
+  	<select id="querySuspiciousRelTradeNo" resultType="com.gateway.suspicious.model.SuspicioustTransInfo">
+  		SELECT
+					t.id,
+					t.tradeNo,
+					t.relNo,
+					t.merBusCurrency,
+					t.merTransAmount,
+					t.bankCurrency,
+					t.bankTransAmount,
+					t.merSettleCurrency,
+					t.merSettleAmount,
+					t.merNo,
+					t.terNo,
+					t.cardType,
+					t.cardName,
+					t.bankName,
+					t.agentNo,
+					t.parentAgentNo,
+					t.transDate,
+					t.settleBatchNo,
+					t.settleDate,
+					t.batchNo,
+					t.posNo,
+					t.currencyId,
+					t.singleFee,
+					t.merForAmount,
+					t.transType,
+					t.respCode,
+					t.checkToNo,
+					t.bankRefNo,
+					t.bankPosNo,
+					t.bankBatchNo,
+					t.autoCode,
+					t.bankTransDate,
+					t.bankTransTime,
+					t.checkedBatchNo,
+					t.transAmount,
+					t.IPAddress,
+					t.checkNo,
+					t.middle,
+					t.last,
+					t.email,
+					t.respMsg,
+					t.bondAmount,
+					t.ischecked,
+					t.rvfId,
+					t.isRefund,
+					t.isDishonor,
+					t.isFrozen,
+					t.isThaw,
+					t.orderNo,
+					t.access,
+					t.bondBatchNo,
+					t.payWebsite as payWebsite,
+					t.transStatus,
+					t.transDishonor,
+					t.transFrozen,
+					t.transThaw,
+					t.transRefund,
+					t.webInfo,
+					t.riskScore,
+					t.ipCountry,
+					c.currencyName,
+					t.acquirer,
+					b.bankName as acquiringBank,
+					m.merchantName,
+					t.autoCode,
+					h.cardCountry,
+					h.cardState,
+					h.cardAddress,
+					h.grphoneNumber,
+					h.grPerName,
+					h.grState,
+					h.grEmail,
+					h.grCountry,
+					h.grZipCode,
+					h.grAddress ,
+					k.trackNo,
+					k.iogistics,
+					t.bankRealAmount,
+					t.bankRealCurrency,
+					t.bankRealRate,
+			   (CASE WHEN  SUM(CASE d.transType WHEN 'refund' THEN d.transMoney ELSE 0 END)>0 THEN 1 ELSE 0 END) refundStatus,
+				FORMAT(SUM(CASE d.transType WHEN 'refund' THEN d.transMoney ELSE 0 END),2) AS refundAmount,
+				(CASE WHEN  SUM(CASE d.transType WHEN 'dishonor' THEN d.transMoney ELSE 0 END)>0 THEN 1 ELSE 0 END) dishonorStatus,
+				FORMAT(SUM(CASE d.transType WHEN 'dishonor' THEN d.transMoney ELSE 0 END),2) AS dishonorAmount,
+				(CASE WHEN  SUM(CASE d.transType WHEN 'frozen' THEN d.transMoney WHEN 'thaw' THEN d.transMoney*(-1) ELSE  0 END)>0 THEN 1 ELSE 0 END) frozenStatus,
+				FORMAT(SUM(CASE d.transType WHEN 'frozen' THEN d.transMoney WHEN 'thaw' THEN d.transMoney*(-1) ELSE  0 END),2) AS frozenAmount
+				FROM
+					gw_trans_info t  left join gw_trans_info_log d ON t.tradeNo=d.tradeNo AND d.status=2
+					LEFT JOIN gw_currency_info c ON t.currencyId = c.id
+					LEFT JOIN gw_bank_info b ON c.bankId = b.id
+					LEFT JOIN gw_merchant_info m ON m.merNo=t.merNo
+					LEFT JOIN gw_trans_order_info h ON h.tradeNo=t.tradeNo
+					LEFT JOIN gw_GoodsPress k ON k.tradeNo=t.tradeNo 
+				WHERE 
+					t.tradeNo=#{tradeNo}
+				LIMIT
+					1
+  	</select>
+  	<select id="querySuspiciousRelTradeNoList" resultType="java.lang.String">
+  		SELECT 
+			a.tradeNo
+		FROM
+			gw_suspicious_trans_order_info a
+			LEFT JOIN gw_suspicious_mer_trans_info b ON b.Id=a.syspId
+		WHERE
+			FIND_IN_SET(b.ruleId,#{vo.ruleIds})
+		AND
+			b.createDate=#{vo.createDate}
+		<if test="vo.susType==2 or vo.susType=='2' or vo.susType==&quot;2&quot;">
+			AND
+				b.merNo=#{vo.merNo}
+		</if>
+		<if test="vo.susType==3 or vo.susType=='3' or vo.susType==&quot;3&quot;">
+			AND
+				b.merNo=#{vo.merNo}
+			AND
+				b.terNo=#{vo.terNo}
+		</if>
+		AND
+			b.susType=#{vo.susType}
+		AND
+			(
+				a.info=#{trans.IPAddress}
+			OR
+				a.info=#{trans.checkToNo}
+			OR
+				a.info=#{trans.email}
+			OR
+				a.info=#{trans.grAddress}
+			OR
+				a.info=#{trans.cardFullPhone}
+			OR
+				a.info=#{trans.cardFullName}
+			<foreach collection="sigleAmount" item="amount" >
+			OR
+				a.info>=#{amount}
+			</foreach>
+			)
+		GROUP BY
+			a.tradeNo
+  	</select>
+  	<select id="querySuspiciousSingleAmountInfoList" resultType="java.lang.String">
+  		SELECT
+  			colValue
+  		FROM
+  			gw_suspicious_rule_info a
+  			LEFT JOIN gw_suspicious_rule_param b ON b.paramId=a.ruleParamValueId
+  			LEFT JOIN gw_suspicious_base_table_info c ON c.tableName=b.paramName
+  		WHERE
+  			FIND_IN_SET(a.ruleId,#{ruleIds})
+  		AND
+  			b.paramName LIKE '%amountLimit%'
+  		AND
+  			colKey=1
+  	</select>
+  	<select id="querySuspiciousRuleTransInfo" resultType="java.lang.String">
+  		SELECT 
+			a.tradeNo
+		FROM
+			gw_suspicious_trans_order_info a
+			LEFT JOIN gw_suspicious_mer_trans_info b ON b.Id=a.syspId
+		WHERE
+			FIND_IN_SET(b.ruleId,#{vo.ruleIds})
+		AND
+			b.createDate=#{vo.createDate}
+		<if test="vo.susType==2 or vo.susType=='2' or vo.susType==&quot;2&quot;">
+			AND
+				b.merNo=#{vo.merNo}
+		</if>
+		<if test="vo.susType==3 or vo.susType=='3' or vo.susType==&quot;3&quot;">
+			AND
+				b.merNo=#{vo.merNo}
+			AND
+				b.terNo=#{vo.terNo}
+		</if>
+		AND
+			b.susType=#{vo.susType}
+		AND
+			(
+				a.info=#{trans.IPAddress}
+			OR
+				a.info=#{trans.checkToNo}
+			OR
+				a.info=#{trans.email}
+			OR
+				a.info=#{trans.grAddress}
+			OR
+				a.info=#{trans.cardFullPhone}
+			OR
+				a.info=#{trans.cardFullName}
+			<foreach collection="sigleAmount" item="amount" >
+			OR
+				a.info>=#{amount}
+			</foreach>
+			)
+		GROUP BY
+			a.tradeNo
+  	</select>
+  	<select id="querySuspiciousOrderRuleInfo" resultType="com.gateway.suspicious.model.SuspiciousRuleInfo">
+	  	  SELECT ruleId,GROUP_CONCAT(DISTINCT ruleName) AS ruleName FROM(
+	  		SELECT
+	  			a.ruleId,
+	  			(case when c.processClassId=6 then
+	  			 concat(gp.paramDescName,'在',DATE_FORMAT(e.transDate,'%Y-%m-%d'),gpc.paramDescName)
+	  			 else  c.ruleName end)as ruleName
+	  		FROM
+	  			gw_suspicious_mer_trans_info a
+	  			LEFT JOIN gw_suspicious_trans_order_info b ON a.Id=b.syspId
+	  			LEFT JOIN gw_suspicious_rule_info c ON c.ruleId=a.ruleId
+	  			left join gw_suspicious_rule_param gp on c.paramId=gp.paramId
+	  			left join gw_suspicious_rule_param gpc on c.ruleParamValueId=gpc.paramId
+	  			<!-- LEFT JOIN gw_suspicious_rule_processClass d ON c.processClassId=d.processClassId -->
+	  			left join gw_trans_info e on b.tradeNo=e.tradeNo
+	  			
+	  		WHERE
+	  			a.createDate=#{createDate}
+	  		AND
+	  			b.syspId in 
+	  			(select syspId from gw_suspicious_trans_order_info
+	  			 where tradeNo=#{tradeNo} )
+	  		AND
+	  			a.susType=#{susType}
+	  	)as c
+  		GROUP BY 
+			ruleId
+  	</select>
+  	<select id="querySuspiciousOrderRuleInfoCount" resultType="java.lang.Integer">
+  		SELECT
+  			COUNT(*)
+  		FROM
+  			(
+		  		SELECT
+		  			a.ruleId,
+		  			c.ruleName
+		  		FROM
+		  			gw_suspicious_mer_trans_info a
+		  			LEFT JOIN gw_suspicious_trans_order_info b ON a.Id=b.syspId
+		  			LEFT JOIN gw_suspicious_rule_info c ON c.ruleId=a.ruleId
+		  		WHERE
+		  			a.createDate=#{createDate}
+		  		AND
+		  			b.tradeNo=#{tradeNo}
+		  		AND
+  					a.susType=#{susType}
+		  		GROUP BY 
+					a.ruleId
+			)
+			AS
+				c
+  	</select>
+  	<sql id="WHERE_SUSPICIOUS_ORDER_EXPORT_CLAUSE">
+  		<where>
+  			<if test="condition.createDateStart!=null and condition.createDateStart!=''">
+  				<![CDATA[AND c.transDate>=DATE_ADD(CONCAT(#{condition.createDateStart}, ' ', '00:00:00'),INTERVAL -1 DAY)]]>
+  			</if>
+  			<if test="condition.createDateEnd!=null and condition.createDateEnd!=''">
+  				<![CDATA[AND c.transDate<=DATE_ADD(CONCAT(#{condition.createDateEnd}, ' ', '23:59:59'),INTERVAL -1 DAY)]]>
+  			</if>
+	  		<if test="condition.merNo!=null and condition.merNo!=''">
+	  			AND c.merNo=#{condition.merNo}
+	  		</if>
+	  		<if test="condition.terNo!=null and condition.terNo!=''">
+	  			AND c.terNo=#{condition.terNo}
+	  		</if>
+	  		<if test="condition.email!=null and condition.email!=''">
+	  			AND c.email=#{condition.email}
+	  		</if>
+	  		<if test="condition.IPAddress!=null and condition.IPAddress!=''">
+	  			AND c.IPAddress=#{condtion.IPAddress}
+	  		</if>
+	  		<if test="condition.cardFullPhone!=null and condition.cardFullPhone!=''">
+	  			AND a.cardFullPhone=#{condition.cardFullPhone}
+	  		</if>
+	  		<if test="condition.grAddress!=null and condition.grAddress!=''">
+	  			AND a.grAddress=#{condition.grAddress}
+	  		</if>
+	  		<if test="condition.cardFullName!=null and condition.cardFullName!=''">
+	  			AND a.cardFullName=#{condition.cardFullName}
+	  		</if>
+	  		<if test="condition.cardStart!=null and condition.cardStart!=''">
+	  			AND c.checkNo=#{condition.cardStart}
+	  		</if>
+	  		<if test="condition.cardEnd!=null and condition.cardEnd!=''">
+	  			AND c.last=#{condition.cardEnd}
+	  		</if>
+	  		<if test="condition.susType!=null and condition.susType!=''">
+	  			AND b.susType=#{condition.susType}
+	  		</if>
+	  		<if test="condition.createDateStart!=null and condition.createDateStart!=''">
+	  			AND <![CDATA[b.createDate>=CONCAT(#{condition.createDateStart},' ','00:00:00')]]>
+	  		</if>
+	  		<if test="condition.createDateEnd!=null and condition.createDateEnd!=''">
+	  			AND <![CDATA[b.createDate<=CONCAT(#{condition.createDateEnd},' ','23:59:59')]]>
+	  		</if>
+	  		<if test="condition.ruleId!=null and condition.ruleId!=''">
+	  			AND #{condition.ruleId} LIKE CONCAT('%', b.ruleId, '%')
+	  		</if>
+	  		<if test="condition.tradeNo!=null and condition.tradeNo!=''">
+	  			AND a.tradeNo=#{condition.tradeNo}
+	  		</if>
+  		</where>
+  	</sql>
+  	<select id="querySuspiciousOrderListInfo" resultType="com.gateway.suspicious.model.SuspiciousOrderListInfo">
+  		SELECT
+  			c.merNo,
+  			c.terNo,
+  			c.tradeNo,
+  			c.transDate,
+  			c.merTransAmount,
+  			c.isDishonor,
+  			c.isRefund,
+  			c.merBusCurrency,
+  			a.info,
+  			b.susType,
+  			GROUP_CONCAT(DISTINCT b.ruleId) AS ruleIdList,
+  			a.syspId,
+  			a.Id AS susOrderId,
+  			b.createDate,
+  			c.orderNo
+  		FROM
+  			gw_suspicious_trans_order_info a
+  			LEFT JOIN gw_suspicious_mer_trans_info b ON b.Id=a.syspId
+			LEFT JOIN gw_trans_info c ON c.tradeNo=a.tradeNo
+  		<include refid="WHERE_SUSPICIOUS_ORDER_EXPORT_CLAUSE"/>
+  		GROUP BY
+  			b.createDate,b.susType,c.tradeNo
+  		ORDER BY
+  			c.transDate
+  		DESC
+  	</select>
+  	<select id="querySuspiciousOrderTradeNoInfo" resultType="java.lang.String">
+  		SELECT 
+  			GROUP_CONCAT(DISTINCT a.tradeNo)
+  		FROM
+  			gw_suspicious_trans_order_info a
+  			LEFT JOIN gw_suspicious_mer_trans_info b ON b.Id=a.syspId
+  		WHERE
+  			FIND_IN_SET(b.ruleId,#{ruleIdList})
+  		AND
+  			b.createDate=#{createDate}
+  		AND
+  			b.susType=#{susType}
+  		<if test="susType==2">
+	  		AND
+  				b.merNo=#{merNo}
+  		</if>
+  		<if test="susType==3">
+	  		AND
+  				b.merNo=#{merNo}
+  			AND
+  				b.terNo=#{terNo}
+  		</if>
+  	</select>
+  	<select id="querySuspiciousOrderRuleListInfo" resultType="com.gateway.suspicious.model.SuspiciousRuleListInfo">
+  		SELECT 
+  			GROUP_CONCAT(ruleId) AS ruleIdList,
+  			GROUP_CONCAT(ruleName) AS ruleNameList
+  		FROM
+  			gw_suspicious_rule_info
+  		WHERE
+  			FIND_IN_SET(ruleId,#{ruleIdList})
+  	</select>
+  	<select id="queryTransListByTradeNo" resultType="com.gateway.transmgr.model.TransInfo">
+				SELECT
+					t.id,
+					t.tradeNo,
+					t.relNo,
+					t.merBusCurrency,
+					t.merTransAmount,
+					t.bankCurrency,
+					t.bankTransAmount,
+					t.merSettleCurrency,
+					t.merSettleAmount,
+					t.merNo,
+					t.terNo,
+					t.cardType,
+					t.cardName,
+					t.bankName,
+					t.agentNo,
+					t.parentAgentNo,
+					t.transDate,
+					t.settleBatchNo,
+					t.settleDate,
+					t.batchNo,
+					t.posNo,
+					t.currencyId,
+					t.singleFee,
+					t.merForAmount,
+					t.transType,
+					t.respCode,
+					t.checkToNo,
+					t.bankRefNo,
+					t.bankPosNo,
+					t.bankBatchNo,
+					t.autoCode,
+					t.bankTransDate,
+					t.bankTransTime,
+					t.checkedBatchNo,
+					t.transAmount,
+					t.IPAddress,
+					t.checkNo,
+					t.middle,
+					t.last,
+					t.email,
+					t.respMsg,
+					t.bondAmount,
+					t.ischecked,
+					t.rvfId,
+					t.isRefund,
+					t.isDishonor,
+					t.isFrozen,
+					t.isThaw,
+					t.orderNo,
+					t.access,
+					t.bondBatchNo,
+					t.payWebsite as payWebsite,
+					t.transStatus,
+					t.transDishonor,
+					t.transFrozen,
+					t.transThaw,
+					t.transRefund,
+					t.webInfo,
+					t.riskScore,
+					t.ipCountry,
+					c.currencyName,
+					t.acquirer,
+					b.bankName as acquiringBank,
+					m.merchantName,
+					t.autoCode,
+					h.cardCountry,
+					h.cardState,
+					h.cardAddress,
+					h.cardFullPhone,
+					h.cardFullName,
+					h.grphoneNumber,
+					h.grPerName,
+					h.grState,
+					h.grEmail,
+					h.grCountry,
+					h.grZipCode,
+					h.grAddress ,
+					k.trackNo,
+					k.iogistics,
+					t.bankRealAmount,
+					t.bankRealCurrency,
+					t.bankRealRate,
+			   (CASE WHEN  SUM(CASE d.transType WHEN 'refund' THEN d.transMoney ELSE 0 END)>0 THEN 1 ELSE 0 END) refundStatus,
+				FORMAT(SUM(CASE d.transType WHEN 'refund' THEN d.transMoney ELSE 0 END),2) AS refundAmount,
+				(CASE WHEN  SUM(CASE d.transType WHEN 'dishonor' THEN d.transMoney ELSE 0 END)>0 THEN 1 ELSE 0 END) dishonorStatus,
+				FORMAT(SUM(CASE d.transType WHEN 'dishonor' THEN d.transMoney ELSE 0 END),2) AS dishonorAmount,
+				(CASE WHEN  SUM(CASE d.transType WHEN 'frozen' THEN d.transMoney WHEN 'thaw' THEN d.transMoney*(-1) ELSE  0 END)>0 THEN 1 ELSE 0 END) frozenStatus,
+				FORMAT(SUM(CASE d.transType WHEN 'frozen' THEN d.transMoney WHEN 'thaw' THEN d.transMoney*(-1) ELSE  0 END),2) AS frozenAmount
+				FROM
+					gw_trans_info t  left join gw_trans_info_log d ON t.tradeNo=d.tradeNo AND d.status=2
+				LEFT JOIN gw_currency_info c ON t.currencyId = c.id
+				LEFT JOIN gw_bank_info b ON c.bankId = b.id
+				left join gw_merchant_info m on m.merNo=t.merNo
+				left join gw_trans_order_info h on h.tradeNo=t.tradeNo
+				left join gw_GoodsPress k on k.tradeNo=t.tradeNo 
+				where t.tradeNo=#{tradeNo}
+			group by t.tradeNo
+	</select>
+	<select id="queryGoodsInfoByTradeNo" resultType="com.gateway.transmgr.model.GoodsInfo">
+		select * from gw_trans_goods_info where tradeNo=#{tradeNo}
+	</select>
+</mapper>

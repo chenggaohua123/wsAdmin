@@ -1,0 +1,840 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="com.gateway.riskmgr.mapper.RiskMgrDao">
+	<sql id="Where_Clause_Risk_Trans_Info">
+		<where>
+			and a.status=#{condition.doStatus}
+			<if test="condition.merNo != null and condition.merNo != '' ">
+				and b.merNo=#{condition.merNo}
+			</if>
+			<if test="condition.terNo != null and condition.terNo != '' ">
+				and b.terNo=#{condition.terNo}
+			</if>
+			<if test="condition.tradeNo  != null and condition.tradeNo != '' ">
+				and a.tradeNo=#{condition.tradeNo}
+			</if>
+			<if test="condition.website  != null and condition.website != '' ">
+				and b.payWebSite=#{condition.website}
+			</if>
+			<if test="condition.transDateStart  != null and condition.transDateStart != '' ">
+				and a.createDate >='${condition.transDateStart} 00:00:00.000'
+			</if>
+			<if test="condition.transDateEnd  != null and condition.transDateEnd != '' ">
+				and a.createDate &lt;='${condition.transDateEnd} 23:59:59.999'
+			</if>
+			<if test="condition.respCode  != null and condition.respCode != '' ">
+				and b.respCode=#{condition.respCode}
+			</if>
+			<if test="condition.ruleId !=null and condition.ruleId !='' ">
+				and a.ruleId=#{condition.ruleId}
+			</if>
+			<if test="condition.orderNo !=null and condition.orderNo !='' ">
+				and b.orderNo=#{condition.orderNo}
+			</if>
+		</where>
+	</sql>
+	<select id="countRiskTransInfo" resultType="int">
+	select count(*) from (
+			select 
+			a.tradeNo,
+			b.merNo,
+			b.payWebSite as website,
+			a.createDate as doDate,
+			a.status as doStatus,
+			b.orderNo,
+			b.terNo,
+			c.ruleName as doReason,
+			a.ruleId
+		from 
+		gw_risk_trans_info a left join gw_trans_info b on a.tradeNo=b.tradeNo
+		left join rule_info c on a.ruleId=c.ruleId
+		<include refid="Where_Clause_Risk_Trans_Info"/>
+	)as t
+	</select> 
+	<select id="getListRiskTransInfo" resultType="com.gateway.riskmgr.model.RiskTransInfo">
+		select 
+			a.tradeNo,
+			b.merNo,
+			b.payWebSite as website,
+			a.createDate as doDate,
+			DATE_ADD(a.createDate,INTERVAL 24 hour) as doEndDate,
+			(case when now()>=DATE_ADD(a.createDate,INTERVAL 24 hour) then 1 else 0 end ) as reStatus,
+			a.status as doStatus,
+			b.orderNo,
+			b.terNo,
+			(case a.ruleId when -1 then a.riskMsg else c.ruleName end) as doReason,
+			b.respCode,
+			a.ruleId,
+			b.respMsg
+		from 
+		gw_risk_trans_info a left join gw_trans_info b on a.tradeNo=b.tradeNo
+		left join rule_info c on a.ruleId=c.ruleId
+		<include refid="Where_Clause_Risk_Trans_Info"/> 
+		order by a.createDate desc 
+	</select>
+	
+	<select id="exportRiskTransList" resultType="com.gateway.riskmgr.model.ExportRiskTransInfo">
+		select 
+			a.tradeNo,
+			b.merNo,
+			b.payWebSite as website,
+			a.createDate as doDate,
+			a.status as doStatus,
+			b.orderNo,
+			b.terNo,
+			(case a.ruleId when -1 then a.riskMsg else c.ruleName end) as  doReason,
+			DATE_ADD(a.createDate,INTERVAL 24 hour) as doEndDate,
+			b.respCode,
+			b.merBusCurrency as currency,
+			b.merTransAmount as amount,
+			b.checkNo,
+			b.last,
+			d.cardFullName,
+			d.cardFullPhone,
+			b.email,
+			b.ipAddress as ip,
+			d.grCountry,
+			b.ipCountry,
+			d.grState,
+			d.grAddress,
+			d.grZipCode,
+			d.cardCountry,
+			d.cardState,
+			d.cardAddress,
+			a.ruleId,
+			b.riskScore,
+			b.respMsg
+		from 
+		gw_risk_trans_info a left join gw_trans_info b on a.tradeNo=b.tradeNo
+		left join rule_info c on a.ruleId=c.ruleId
+		left join gw_trans_order_info d on a.tradeNo=d.tradeNo
+		<include refid="Where_Clause_Risk_Trans_Info"/> 
+		order by a.createDate desc 
+	</select>
+	<sql id="Where_Merchant_Country_Limit">
+		<where>
+			<if test="condition.merNo != null and condition.merNo != ''">
+				and a.merNo=#{condition.merNo}
+			</if>
+			<if test="condition.countryNameEN != null and condition.countryNameEN != ''">
+				and b.countryNameEN=#{condition.countryNameEN}
+			</if>
+			<if test="condition.countryNameCN != null and condition.countryNameCN != ''">
+				and b.countryNameCN=#{condition.countryNameCN}
+			</if>
+			<if test="condition.countryNameSimple != null and condition.countryNameSimple != ''">
+				and b.countryNameSimple=#{condition.countryNameSimple}
+			</if>
+		</where>
+	</sql>
+	<select id="queryMerchantCountryLimit" resultType="com.gateway.riskmgr.model.CountryLimit">
+		select a.createDate,a.merNo,b.countryNameEN,b.countryNameCN,b.countryNameSimple from gw_mer_ref_black a  left join gw_country_info b 
+		on a.elementValue=b.id
+		<include refid="Where_Merchant_Country_Limit"/>
+		order by a.id desc 
+	</select>
+	<select id="countMerchantCountryLimit" resultType="int">
+	select count(*) from(
+		select a.merNo,b.countryNameEN,b.countryNameCN,b.countryNameSimple from gw_mer_ref_black a  left join gw_country_info b 
+		on a.elementValue=b.id
+		<include refid="Where_Merchant_Country_Limit"/>
+		) as t
+	</select>
+	<sql id="Where_Merchant_Pay_Count_Limit">
+		<where>
+			<if test="condition.merNo != null and condition.merNo != '' ">
+				and merNo=#{condition.merNo}
+			</if>
+			<if test="condition.type != null and condition.type != '' ">
+				and type=#{condition.type}
+			</if>
+			<if test="condition.status != null and condition.status != '' ">
+				and status=#{condition.status}
+			</if>
+		</where>
+	</sql>
+	<select id="queryMerchantPayCountLimit" resultType="com.gateway.riskmgr.model.MerchantPayCountLimit">
+		select * from gw_payment_count_limit_info
+		<include refid="Where_Merchant_Pay_Count_Limit"/>
+		order by id desc 
+	</select>
+	<select id="queryMerchantPayCountLimitById" resultType="com.gateway.riskmgr.model.MerchantPayCountLimit">
+		select * from gw_payment_count_limit_info where id=#{id}
+	</select>
+	<select id="countMerchantPayCountLimit" resultType="int">
+		select count(*) from gw_payment_count_limit_info
+		<include refid="Where_Merchant_Pay_Count_Limit"/>
+		order by id desc 
+	</select>
+	<update id="updateMerchantPayCountLimit">
+		update gw_payment_count_limit_info 
+		set 
+		status =#{status},
+		lastModifyBy=#{lastModifyBy},
+		lastMofifyDate=now(),
+		remark=#{remark}
+		where id=#{id}
+	</update>
+	<sql id="Where_Caulse_Brand_Limit_info">
+		<where>
+			<if test="condition.merNo != null and condition.merNo != '' ">
+				and a.merNo=#{condition.merNo}
+			</if>
+			<if test="condition.brand != null and condition.brand != '' ">
+				and (a.brand like '%${condition.brand}%' or a.brand = '0' )
+			</if>
+			<if test="condition.countrys != null and condition.countrys != '' ">
+				and (a.countrys like '%${condition.countrys}%' or a.countrys ='0')
+			</if>
+			<if test="condition.bankId != null and condition.bankId != '' and condition.bankId != 0 ">
+				and (a.bankId =#{condition.bankId} or a.bankId ='0')
+			</if>
+			<if test="condition.cardType != null and condition.cardType != '' ">
+				and (a.cardType =#{condition.cardType} or a.cardType ='0')
+			</if>
+			<if test="condition.enabled != null and condition.enabled != '' ">
+				and a.enabled=#{enabled}
+			</if>
+			<if test="condition.transDateStart != null and condition.transDateStart != '' ">
+				and a.createDate >= '${condition.transDateStart}'
+			</if>
+			<if test="condition.transDateEnd != null and condition.transDateEnd != '' ">
+				and a.createDate &lt;= '${condition.transDateEnd} 23:59:59'
+			</if>
+		</where>
+	</sql>
+	<select id="queryBrandLimit" resultType="com.gateway.riskmgr.model.BrandLimitInfo">
+		select a.*,b.bankName from gw_brand_limit_info a left join gw_bank_info b on a.bankId=b.id
+		<include refid="Where_Caulse_Brand_Limit_info"/>
+		order by a.id desc 
+	</select>
+	<select id="countBrandLimit" resultType="int">
+		select count(*) from gw_brand_limit_info a left join gw_bank_info b on a.bankId=b.id
+		<include refid="Where_Caulse_Brand_Limit_info"/>
+	</select>
+	<select id="queryBrandLimitInfoById" resultType="com.gateway.riskmgr.model.BrandLimitInfo">
+		select *,b.bankName from gw_brand_limit_info a left join gw_bank_info b on a.bankId=b.id
+		where a.id=#{id}
+	 </select>
+	 <insert id="addBrandLimitInfo">
+	 	insert into gw_brand_limit_info(
+	 		merNo,
+	 		terNo,
+	 		bankId,
+	 		brand,
+	 		countrys,
+	 		cardType,
+	 		enabled,
+	 		createBy,
+	 		createDate
+	 	)values(
+	 		#{merNo},
+	 		#{terNo},
+	 		#{bankId},
+	 		#{brand},
+	 		#{countrys},
+	 		#{cardType},
+	 		#{enabled},
+	 		#{createBy},
+	 		now()
+	 	)
+	 </insert>
+	 <update id="updateBrandLimitInfo">
+	 	update gw_brand_limit_info set 
+	 		merNo=#{merNo},
+	 		terNo=#{terNo},
+	 		bankId=#{bankId},
+	 		brand=#{brand},
+	 		countrys=#{countrys},
+	 		cardType=#{cardType},
+	 		enabled=#{enabled},
+	 		createBy=#{createBy},
+	 		createDate=now()
+	 	where id=#{id}
+	 </update>
+	 <delete id="deleteBrandLimitInfoByIds">
+	 	delete from gw_brand_limit_info
+	 	where id in
+	 	<foreach collection="ids" item="id" open="(" close=")" separator=",">
+	 		#{id}
+	 	</foreach>
+	 </delete>
+	 <!-- 银行限制 start-->
+	 <sql id="Where_Caulse_Bank_Limit_info">
+		<where>
+			<if test="condition.merNo != null and condition.merNo != '' ">
+				and a.merNo=#{condition.merNo}
+			</if>
+			<if test="condition.countrys != null and condition.countrys != '' ">
+				and (a.countrys like '%${condition.countrys}%' or a.countrys ='0')
+			</if>
+			<if test="condition.bankId != null and condition.bankId != '' and condition.bankId != 0 ">
+				and (a.bankId =#{condition.bankId} or a.bankId ='0')
+			</if>
+			<if test="condition.cardType != null and condition.cardType != '' ">
+				and (a.cardType =#{condition.cardType} or a.cardType ='0')
+			</if>
+			<if test="condition.enabled != null and condition.enabled != '' ">
+				and a.enabled=#{enabled}
+			</if>
+			<if test="condition.transDateStart != null and condition.transDateStart != '' ">
+				and a.createDate >= '${condition.transDateStart}'
+			</if>
+			<if test="condition.transDateEnd != null and condition.transDateEnd != '' ">
+				and a.createDate &lt;= '${condition.transDateEnd} 23:59:59'
+			</if>
+		</where>
+	</sql>
+	<select id="queryBankLimit" resultType="com.gateway.riskmgr.model.BankLimitInfo">
+		select a.*,b.bankName from gw_bank_limit_info a left join gw_bank_info b on a.bankId=b.id
+		<include refid="Where_Caulse_Bank_Limit_info"/>
+		order by a.id desc 
+	</select>
+	 <select id="countBankLimit" resultType="int">
+		select count(*) from gw_bank_limit_info a left join gw_bank_info b on a.bankId=b.id
+		<include refid="Where_Caulse_Bank_Limit_info"/>
+	</select>
+	<select id="queryBankLimitInfoById" resultType="com.gateway.riskmgr.model.BankLimitInfo">
+		select *,b.bankName from gw_bank_limit_info a left join gw_bank_info b on a.bankId=b.id
+		where a.id=#{id}
+	 </select>
+	 <insert id="addBankLimitInfo">
+	 	insert into gw_bank_limit_info(
+	 		merNo,
+	 		terNo,
+	 		bankId,
+	 		countrys,
+	 		cardType,
+	 		enabled,
+	 		createBy,
+	 		createDate
+	 	)values(
+	 		#{merNo},
+	 		#{terNo},
+	 		#{bankId},
+	 		#{countrys},
+	 		#{cardType},
+	 		#{enabled},
+	 		#{createBy},
+	 		now()
+	 	)
+	 </insert>
+	 <update id="updateBankLimitInfo">
+	 	update gw_bank_limit_info set 
+	 		merNo=#{merNo},
+	 		terNo=#{terNo},
+	 		bankId=#{bankId},
+	 		countrys=#{countrys},
+	 		cardType=#{cardType},
+	 		enabled=#{enabled},
+	 		createBy=#{createBy},
+	 		createDate=now()
+	 	where id=#{id}
+	 </update>
+	 <delete id="deleteBankLimitInfoByIds">
+	 	delete from gw_bank_limit_info
+	 	where id in
+	 	<foreach collection="ids" item="id" open="(" close=")" separator=",">
+	 		#{id}
+	 	</foreach>
+	 </delete>
+	 <!-- 银行限制 end-->
+	 
+	<sql id="Where_Caulse_Country_Info">
+		<where>
+			<if test="condition.countryNameEN!=null and condition.countryNameEN!=''">
+				and countryNameEN like '%${condition.countryNameEN}%'
+			</if>
+			<if test="condition.countryNameCN!=null and condition.countryNameCN!=''">
+				and countryNameCN like '%${condition.countryNameCN}%'
+			</if>
+			<if test="condition.countryNameSimple!=null and condition.countryNameSimple!=''">
+				and countryNameSimple like '%${condition.countryNameSimple}%'
+			</if>
+		</where>
+	</sql>
+	<select id="queryCountryList" resultType="com.gateway.riskmgr.model.CountryInfo">
+		select * from gw_country_info 
+		<include refid="Where_Caulse_Country_Info"/>
+		order by CNorder 
+	</select>   
+	<select id="countCountryList" resultType="int">
+		select count(*) from gw_country_info
+		<include refid="Where_Caulse_Country_Info"/>
+	</select>
+	
+	<select id="countMaxMindTransList" resultType="int">
+		select count(*)  from(
+				SELECT
+					t.id
+				FROM
+				gw_maxmind_result_info a left join 
+				gw_trans_info t  on a.tradeNo=t.tradeNo
+				LEFT JOIN gw_currency_info c ON t.currencyId = c.id
+				LEFT JOIN gw_bank_info b ON c.bankId = b.id
+				left join gw_trans_order_info h on h.tradeNo=t.tradeNo 
+				<include refid="Where_Clause_Trans_Info"/>
+		) as q
+	</select>
+	
+	<select id="queryMaxMindTransList" resultType="com.gateway.riskmgr.model.MaxmindTransInfo">
+		SELECT
+					
+					t.merBusCurrency,
+					t.merTransAmount,
+					t.bankCurrency,
+					t.bankTransAmount,
+					t.merSettleCurrency,
+					t.merSettleAmount,
+					t.merNo,
+					t.terNo,
+					t.cardType,
+					t.respMsg,
+					t.transDate,
+					t.respCode,
+					t.checkNo,
+					t.middle,
+					t.last,
+					t.email,
+					t.ischecked,
+					t.orderNo,
+					c.currencyName,
+					t.ipAddress,
+					t.payWebSite,
+					a.*
+				FROM
+				gw_maxmind_result_info a left join 
+				gw_trans_info t  on a.tradeNo=t.tradeNo
+				LEFT JOIN gw_currency_info c ON t.currencyId = c.id
+				LEFT JOIN gw_bank_info b ON c.bankId = b.id
+				left join gw_trans_order_info h on h.tradeNo=t.tradeNo
+				<include refid="Where_Clause_Trans_Info"/>
+			order by transDate desc
+	
+	</select>
+	<sql id="Where_Clause_Trans_Info">
+		<where>
+			and a.tradeNo is not null
+			and t.transType in ('sales','test')
+			
+			<if test="cr.condition.riskType != null and cr.condition.riskType != ''">
+				<choose>
+					<when test="cr.condition.riskType == 1 ">
+						and t.respMsg not like '%high risk%'
+					</when>
+					<when test="cr.condition.riskType == 2 ">
+						and t.respMsg like '%high risk re%'
+					</when>
+					<when test="cr.condition.riskType == 3 ">
+						and t.respMsg like '%high risk pe%'
+					</when>
+				</choose>
+			</if>
+			<if test="cr.condition.tradeNo != null and cr.condition.tradeNo != ''">
+			  and t.tradeNo = #{cr.condition.tradeNo}
+			</if>
+			<if test="cr.condition.orderNo != null and cr.condition.orderNo != ''">
+			  and t.orderNo = #{cr.condition.orderNo}
+			</if>
+			<if test="cr.condition.email != null and cr.condition.email != ''">
+			  and t.email = #{cr.condition.email}
+			</if>
+			<if test="cr.condition.cardStart !=null and cr.condition.cardStart !=''">
+			  and t.checkNo = #{cr.condition.cardStart}
+			</if>
+			<if test="cr.condition.cardEnd !=null and cr.condition.cardEnd !=''">
+			  and t.last = #{cr.condition.cardEnd}
+			</if>
+			<if test="cr.condition.webInfo != null and cr.condition.webInfo != ''">
+			  and t.webInfo = #{cr.condition.webInfo}
+			</if>
+			<if test="cr.condition.payWebSite != null and cr.condition.payWebSite != ''">
+			  and t.payWebSite = #{cr.condition.payWebSite}
+			</if>
+			<if test="cr.condition.cardType != null and cr.condition.cardType != ''">
+			  and t.cardType = #{cr.condition.cardType}
+			</if>
+			<if test="cr.condition.bankName != null and cr.condition.bankName != ''">
+			  and c.currencyName = #{cr.condition.bankName}
+			</if>
+			<if test="cr.condition.transDishonor != null and cr.condition.transDishonor != ''">
+			  and t.transDishonor = #{cr.condition.transDishonor}
+			</if>
+			<if test="cr.condition.transFrozen != null and cr.condition.transFrozen != ''">
+			  and t.transFrozen = #{cr.condition.transFrozen}
+			</if>
+			<if test="cr.condition.transRefund != null and cr.condition.transRefund != ''">
+			  and t.transRefund = #{cr.condition.transRefund}
+			</if>
+			<if test="cr.condition.grPerName != null and cr.condition.grPerName != ''">
+			  and h.grPerName = #{cr.condition.grPerName}
+			</if>
+			<if test="cr.condition.grphoneNumber != null and cr.condition.grphoneNumber != ''">
+			  and h.grphoneNumber = #{cr.condition.grphoneNumber}
+			</if>
+			<if test="cr.condition.ipAddress != null and cr.condition.ipAddress != ''">
+			  and t.IPAddress = #{cr.condition.ipAddress}
+			</if>
+		
+			<if test="cr.condition.relNo !=null and cr.condition.relNo !=''">
+			  and  t.rcr.condition.relNo}
+			</if>
+			<if test="cr.condition.merNo !=null and cr.condition.merNo !=''">
+			  and  t.merNo = #{cr.condition.merNo}
+			</if>
+			<if test="cr.condition.terNo !=null and cr.condition.terNo !=''">
+			  and  t.terNo = #{cr.condition.terNo}
+			</if>
+			<if test="cr.condition.respCode == '00'">
+			  and  t.respCode = #{cr.condition.respCode}
+			</if>
+			<if test="cr.condition.respCode == '01'">
+			  and  (t.respCode &lt;> '00'  or t.respCode is null)
+			</if>
+			<if test="cr.condition.transType !=null and cr.condition.transType !=''">
+			  and  t.transType=#{cr.condition.transType}
+			</if>
+			<if test="cr.condition.transDateStart != null and cr.condition.transDateStart != ''">
+		     and transDate >= '${cr.condition.transDateStart}'
+		    </if>
+		    <if test="cr.condition.transDateEnd != null and cr.condition.transDateEnd != ''">
+		      and transDate &lt;='${cr.condition.transDateEnd}'
+		    </if>	
+			<if test="cr.condition.settleDateStart != null and cr.condition.settleDateStart != ''">
+		     and settleDate >= '${cr.condition.settleDateStart} 00:00:00'
+		    </if>
+		    <if test="cr.condition.settleDateEnd != null and cr.condition.settleDateEnd != ''">
+		      and settleDate &lt;='${cr.condition.settleDateEnd} 23:59:59.999'
+		    </if>
+		    <if test="cr.condition.checkedBatchNo == 1">
+		      and t.checkedBatchNo is not null
+		    </if>
+		    <if test="cr.condition.checkedBatchNo == 2">
+		      and t.checkedBatchNo is null
+		    </if>
+		    <if test="cr.condition.ischecked !=null and cr.condition.ischecked !=''">
+		    	and ischecked=#{cr.condition.ischecked}
+		    </if>
+		    <if test="cr.condition.access != null and cr.condition.access  != ''">
+		    	and access =#{cr.condition.access}
+		    </if>
+		    <if test="cr.condition.currencyId != null and  cr.condition.currencyId != '' ">
+		    	and t.currencyId=#{cr.condition.currencyId}
+		    </if>
+		    <if test="cr.condition.bankId != null and  cr.condition.bankId != '' and cr.condition.bankId != 0 ">
+		    	and b.id=#{cr.condition.bankId}
+		    </if>
+		    <if test="cr.condition.merchantType != null and cr.condition.merchantType != '' ">
+		    	and t.merNo in (
+		    	select merNo from gw_merchant_info where type=#{cr.condition.merchantType}
+		    	)
+		    </if>
+		    </where>
+	</sql>
+	<select id="queryMaxmindInfoByTradeNo" resultType="com.gateway.riskmgr.model.MaxmindTransInfo">
+		select * from 
+		gw_maxmind_result_info
+		where tradeNo=#{tradeNo}
+	</select>
+	
+	<select id="exportTransList" resultType="com.gateway.riskmgr.model.MaxmindTransInfo">
+				SELECT
+					a.*,					
+					t.relNo,
+					t.merBusCurrency,
+					t.merTransAmount,
+					t.bankCurrency,
+					t.bankTransAmount,
+					t.merSettleCurrency,
+					t.merSettleAmount,
+					t.merNo,
+					t.terNo,
+					t.cardType,
+					t.cardName,
+					t.bankName,
+					t.agentNo,
+					t.parentAgentNo,
+					t.transDate,
+					t.settleBatchNo,
+					t.settleDate,
+					t.batchNo,
+					t.posNo,
+					t.currencyId,
+					t.singleFee,
+					t.merForAmount,
+					t.transType,
+					t.respCode,
+					t.checkToNo,
+					t.bankRefNo,
+					t.bankPosNo,
+					t.bankBatchNo,
+					t.autoCode,
+					t.bankTransDate,
+					t.bankTransTime,
+					t.checkedBatchNo,
+					t.transAmount,
+					t.IPAddress,
+					t.checkNo,
+					t.middle,
+					t.last,
+					t.email,
+					t.respMsg,
+					t.bondAmount,
+					t.ischecked,
+					t.rvfId,
+					t.isRefund,
+					t.isDishonor,
+					t.isFrozen,
+					t.isThaw,
+					t.orderNo,
+					t.access,
+					t.bondBatchNo,
+					t.payWebsite as payWebsite,
+					t.transStatus,
+					t.transDishonor,
+					t.transFrozen,
+					t.transThaw,
+					t.transRefund,
+					t.webInfo,
+					t.riskScore,
+					t.ipCountry,
+					c.currencyName,
+					c.acquirer,
+					b.bankName as acquiringBank,
+					m.merchantName,
+					
+					h.cardCountry,
+					h.cardState,
+					h.cardAddress,
+					h.grphoneNumber,
+					h.grPerName,
+					h.grState,
+					h.grEmail,
+					h.grCountry,
+					h.grZipCode,
+					h.grAddress ,
+					k.trackNo,
+					k.iogistics,
+			   (CASE WHEN  SUM(CASE d.transType WHEN 'refund' THEN d.transMoney ELSE 0 END)>0 THEN 1 ELSE 0 END) refundStatus,
+				FORMAT(SUM(CASE d.transType WHEN 'refund' THEN d.transMoney ELSE 0 END),2) AS refundAmount,
+				(CASE WHEN  SUM(CASE d.transType WHEN 'dishonor' THEN d.transMoney ELSE 0 END)>0 THEN 1 ELSE 0 END) dishonorStatus,
+				FORMAT(SUM(CASE d.transType WHEN 'dishonor' THEN d.transMoney ELSE 0 END),2) AS dishonorAmount,
+				(CASE WHEN  SUM(CASE d.transType WHEN 'frozen' THEN d.transMoney WHEN 'thaw' THEN d.transMoney*(-1) ELSE  0 END)>0 THEN 1 ELSE 0 END) frozenStatus,
+				FORMAT(SUM(CASE d.transType WHEN 'frozen' THEN d.transMoney WHEN 'thaw' THEN d.transMoney*(-1) ELSE  0 END),2) AS frozenAmount,
+				(SELECT GROUP_CONCAT(CONCAT(f.goodsName,',',f.quantity,',',f.goodsPrice)) AS goodsInfo
+						FROM gw_trans_goods_info f WHERE f.tradeNo=t.tradeNo
+					) goodsInfo
+				FROM
+				gw_maxmind_result_info a left join 
+					gw_trans_info t  on a.tradeNo=t.tradeNo
+				left join gw_trans_info_log d ON t.tradeNo=d.tradeNo AND d.status=2
+				LEFT JOIN gw_currency_info c ON t.currencyId = c.id
+				LEFT JOIN gw_bank_info b ON c.bankId = b.id
+				left join gw_merchant_info m on m.merNo=t.merNo
+				left join gw_trans_order_info h on h.tradeNo=t.tradeNo
+				left join gw_GoodsPress k on k.tradeNo=t.tradeNo 
+				<include refid="Where_Clause_Trans_Info"/>
+			group by t.id
+		order by t.id asc
+	</select>
+	
+	<select id="countMaxmindWarnList" resultType="int">
+		select count(*) from gw_maxmind_warn_info
+		<include refid="WHere_MaxMind_Warn_info"/>
+		order by id desc 
+	</select>
+	<sql id="WHere_MaxMind_Warn_info">
+		<where>
+			and txnID like 'FHT%'
+			<if test="condition.transDateStart != null and condition.transDateStart != ''">
+		     and createDate >= #{condition.transDateStart}
+		    </if>
+		    <if test="condition.transDateEnd != null and condition.transDateEnd != ''">
+		      and createDate &lt;=#{condition.transDateEnd}
+		    </if>
+			<if test="condition.tradeNo != null and condition.tradeNo != '' ">
+				and txnID=#{condition.tradeNo}
+			</if>
+			<if test="condition.maxmindID != null and condition.maxmindID != '' ">
+				and maxmindID=#{condition.maxmindID}
+			</if>
+		</where>
+	</sql>
+	<select id="queryMaxmindWarnList" resultType="com.gateway.riskmgr.model.MaxmindWarnInfo">
+		select * from gw_maxmind_warn_info
+		<include refid="WHere_MaxMind_Warn_info"/>
+		order by id desc 
+	</select>
+	
+	<sql id="Where_Risk_Country_Log_Info">
+		<where>
+			<if test="condition.merNo!=null and condition.merNo!=''">
+				AND
+					a.merNo=#{condition.merNo}
+			</if>
+			<if test="condition.actionType!=null and condition.actionType!=''">
+				AND
+					a.actionType=#{condition.actionType}
+			</if>
+			<if test="condition.startDate!=null and condition.startDate!=''">
+				AND
+					a.createDate>=CONCAT(#{condition.startDate}, ' ', '00:00:00')
+			</if>
+			<if test="condition.endDate!=null and condition.endDate!=''">
+				AND
+					<![CDATA[a.createDate<=CONCAT(#{condition.endDate}, ' ', '23:59:59')]]>
+			</if>
+			<if test="condition.countryNameEN!=null and condition.countryNameEN!=''">
+				AND
+					b.countryNameEN=#{condition.countryNameEN}
+			</if>
+			<if test="condition.countryNameCN!=null and condition.countryNameCN!=''">
+				AND
+					b.countryNameCN=#{condition.countryNameCN}
+			</if>
+			<if test="condition.countryNameSimple!=null and condition.countryNameSimple!=''">
+				AND
+					b.countryNameSimple=#{condition.countryNameSimple}
+			</if>
+		</where>
+	</sql>
+	
+	<select id="queryRiskCountryLogInfo" resultType="com.gateway.riskmgr.model.RiskCountryInfoLog">
+		SELECT
+			a.id,
+			a.merNo,
+			a.terNo,
+			a.actionType,
+			a.elementType,
+			a.elementValue,
+			a.createby,
+			DATE_FORMAT(a.createDate, '%Y-%m-%d %H:%i:%s') AS createDate,
+			b.countryNameEN,
+			b.countryNameCN,
+			b.countryNameSimple
+		FROM
+			gw_mer_ref_black_log a
+			LEFT JOIN gw_country_info b ON a.elementValue=b.id
+		<include refid="Where_Risk_Country_Log_Info"/>
+	</select>
+	
+	<select id="queryRiskCountryLogCount" resultType="java.lang.Integer">
+		SELECT
+			COUNT(a.id)
+		FROM
+			gw_mer_ref_black_log a
+			LEFT JOIN gw_country_info b ON a.elementValue=b.id
+		<include refid="Where_Risk_Country_Log_Info"/>
+	</select>
+	
+	<sql id="Where_Caluse_ThreatMetrix_Info">
+		<where>
+			<if test="condition.tradeNo!=null and condition.tradeNo!=''">
+				AND
+					a.tradeNo=#{condition.tradeNo}
+			</if>
+			<if test="condition.dns_ip!=null and condition.dns_ip!=''">
+				AND
+					a.dns_ip=#{condition.dns_ip}
+			</if>
+			<if test="condition.input_ip_address!=null and condition.input_ip_address!=''">
+				AND
+					a.input_ip_address=#{condition.input_ip_address}
+			</if>
+			<if test="condition.true_ip!=null and condition.true_ip!=''">
+				AND
+					a.true_ip=#{condition.true_ip}
+			</if>
+			<if test="condition.merNo!=null and condition.merNo!=''">
+				AND
+					b.merNo=#{condition.merNo}
+			</if>
+			<if test="condition.terNo!=null and condition.terNo!=''">
+				AND
+					b.terNo=#{condition.terNo}
+			</if>
+			<if test="condition.transDateStart!=null and condition.transDateStart!=''">
+				AND
+					b.transDate &gt;= #{condition.transDateStart}
+			</if>
+			<if test="condition.transDateEnd!=null and condition.transDateEnd!=''">
+				AND
+					b.transDate &lt;= #{condition.transDateEnd}
+			</if>
+		</where>
+	</sql>
+	
+	<select id="queryThreatMetrixInfoCount" resultType="java.lang.Integer">
+		SELECT
+			COUNT(a.id)
+		FROM
+			gw_threadmetrix_result_info a
+			LEFT JOIN gw_trans_info b ON b.tradeNo=a.tradeNo
+		<include refid="Where_Caluse_ThreatMetrix_Info"/>
+	</select>
+	
+	<select id="queryThreatMetrixInfoList" resultType="com.gateway.riskmgr.model.ThreatMetrixResultInfo">
+		SELECT
+			a.*,
+			b.merNo,
+			b.terNo,
+			b.transDate
+		FROM
+			gw_threadmetrix_result_info a
+			LEFT JOIN gw_trans_info b ON b.tradeNo=a.tradeNo
+		<include refid="Where_Caluse_ThreatMetrix_Info"/>
+		ORDER BY
+			a.id
+		DESC
+	</select>
+	
+	<select id="queryThreatMetrixInfoById" resultType="com.gateway.riskmgr.model.ThreatMetrixResultInfo">
+		SELECT
+			a.*,
+			b.merNo,
+			b.terNo,
+			b.transDate
+		FROM
+			gw_threadmetrix_result_info a
+			LEFT JOIN gw_trans_info b ON b.tradeNo=a.tradeNo
+		WHERE
+			a.id=#{id}
+	</select>
+	
+	<insert id="addMerchantPayCountLimitById">
+		insert into gw_payment_count_limit_info(
+			merNo,
+			type,
+			limitTime,
+			limitCount,
+			createDate,
+			status,
+			terNo
+		)values(
+			#{merNo},
+			#{type},
+			#{limitTime},
+			#{limitCount},
+			now(),
+			0,
+			#{terNo}
+		)
+	</insert>
+	<update id="modifyMerchantPayCountLimitById">
+		update gw_payment_count_limit_info set 
+			type=#{type},
+			limitTime=#{limitTime},
+			limitCount=#{limitCount},
+			createBy='',
+			createDate=now(),
+			terNo=#{terNo}
+		where 
+			id=#{id}
+			
+	</update>
+	<delete id="deleteMerchantPayCountLimit">
+		delete from gw_payment_count_limit_info where id=#{id}
+	</delete>
+</mapper>
+

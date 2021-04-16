@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="com.gateway.api.mapper.BaseMgrMapper">
+	<insert id="savePicInfo">
+		insert into gw_pic_info 
+		(
+			tradeNo,
+			phoneNo,
+			picExtName,
+			picType,
+			picBuffer,
+			uploadDate,
+			uploadBy
+		)
+		values
+		(
+			#{info.tradeNo},
+			#{info.phoneNo},
+			#{info.picExtName},
+			#{info.picType},
+			#{info.picBuffer},
+			SYSDATE(),
+			#{info.uploadBy}
+		)
+	</insert>
+	
+	<select id="queryPicInfoByTradeNoAndPhoneNoAndType" resultType="com.gateway.api.model.PicInfo">
+		select * from gw_pic_info 
+		<where>
+			<if test="tradeNo != null and tradeNo != ''">
+				and tradeNo = #{tradeNo}
+			</if>
+			<if test="phoneNo != null and phoneNo != ''">
+				and phoneNo = #{phoneNo}
+			</if>
+			<if test="picType != null and picType != ''">
+				and picType = #{picType}
+			</if>
+		</where>
+	</select>
+	
+	<update id="delSerNoFromTerNo">
+		update gw_merchant_terno_info set serNo = null where merNo = #{info.merNo} and #{info.terNo}
+	</update>
+	
+	<insert id="saveSMSVerificationInfo">
+		insert into gw_sms_verification_info 
+		(
+			phoneNo,
+			code,
+			centext,
+			expDate
+		)
+		values
+		(
+			#{info.phoneNo},
+			#{info.code},
+			#{info.centext},
+			date_add(SYSDATE(),interval 5 minute)
+		)
+	</insert>
+	
+	<select id="querySMSVerificationInfoByPhone" resultType="com.gateway.api.model.SMSVerificationInfo">
+		select * from gw_sms_verification_info where phoneNo = #{phoneNo} order by expDate DESC limit 1
+	</select>
+	
+	<select id="queryTerInfoBySnNo" resultType="com.gateway.api.model.TerInfo">
+		select * from gw_merchant_terno_info where serNo = #{snNo} limit 1
+	</select>
+	
+	<select id="queryVersionInfo" resultType="com.gateway.api.model.VersionInfo">
+		select * from gw_version_info where sysType = #{info.sysType} order by updateDate DESC limit 1
+	</select>
+	<select id="queryUserInfo" resultType="com.gateway.api.model.UserForOther">
+		SELECT a.userName,a.password,a.systemId,
+		(CASE  WHEN a.systemId=2 THEN  a.merNo ELSE  d.merNo END)
+		AS merNos FROM gw_sys_user_info a 
+		LEFT JOIN gw_sys_role_ref_user_info b ON a.id=b.userId
+		LEFT JOIN gw_sys_role_info c ON c.id=b.roleId
+		LEFT JOIN gw_sell_ref_merchant_info d ON a.userName=d.userName
+		WHERE a.userName=#{userName} AND PASSWORD=#{password}
+		AND( 
+		(a.systemId=2 AND c.id=12)
+		OR
+		a.systemId=1
+		)
+	</select>
+</mapper>
+

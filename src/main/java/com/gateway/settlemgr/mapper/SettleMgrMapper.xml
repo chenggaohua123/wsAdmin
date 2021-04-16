@@ -1,0 +1,1723 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="com.gateway.settlemgr.mapper.SettleMgrMapper">
+	<sql id="Where_Clause_Exception_Settle_Type">
+		<where>
+			<if test="condition.merNo != null and condition.merNo != ''">
+	          and a.merNo=#{condition.merNo}
+	        </if>
+	        <if test="condition.terNo != null and condition.terNo != ''">
+	          and a.terNo=#{condition.terNo}
+	        </if>
+	         <if test="condition.enabled != null and condition.enabled != ''">
+	          and a.enabled=#{condition.enabled}
+	        </if>
+	         <if test="condition.bankName != null and condition.bankName != ''">
+		         <if test="condition.bankName!='所有'">
+			          and b.bankName=#{condition.bankName}
+		         </if>
+		         <if test="condition.bankName =='所有'">
+			          and a.bankId=0
+		         </if>
+	        </if>
+	         <if test="condition.gatherType != null and condition.gatherType != ''">
+	          and a.gatherType=#{condition.gatherType}
+	        </if>
+		</where>
+	</sql>
+	<sql id="Where_Settle_Type_Info">
+		<where>        
+	      	<if test="condition.merNo != null and condition.merNo != ''">
+	          and merNo=#{condition.merNo}
+	        </if>
+	        <if test="condition.terNo != null and condition.terNo != ''">
+	          and terNo=#{condition.terNo}
+	        </if>
+	         <if test="condition.enabled != null and condition.enabled != ''">
+	          and enabled=#{condition.enabled}
+	        </if>
+	        <if test="condition.settleType != null and condition.settleType != ''">
+	          and settleType=#{condition.settleType}
+	        </if>
+	    </where>
+	</sql>
+	
+	<!-- 查询商户虚拟账户_查询条件 -->
+	<sql id="Where_Merchant_Account_Info">
+	 	<where>        
+	      	<if test="condition.merNo != null and condition.merNo != ''">
+	          and t.merNo=#{condition.merNo}
+	        </if>
+	        <if test="condition.terNo != null and condition.terNo != ''">
+	          and t.terNo=#{condition.terNo}
+	        </if><if test="condition.accountType != null and condition.accountType != ''">
+	          and t.accountType=#{condition.accountType}
+	        </if>
+	        <if test="condition.merchantChannel != null and condition.merchantChannel != ''">
+	          and g.merchantChannel=#{condition.merchantChannel}
+	        </if>
+	    </where>
+	</sql>
+	
+	<sql id="Where_Merchant_Account_Access_Detail_Info">
+		<where>
+			and c.accessId=#{condition.accessId}
+			and a.id=#{condition.accountId}
+			 <if test="condition.dateStart != null and condition.dateStart != ''">
+		 	   and c.createDate >= '${condition.dateStart} 00:00:00'
+			</if>
+			<if test="condition.dateEnd != null and condition.dateEnd != ''">
+			    and c.createDate &lt;='${condition.dateEnd} 23:59:59'
+			</if>
+		</where>
+	</sql>
+	<sql id="Where_Merchant_Account_Access_Info">
+	 	<where> 
+	 		<if test="condition.cashTypes != null and condition.cashTypes != '' ">
+	 			and a.cashType in ${condition.cashTypes}
+	 		</if>
+		 	 <if test="condition.merNo != null and condition.merNo != ''">
+			    and a.merNo = #{condition.merNo}
+			</if> 
+			<if test="condition.terNo != null and condition.terNo != ''">
+			    and a.terNo = #{condition.terNo}
+			</if>  
+			<if test="condition.accountType != null and condition.accountType != ''">
+			    and a.accountType = #{condition.accountType}
+			</if>
+			<if test="condition.createBy != null and condition.createBy != ''">
+			    and a.createBy = #{condition.createBy}
+			</if>
+			<if test="condition.checkBy != null and condition.checkBy != ''">
+			    and a.checkBy = #{condition.checkBy}
+			</if>
+			<if test="condition.reCheckBy != null and condition.reCheckBy != ''">
+			    and a.reCheckBy = #{condition.reCheckBy}
+			</if>
+			<if test="condition.moneyBy != null and condition.moneyBy != ''">
+			    and a.moneyBy = #{condition.moneyBy}
+			</if>
+	       	<if test="condition.dateStart != null and condition.dateStart != ''">
+		   		and a.moneyDate >= '${condition.dateStart} 00:00:00'
+			</if>
+			<if test="condition.dateEnd != null and condition.dateEnd != ''">
+			    and a.moneyDate &lt;='${condition.dateEnd} 23:59:59'
+			</if>
+			<if test="condition.status != null and condition.status != ''">
+			    and a.status =${condition.status}
+			</if>
+			<if test="condition.cashType != null and condition.cashType != ''">
+			    and a.cashType =${condition.cashType}
+			</if>
+			<if test="condition.deductionType != null and condition.deductionType != '' ">
+				 and a.deductionType =#{condition.deductionType}
+			</if>
+			<if test="condition.merchantChannel != null and condition.merchantChannel != '' ">
+				 and b.merchantChannel =#{condition.merchantChannel}
+			</if>
+	    </where>
+	</sql>
+    <sql id="where_Merchant_Settle">
+      <where>        
+      	<if test="condition.merNo != null and condition.merNo != ''">
+          and s.merNo=#{condition.merNo}
+        </if>
+        <if test="condition.terNo != null and condition.terNo != ''">
+          and t.terNo=#{condition.terNo}
+         </if>
+        <if test="condition.batchNo != null and condition.batchNo != ''">
+          and s.batchNo=#{condition.batchNo}
+         </if>	
+        <if test="condition.settleDateStart != null and condition.settleDateStart != ''">
+		  and s.settleDate >= '${condition.settleDateStart} 00:00:00'
+		</if>
+		<if test="condition.settleDateEnd != null and condition.settleDateEnd != ''">
+		  and s.settleDate &lt;='${condition.settleDateEnd} 23:59:59'
+		</if>
+      </where>
+    </sql>   
+    <sql id="Where_Clause_View_Agent_Settle_Info">
+    	<where>
+    		and (agentSettleBatchNo is null or agentSettleBatchNo = '')
+    		<if test="condition.transDate != null and condition.transDate != ''">
+	    		and date_format(settleDate,'%Y-%m') = #{condition.transDate}
+    		</if>
+    	</where>
+    </sql>
+    
+	<sql id="Where_View_Merchant_Settle_Clause">
+		<where>
+			and t1.settleflag != 0 
+			and (settleBatchNo is null or settleBatchNo = '')
+			and t.respCode = '00'
+			<if test="condition.transDate != null and condition.transDate != ''">
+				and	date_format(t.transDate,'%Y-%m-%d %H') &lt;= #{condition.transDate}
+			</if>
+		</where>
+	</sql>
+	
+	<sql id="Where_Agent_Settle_Info">
+		<where>
+			<if test="condition.parentAgentNo == null and condition.parentAgentNo != ''">
+				and g.parentAgentNo = #{condition.parentAgentNo}
+			</if>
+			<if test="condition.settleBatchNo != null and condition.settleBatchNo != ''">
+				and g.settleBatchNo = #{condition.settleBatchNo}
+			</if>
+			<if test="condition.transDateStart != null and condition.transDateStart != ''">
+			  and settleDate >= '${condition.transDateStart} 00:00:00'
+			</if>
+			<if test="condition.transDateEnd != null and condition.transDateEnd != ''">
+			  and settleDate &lt;='${condition.transDateEnd} 23:59:59'
+			</if>
+		</where>
+	</sql>
+	<select id="getMerchantSettleInfo" resultType="com.gateway.settlemgr.model.MerchantSettleInfo">
+	   select s.*,t.accountName,t.accountNo,t.accountAddress,t1.merchantName 
+	   from gw_merchant_settle_info s 
+	   left join gw_merchant_terno_info t on s.merNo=t.merNo and s.terNo=t.terNo
+	   left join gw_merchant_info t1 on s.merNo=t1.merNo
+	   <include refid="where_Merchant_Settle"/>
+	   order by batchNo DESC
+	</select>
+	
+	<select id="countListMerchantSettleInfo" resultType="int">
+	    select count(*) from gw_merchant_settle_info s 
+	    left join gw_merchant_terno_info t on s.merNo=t.merNo and s.terNo=t.terNo
+	    left join gw_merchant_info t1 on s.merNo=t1.merNo
+	    <include refid="where_Merchant_Settle"/>
+	    order by batchNo DESC
+	</select>
+	<select id="getMaxBatchNo" resultType="int">
+		select IFNULL(max(batchNo),0) from gw_merchant_settle_info
+	</select>
+	<select id="queryTotalTransList" resultType="com.gateway.settlemgr.model.MerchantSettleInfo">
+		select * from gw_trans_info
+	</select>
+	
+	<select id="viewMerchantSettleList" resultType="com.gateway.settlemgr.model.MerchantSettleInfo">
+		SELECT
+			count(*) transCount,
+			sum(transAmount) transAmount,
+			merNo,
+			terNo,
+			SUM(merForAmount) forAmount,
+			SUM(agentForAmount) agentForAmount,
+			SUM(parentAgentForAmount) parentAgentForAmount,
+			SUM(transAmount - merForAmount) settleAmount,
+			t.agentNo,
+			t.parentAgentNo
+		FROM
+			gw_trans_info t LEFT JOIN gw_transtype_info t1 on t.transType = t1.transType
+		<include refid="Where_View_Merchant_Settle_Clause"/>
+		GROUP BY
+			t.merNo,
+			t.terNo,
+			t.agentNo,
+			t.parentAgentNo
+	</select>
+	
+	<select id="countViewMerchantSettleList" resultType="int">
+		select count(*) from (
+			SELECT
+			count(*) transCount,
+			sum(transAmount) transAmount,
+			merNo,
+			terNo,
+			SUM(merForAmount) forAmount,
+			SUM(agentForAmount) agentForAmount,
+			SUM(parentAgentForAmount) parentAgentForAmount,
+			SUM(transAmount - merForAmount) settleAmount,
+			t.agentNo,
+			t.parentAgentNo
+		FROM
+			gw_trans_info t LEFT JOIN gw_transtype_info t1 on t.transType = t1.transType
+		<include refid="Where_View_Merchant_Settle_Clause"/>
+		GROUP BY
+			t.merNo,
+			t.terNo,
+			t.agentNo,
+			t.parentAgentNo
+		) as t2
+	</select>
+	
+	<insert id="saveMerchantSettleInfo">
+		insert into gw_merchant_settle_info
+		(
+			merNo,
+			terNo,
+			agentNo,
+			parentAgentNo,
+			transCount,
+			transAmount,
+			forAmount,
+			agentForAmount,
+			parentAgentForAmount,
+			settleDate,
+			batchNo,
+			settleAmount
+		)
+		values
+		(
+			#{info.merNo},
+			#{info.terNo},
+			#{info.agentNo},
+			#{info.parentAgentNo},
+			#{info.transCount},
+			#{info.transAmount},
+			#{info.forAmount},
+			#{info.agentForAmount},
+			#{info.parentAgentForAmount},
+			#{info.settleDate},
+			#{info.batchNo},
+			#{info.settleAmount}
+		)
+	</insert>
+	<update id="updateSettleFlagByTransDate">
+		update gw_trans_info set settleBatchNo = #{condition.batchNo} 
+		where date_format(transDate,'%Y-%m-%d %H') &lt;= #{condition.transDate} and settleBatchNo is null 
+	</update>
+	<insert id="copyTransToSeteleRecordByBatchNo">
+		INSERT INTO gw_settle_trans_info (
+			tradeNo,
+			relNo,
+			transAmount,
+			merNo,
+			terNo,
+			cardType,
+			agentNo,
+			parentAgentNo,
+			transDate,
+			settleBatchNo,
+			settleDate,
+			batchNo,
+			posNo,
+			currencyId,
+			merForAmount,
+			agentForAmount,
+			parentAgentForAmount,
+			transType,
+			respCode,
+			cardNo,
+			bankRefNo,
+			bankPosNo,
+			bankBatchNo,
+			autoCode,
+			bankTransDate,
+			bankTransTime,
+			cardName,
+			bankName
+		) SELECT
+			t.tradeNo,
+			t.relNo,
+			t.transAmount,
+			t.merNo,
+			t.terNo,
+			t.cardType,
+			t.agentNo,
+			t.parentAgentNo,
+			t.transDate,
+			t.settleBatchNo,
+			t.settleDate,
+			t.batchNo,
+			t.posNo,
+			t.currencyId,
+			t.merForAmount,
+			t.agentForAmount,
+			t.parentAgentForAmount,
+			t.transType,
+			t.respCode,
+			t.cardNo,
+			t.bankRefNo,
+			t.bankPosNo,
+			t.bankBatchNo,
+			t.autoCode,
+			t.bankTransDate,
+			t.bankTransTime,
+			cardName,
+			bankName
+		FROM
+			gw_trans_info t
+		LEFT JOIN gw_transtype_info t1 ON t.transType = t1.transType
+		WHERE
+			t1.settleflag != 0
+			and t.respCode = '00'
+			and t.settleBatchNo = #{batchNo} 
+	</insert>
+	
+	<select id="queryDetailList" resultType="com.gateway.settlemgr.model.GwSettleTransInfo">
+	   select t.*,
+			c.currencyName,
+			b.bankName 
+	   from gw_settle_trans_info t
+	   LEFT JOIN gw_currency_info c ON t.currencyId = c.id
+	   LEFT JOIN gw_bank_info b ON c.bankId = b.id
+	   where t.merNo=#{merNo} and t.terNo=#{terNo} and t.settleBatchNo=#{batchNo}
+	</select>
+	
+	<select id="viewAgentSettleInfo" resultType="com.gateway.settlemgr.model.AgentSettleInfo">
+		SELECT
+			t.*,
+			(IFNULL(t.diversitySplitAgentForAmount,0)+IFNULL(diversitySplitParentAgentForAmount,0))  settleAmount
+		FROM
+			(
+				SELECT
+					SUM(m.transAmount) transAmount,
+					SUM(m.agentForAmount) agentForAmount,
+					SUM(m.parentAgentForAmount) parentAgentForAmount,
+					SUM(m.transCount) transCount,
+					SUM(m.forAmount) transForAmaount,
+					SUM(
+						CASE
+						WHEN m.agentForAmount &lt;> 0 THEN
+							(
+								m.forAmount - m.agentForAmount
+							)
+						ELSE
+							0
+						END
+					) diversityAgentForAmount,
+					SUM(
+						CASE
+						WHEN m.parentAgentForAmount &lt;> 0 THEN
+							(
+								m.forAmount - m.parentAgentForAmount
+							)
+						ELSE
+							0
+						END
+					) diversityParentAgentForAmount,
+					SUM(
+						(
+							CASE
+							WHEN m.agentForAmount &lt;> 0 THEN
+								(
+									m.forAmount - m.agentForAmount
+								)
+							ELSE
+								0
+							END
+						) * r.agentSplitRate
+					) diversitySplitAgentForAmount,
+					SUM(
+						(
+							CASE
+							WHEN m.parentAgentForAmount &lt;> 0 THEN
+								(
+									m.forAmount - m.parentAgentForAmount
+								)
+							ELSE
+								0
+							END
+						) * r.parentAgentRate
+					) diversitySplitParentAgentForAmount,
+					r.agentSplitRate,
+					r.parentAgentRate,
+					m.agentNo,
+					m.parentAgentNo,
+					m.merNo,
+					m.terNo
+				FROM
+					gw_merchant_settle_info m
+				LEFT JOIN gw_rate_info r ON m.merNo = r.merNo
+				AND m.terNo = r.terNo
+				WHERE
+					(
+						agentSettleBatchNo IS NULL
+						OR agentSettleBatchNo = ''
+					)
+				GROUP BY
+					m.merNo,
+					m.terNo,
+					agentNo,
+					r.agentSplitRate,
+					r.parentAgentRate,
+					parentAgentNo
+			) AS t
+	</select>
+	
+	<select id="countViewAgentSettleInfo" resultType="int">
+		SELECT count(*) FROM(
+			SELECT
+				t.*,
+				(IFNULL(t.diversitySplitAgentForAmount,0)+IFNULL(diversitySplitParentAgentForAmount,0))  settleAmount
+			FROM
+				(
+					SELECT
+						SUM(m.transAmount) transAmount,
+						SUM(m.agentForAmount) agentForAmount,
+						SUM(m.parentAgentForAmount) parentAgentForAmount,
+						SUM(m.transCount) transCount,
+						SUM(m.forAmount) transForAmaount,
+						SUM(
+							CASE
+							WHEN m.agentForAmount &lt;> 0 THEN
+								(
+									m.forAmount - m.agentForAmount
+								)
+							ELSE
+								0
+							END
+						) diversityAgentForAmount,
+						SUM(
+							CASE
+							WHEN m.parentAgentForAmount &lt;> 0 THEN
+								(
+									m.forAmount - m.parentAgentForAmount
+								)
+							ELSE
+								0
+							END
+						) diversityParentAgentForAmount,
+						SUM(
+							(
+								CASE
+								WHEN m.agentForAmount &lt;> 0 THEN
+									(
+										m.forAmount - m.agentForAmount
+									)
+								ELSE
+									0
+								END
+							) * r.agentSplitRate
+						) diversitySplitAgentForAmount,
+						SUM(
+							(
+								CASE
+								WHEN m.parentAgentForAmount &lt;> 0 THEN
+									(
+										m.forAmount - m.parentAgentForAmount
+									)
+								ELSE
+									0
+								END
+							) * r.parentAgentRate
+						) diversitySplitParentAgentForAmount,
+						m.agentNo,
+						m.parentAgentNo,
+						m.merNo,
+						m.terNo
+				FROM
+					gw_merchant_settle_info m
+				LEFT JOIN gw_rate_info r ON m.merNo = r.merNo
+				AND m.terNo = r.terNo
+				WHERE
+					(
+						agentSettleBatchNo IS NULL
+						OR agentSettleBatchNo = ''
+					)
+				GROUP BY
+					m.merNo,
+					m.terNo,
+					agentNo,
+					parentAgentNo
+			) AS t
+		) AS t
+	</select>
+	
+	<select id="createAgentSettleInfo" resultType="com.gateway.settlemgr.model.AgentSettleInfo">
+		SELECT
+			t.*,
+			(IFNULL(t.diversitySplitAgentForAmount,0)+IFNULL(diversitySplitParentAgentForAmount,0))  settleAmount
+		FROM
+			(
+				SELECT
+					SUM(m.transAmount) transAmount,
+					SUM(m.agentForAmount) agentForAmount,
+					SUM(m.parentAgentForAmount) parentAgentForAmount,
+					SUM(m.transCount) transCount,
+					SUM(m.forAmount) transForAmaount,
+					SUM(
+						CASE
+							WHEN m.agentForAmount &lt;> 0 THEN
+								(
+									m.forAmount - m.agentForAmount
+								)
+							ELSE
+								0
+						END
+						
+					) diversityAgentForAmount,
+					SUM(
+						CASE
+							WHEN m.parentAgentForAmount &lt;> 0 THEN
+								(
+									m.forAmount - m.parentAgentForAmount
+								)
+							ELSE
+								0
+						END
+						
+					) diversityParentAgentForAmount,
+					SUM(
+						(
+							CASE
+								WHEN m.agentForAmount &lt;> 0 THEN
+									(
+										m.forAmount - m.agentForAmount
+									)
+								ELSE
+									0
+							END
+						) * r.agentSplitRate
+					) diversitySplitAgentForAmount,
+					SUM(
+						(
+							CASE
+								WHEN m.parentAgentForAmount &lt;> 0 THEN
+									(
+										m.forAmount - m.parentAgentForAmount
+									)
+								ELSE
+									0
+							END
+						) * r.parentAgentRate
+					) diversitySplitParentAgentForAmount,
+					m.agentNo,
+					m.parentAgentNo
+				FROM
+					gw_merchant_settle_info m
+				LEFT JOIN gw_rate_info r ON m.merNo = r.merNo
+				AND m.terNo = r.terNo
+				<include refid="Where_Clause_View_Agent_Settle_Info"/>
+				GROUP BY
+					agentNo,
+					parentAgentNo
+			) AS t where t.parentAgentNo = 0
+	</select>
+	
+	<select id="countCreateAgentSettleInfo" resultType="int">
+		select count(*) from (
+			SELECT
+				t.*,
+				(IFNULL(t.diversitySplitAgentForAmount,0)+IFNULL(diversitySplitParentAgentForAmount,0))  settleAmount
+			FROM
+				(
+					SELECT
+						SUM(m.transAmount) transAmount,
+						SUM(m.agentForAmount) agentForAmount,
+						SUM(m.parentAgentForAmount) parentAgentForAmount,
+						SUM(m.transCount) transCount,
+						SUM(m.forAmount) transForAmaount,
+						SUM(
+							CASE
+								WHEN m.agentForAmount &lt;> 0 THEN
+									(
+										m.forAmount - m.agentForAmount
+									)
+								ELSE
+									0
+							END
+							
+						) diversityAgentForAmount,
+						SUM(
+							CASE
+								WHEN m.parentAgentForAmount &lt;> 0 THEN
+									(
+										m.forAmount - m.parentAgentForAmount
+									)
+								ELSE
+									0
+							END
+							
+						) diversityParentAgentForAmount,
+						SUM(
+							(
+								CASE
+									WHEN m.agentForAmount &lt;> 0 THEN
+										(
+											m.forAmount - m.agentForAmount
+										)
+									ELSE
+										0
+								END
+							) * r.agentSplitRate
+						) diversitySplitAgentForAmount,
+						SUM(
+							(
+								CASE
+									WHEN m.parentAgentForAmount &lt;> 0 THEN
+										(
+											m.forAmount - m.parentAgentForAmount
+										)
+									ELSE
+										0
+								END
+							) * r.parentAgentRate
+						) diversitySplitParentAgentForAmount,
+						m.agentNo,
+						m.parentAgentNo
+					FROM
+						gw_merchant_settle_info m
+					LEFT JOIN gw_rate_info r ON m.merNo = r.merNo
+					AND m.terNo = r.terNo
+					<include refid="Where_Clause_View_Agent_Settle_Info"/>
+					GROUP BY
+						agentNo,
+						parentAgentNo
+				) AS t where t.parentAgentNo = 0
+		) as t
+	</select>
+	
+	<select id="agentSettleMaxBatchNO" resultType="int">
+		select IFNULL(max(settleBatchNo),0) from gw_agent_settle_info
+	</select>
+	
+	<update id="updateAgentSettleInfoBatchNo">
+		update gw_merchant_settle_info set agentSettleBatchNo = #{condition.batchNo} where date_format(settleDate,'%Y-%m') = #{condition.transDate}
+	</update>
+	
+	<insert id="saveAgentSettleInfo">
+		insert into gw_agent_settle_info
+		(
+			agentNo,
+			parentAgentNo,
+			transCount,
+			transAmount,
+			transForAmaount,
+			diversityAgentForAmount,
+			diversitySplitAgentForAmount,
+			diversityParentAgentForAmount,
+			diversitySplitParentAgentForAmount,
+			settleAmount,
+			settleBatchNo,
+			settleDate,
+			createDate
+		)
+		values
+		(
+			#{info.agentNo},
+			#{info.parentAgentNo},
+			#{info.transCount},
+			#{info.transAmount},
+			#{info.transForAmaount},
+			#{info.diversityAgentForAmount},
+			#{info.diversitySplitAgentForAmount},
+			#{info.diversityParentAgentForAmount},
+			#{info.diversitySplitParentAgentForAmount},
+			#{info.settleAmount},
+			#{info.settleBatchNo},
+			#{info.settleDate},
+			SYSDATE()
+		)
+	</insert>
+	
+	<select id="queryAgentSettleInfoList" resultType="com.gateway.settlemgr.model.AgentSettleInfo">
+		select 
+		g.*,
+		ag.accountAddress,
+		ag.accountName,
+		ag.accountNo from gw_agent_settle_info g left join gw_agent_info ag on g.agentNo = ag.agentNo
+		<include refid="Where_Agent_Settle_Info"/>
+		order by g.settleBatchNo desc
+	</select>
+	<select id="countAgentSettleInfoList" resultType="int">
+		select 
+		count(*) from gw_agent_settle_info g left join gw_agent_info ag on g.agentNo = ag.agentNo
+		<include refid="Where_Agent_Settle_Info"/>
+		order by g.settleBatchNo desc
+	</select>
+	
+	<!-- 查询商户虚拟账户 -->
+	<select id="queryMerchantAccount" resultType="com.gateway.settlemgr.model.MerchantAccount">
+		select t.*,g.merchantChannel from (
+		SELECT `gw_merchant_account`.`id` AS `id`,`gw_merchant_account`.`merNo` AS `merNo`,`gw_merchant_account`.`terNo` AS `terNo`,`gw_merchant_account`.`currency` AS `currency`,'0' AS `accountType`,`gw_merchant_account`.`totalAmount` AS `totalAmount`,`gw_merchant_account`.`cashAmount` AS `cashAmount`,(`gw_merchant_account`.`frozenAmount` + `gw_merchant_account`.`transFrozenAmount`) AS `frozenAmount` FROM `gw_merchant_account` UNION SELECT `gw_merchant_account`.`id` AS `id`,`gw_merchant_account`.`merNo` AS `merNo`,`gw_merchant_account`.`terNo` AS `terNo`,`gw_merchant_account`.`currency` AS `currency`,'1' AS `accountType`,`gw_merchant_account`.`bondAmount` AS `totalAmount`,`gw_merchant_account`.`bondCashAmount` AS `cashAmount`,`gw_merchant_account`.`bondFrozenAmount` AS `frozenAmount` FROM `gw_merchant_account` 
+		) as t
+		LEFT JOIN gw_merchant_terno_info g ON (g.merNo=t.merNo AND g.terNo=t.terNo)
+		<include refid="Where_Merchant_Account_Info"/>
+		order by t.id
+	</select>
+	
+	<!-- 统计商户虚拟账户数量 -->
+	<select id="countMerchantAccount" resultType="int">
+		select count(*) from (
+		SELECT `gw_merchant_account`.`id` AS `id`,`gw_merchant_account`.`merNo` AS `merNo`,`gw_merchant_account`.`terNo` AS `terNo`,`gw_merchant_account`.`currency` AS `currency`,'0' AS `accountType`,`gw_merchant_account`.`totalAmount` AS `totalAmount`,`gw_merchant_account`.`cashAmount` AS `cashAmount`,(`gw_merchant_account`.`frozenAmount` + `gw_merchant_account`.`transFrozenAmount`) AS `frozenAmount` FROM `gw_merchant_account` UNION SELECT `gw_merchant_account`.`id` AS `id`,`gw_merchant_account`.`merNo` AS `merNo`,`gw_merchant_account`.`terNo` AS `terNo`,`gw_merchant_account`.`currency` AS `currency`,'1' AS `accountType`,`gw_merchant_account`.`bondAmount` AS `totalAmount`,`gw_merchant_account`.`bondCashAmount` AS `cashAmount`,`gw_merchant_account`.`bondFrozenAmount` AS `frozenAmount` FROM `gw_merchant_account` 
+		) as t 	
+		LEFT JOIN gw_merchant_terno_info g ON (g.merNo=t.merNo AND g.terNo=t.terNo)
+		<include refid="Where_Merchant_Account_Info"/>
+		order by t.id
+	</select>
+	
+	<!-- 查询商户虚拟账户出入帐 -->
+	<select id="queryMerchantAccountAccess" resultType="com.gateway.settlemgr.model.MerchantAccountAccess">
+		SELECT
+			a.*, b.accountName AS merchantName,b.merchantChannel
+		FROM
+			gw_merchant_account_access a
+		LEFT JOIN gw_merchant_terno_info b ON (
+			a.merNo = b.merNo
+			AND a.terNo = b.terNo
+		)
+		<include refid="Where_Merchant_Account_Access_Info" />
+		ORDER BY
+			a.createDate DESC
+	</select>
+	
+	<!-- 统计出入帐数量 -->
+	<select id="countMerchantAccountAccess" resultType="int">
+		select count(*) from gw_merchant_account_access a
+		LEFT JOIN gw_merchant_terno_info b ON (
+			a.merNo = b.merNo
+			AND a.terNo = b.terNo
+		)
+		<include refid="Where_Merchant_Account_Access_Info"/>
+		order by a.createDate DESC
+	</select>
+	
+	<select id="queryMerchantAccountAccessDetail" resultType="com.gateway.settlemgr.model.MerchantAccountAccessDetail">
+		select 
+			c.id,
+			c.tradeNo,
+			c.accessId,
+			d.batchNo,
+			c.createDate,
+			d.merTransAmount busAmount,
+			d.merBusCurrency busCurrency,
+			d.merSettleAmount settleAmount,
+			d.merSettleCurrency settleCurrency,
+			d.transDate,
+			d.respCode,
+			d.merForAmount,
+			d.bondAmount,
+			d.bondBatchNo
+		from
+			gw_merchant_account a left join gw_merchant_account_access b on a.id=b.accountId
+			left join gw_merchant_account_access_detail c on b.id=c.accessId
+			left join gw_trans_info d on a.merNo=d.merNo and a.terNo=d.terNo and c.tradeNo=d.tradeNo
+		<include refid="Where_Merchant_Account_Access_Detail_Info"/>
+		order by d.transDate DESC
+	</select>
+	<select id="countMerchantAccountAccessDetail" resultType="int">
+		select count(*) from (
+		select 
+			c.id,
+			c.tradeNo,
+			c.accessId,
+			d.batchNo,
+			c.createDate,
+			d.merTransAmount busAmount,
+			d.merBusCurrency busCurrency,
+			d.merSettleAmount settleAmount,
+			d.merSettleCurrency settleCurrency,
+			d.transDate,
+			d.respCode,
+			d.merForAmount,
+			d.bondAmount,
+			d.bondBatchNo
+		from
+			gw_merchant_account a left join gw_merchant_account_access b on a.id=b.accountId
+			left join gw_merchant_account_access_detail c on b.id=c.accessId
+			left join gw_trans_info d on a.merNo=d.merNo and a.terNo=d.terNo and c.tradeNo=d.tradeNo
+		<include refid="Where_Merchant_Account_Access_Detail_Info"/>
+		order by d.transDate DESC
+		)as t
+	</select>
+	<select id="querySettleTypeInfo" resultType="com.gateway.settlemgr.model.SettleTypeInfo">
+		select * from 
+		<if test="condition.type != null and condition.type != '' ">
+			gw_settle_type_info_log
+			<include refid="Where_Settle_Type_Info"/>
+			order by lastModifyDate desc
+		</if>
+		<if test="condition.type == null or condition.type == '' ">
+			gw_settle_type_info
+			<include refid="Where_Settle_Type_Info"/>
+			order by id desc
+		</if>
+	</select>
+	<select id="countSettleTypeInfo" resultType="int">
+		select count(*) from 
+		<if test="condition.type != null and condition.type != '' ">
+			gw_settle_type_info_log
+		</if>
+		<if test="condition.type == null or condition.type == '' ">
+			gw_settle_type_info
+		</if>
+		<include refid="Where_Settle_Type_Info"/>
+		order by merNo 
+	</select>
+	<select id="queryDuplicateByMerNoAndTerNo" resultType="int">
+		select count(*) from gw_settle_type_info where merNo=#{merNo} and terNo=#{terNo}
+	</select>
+	<insert id="insertSettleTypeLogInfo">
+		insert into gw_settle_type_info_log(
+			merNo,
+			terNo,
+			settleType,
+			firstSettleCycle,
+			settleCycle,
+			bondCycle,
+			settleService,
+			enabled,
+			createBy,
+			createDate,
+			remark,
+			lastModify,
+			lastModifyDate
+		)values(
+			#{info.merNo},
+			#{info.terNo},
+			#{info.settleType},
+			#{info.firstSettleCycle},
+			#{info.settleCycle},
+			#{info.bondCycle},
+			#{info.settleService},
+			#{info.enabled},
+			#{info.createBy},
+			now(),
+			#{info.remark},
+			#{info.lastModify},
+			#{info.lastModifyDate}
+			
+		)
+	</insert>
+	<insert id="insertSettleTypeInfo">
+		insert into gw_settle_type_info(
+			merNo,
+			terNo,
+			settleType,
+			firstSettleCycle,
+			settleCycle,
+			bondCycle,
+			settleService,
+			enabled,
+			createBy,
+			createDate,
+			remark
+		)values(
+			#{info.merNo},
+			#{info.terNo},
+			#{info.settleType},
+			#{info.firstSettleCycle},
+			#{info.settleCycle},
+			#{info.bondCycle},
+			#{info.settleService},
+			#{info.enabled},
+			#{info.createBy},
+			now(),
+			#{info.remark}
+		)
+	</insert>
+	<select id="querySettleTypeInfoById" resultType="com.gateway.settlemgr.model.SettleTypeInfo">
+		select * from gw_settle_type_info where id=#{id}
+	</select>
+	<update id="updateSettleTypeInfo">
+		update 
+			gw_settle_type_info
+		set 
+			settleType=#{info.settleType},
+			settleCycle=#{info.settleCycle},
+			firstSettleCycle=#{info.firstSettleCycle},
+			bondCycle=#{info.bondCycle},
+			settleService=#{info.settleService},
+			enabled=#{info.enabled},
+			remark=#{info.remark},
+			lastModify=#{info.lastModify},
+			lastModifyDate=now()
+		where 
+			id=#{info.id}
+	</update>
+	<select id="queryMerchantAccountByMerNoAndTerNo" resultType="com.gateway.settlemgr.model.MerchantAccount">
+		select * from gw_merchant_account where merNo=#{merNo} and terNo=#{terNo}
+	</select>
+	<select id="queryMerchantAccountById" resultType="com.gateway.settlemgr.model.MerchantAccount">
+		select * from gw_merchant_account where id=#{id}
+	</select>
+	<insert id="insertMerchantAccountAccess">
+		insert into gw_merchant_account_access(
+			id,
+			merNo,
+			terNo,
+			accountID,
+			accountType,
+			currency,
+			amount,
+			createDate,
+			remark,
+			cashType,
+			status,
+			deductionType,
+			createBy
+		)values(
+			#{info.id},
+			#{info.merNo},
+			#{info.terNo},
+			#{info.accountId},
+			#{info.accountType},
+			#{info.currency},
+			#{info.amount},
+			now(),
+			#{info.remark},
+			#{info.cashType},
+			#{info.status},
+			#{info.deductionType},
+			#{info.createBy}
+		)
+	</insert>
+	<update id="updateMerchantAccount">
+		update gw_merchant_account
+		set 
+				totalAmount=totalAmount+ifnull(#{info.totalAmount},0)
+				,cashAmount=cashAmount+ifnull(#{info.cashAmount},0)
+				,frozenAmount=frozenAmount+ifnull(#{info.frozenAmount},0)
+				,bondAmount=bondAmount+ifnull(#{info.bondAmount},0)
+				,bondCashAmount=bondCashAmount+ifnull(#{info.bondCashAmount},0)
+				,bondFrozenAmount=bondFrozenAmount+ifnull(#{info.bondFrozenAmount},0)
+		where 
+			id=#{info.id}
+	</update>
+	<select id="queryMerchantAccountViewById" resultType="com.gateway.settlemgr.model.MerchantAccount">
+		select 
+			id,
+			merNo,
+			terNo,
+			accountType,
+			currency,
+			totalAmount,
+			cashAmount,
+			<if test="accountType ==0">
+				(select frozenAmount from gw_merchant_account where id=#{id})as frozenAmount
+			</if>
+			<if test="accountType ==1">
+				frozenAmount as frozenAmount
+			</if>
+		from 
+			(
+		SELECT `gw_merchant_account`.`id` AS `id`,`gw_merchant_account`.`merNo` AS `merNo`,`gw_merchant_account`.`terNo` AS `terNo`,`gw_merchant_account`.`currency` AS `currency`,'0' AS `accountType`,`gw_merchant_account`.`totalAmount` AS `totalAmount`,`gw_merchant_account`.`cashAmount` AS `cashAmount`,(`gw_merchant_account`.`frozenAmount` + `gw_merchant_account`.`transFrozenAmount`) AS `frozenAmount` FROM `gw_merchant_account` UNION SELECT `gw_merchant_account`.`id` AS `id`,`gw_merchant_account`.`merNo` AS `merNo`,`gw_merchant_account`.`terNo` AS `terNo`,`gw_merchant_account`.`currency` AS `currency`,'1' AS `accountType`,`gw_merchant_account`.`bondAmount` AS `totalAmount`,`gw_merchant_account`.`bondCashAmount` AS `cashAmount`,`gw_merchant_account`.`bondFrozenAmount` AS `frozenAmount` FROM `gw_merchant_account` 
+		) as t 
+		where 
+			id = #{id}
+			and accountType=#{accountType}
+	</select>
+	<select id="queryMerchantAccountAccessById" resultType="com.gateway.settlemgr.model.MerchantAccountAccess">
+		select * from gw_merchant_account_access where id=#{id}
+	</select>
+	<update id="updateMerchantAccountAccess">
+		update 
+			gw_merchant_account_access
+		set 
+			<if test="info.checkBy!=null and info.checkBy !=''">
+				checkBy=#{info.checkBy},
+				checkDate=now(),
+				checkRemark=#{info.checkRemark},
+			</if>
+			<if test="info.reCheckBy!=null and info.reCheckBy !=''">
+				reCheckBy=#{info.reCheckBy},
+				reCheckDate=now(),
+				reCheckRemark=#{info.reCheckRemark},
+			</if>
+		<if test="info.moneyBy!=null and info.moneyBy !=''">
+				moneyBy=#{info.moneyBy},
+				<choose>
+					<when test="info.moneyDateStr != null and info.moneyDateStr != ''">
+						moneyDate='${info.moneyDateStr}',
+					</when>
+					<otherwise>
+						moneyDate=now(),
+					</otherwise>
+				</choose>
+				moneyRemark=#{info.moneyRemark},
+			</if>
+			status=#{info.status}
+		where 
+			id=#{info.id}
+			<if test="info.status==1">
+				and status=0
+			</if>
+			<if test="info.status==2">
+				and status=0
+			</if>
+			<if test="info.status==3">
+				and status=1
+			</if>
+			<if test="info.status==4">
+				and status=1
+			</if>
+			<if test="info.status==5">
+				and (status=3 or status=5)
+			</if>
+	</update>
+	<select id="exportSettleDetailInfo" resultType="com.gateway.settlemgr.model.ExportInfo">
+		SELECT 				
+			c.merNo,
+			c.terNo,
+			CASE WHEN cashType IN(-1,-2,-3,-4,-13,-14,-15) THEN d.tradeNo ELSE a.tradeNo END AS tradeNo,
+			c.orderNo,
+			c.merBusCurrency AS currency,
+			CASE WHEN cashType IN (-1,-2,-3,-4,-13,-14,-15) THEN d.merTransAmount ELSE c.merTransAmount END  AS amount,
+			c.merSettleCurrency AS settleCurrency,
+			CASE WHEN cashType IN (-1,-2,-3,-4,-13,-14,-15) THEN d.merSettleAmount ELSE c.merSettleAmount END   AS settleAmount,
+			b.cashType,
+			b.accountType,
+			a.createDate AS operateDate,
+			(CASE 	
+				WHEN cashType in (-5,-6) then c.merForAmount else 0 end) as merForAmount,
+			(CASE
+				WHEN cashType in (-5,-6) then c.singleFee else 0 end) as singleFee,
+			(CASE
+				WHEN cashType in (-5,-6,-7,-8) then c.bondAmount else 0 end) as bondAmount,
+			(CASE	
+				WHEN cashType IN(-1,-2) THEN c.merSettleAmount 
+				WHEN cashType=-3 THEN c.merSettleAmount
+				WHEN cashType=-4 THEN c.merSettleAmount
+				WHEN cashType=-15 THEN -c.disFee
+				WHEN cashType=-13 THEN -IFNULL(c.refundFee,0)
+				WHEN cashType=-12 THEN -c.transFailFee
+				WHEN cashType IN(-11,-16) THEN -IFNULL(a.amount,0)
+				WHEN cashType=-14 THEN -(
+						CASE  WHEN e.applyDate IS NULL THEN 0 
+						WHEN DATE_ADD(d.transDate,INTERVAL  IFNULL(c.transRefundFeeStatus,0) HOUR)>=e.applyDate
+						THEN c.merSettleAmount/d.merSettleAmount*(d.merForAmount) ELSE 0 END
+						)
+				WHEN cashType IN (-5,-6) THEN c.merSettleAmount-c.merForAmount-c.bondAmount-c.singleFee
+				WHEN cashType IN(-7,-8) THEN c.bondAmount ELSE '未知' END) AS operateAmount
+		FROM 
+			gw_merchant_account_access_detail a LEFT JOIN gw_merchant_account_access b ON a.accessId=b.id
+			LEFT JOIN gw_trans_info c ON a.tradeNo=c.tradeNo 
+			LEFT JOIN (SELECT a.tradeNewNo,a.tradeNo,b.merBusCurrency,b.merTransAmount,b.merSettleCurrency,b.merSettleAmount,b.disFee,b.refundFee,b.transRefundFeeStatus,b.merForAmount,b.singleFee,b.transDate 
+		FROM  gw_trans_info_log a LEFT JOIN gw_trans_info b ON a.tradeNo=b.tradeNo) AS  d ON a.tradeNo=d.tradeNewNo
+		LEFT JOIN gw_refund_info e on d.tradeNewNo=e.tradeNewNo
+		WHERE a.accessId=#{id} AND b.merNo=c.merNo AND b.terNo=c.terNo AND b.merNo=#{merNo} AND b.terNo=#{terNo}
+		AND b.cashType=#{cashType}
+	</select>
+	
+	<select id="exportInfoForCash" resultType="com.gateway.settlemgr.model.ExportInfo">
+		SELECT 				
+			c.merNo,
+			c.terNo,
+			CASE WHEN cashType IN(-1,-2,-3,-4,-13,-14,-15) THEN d.tradeNo ELSE a.tradeNo END AS tradeNo,
+			c.orderNo,
+			c.merBusCurrency AS currency,
+			CASE WHEN cashType IN (-1,-2,-3,-4,-13,-14,-15) THEN d.merTransAmount ELSE c.merTransAmount END  AS amount,
+			c.merSettleCurrency AS settleCurrency,
+			CASE WHEN cashType IN (-1,-2,-3,-4,-13,-14,-15) THEN d.merSettleAmount ELSE c.merSettleAmount END   AS settleAmount,
+			b.cashType,
+			b.accountType,
+			a.createDate AS operateDate,
+			(case when cashType in (-5,-6) then c.merForAmount else 0 end) as merForAmount,
+			(case when cashType in (-5,-6) then c.singleFee else 0 end) as singleFee,
+			(case when cashType in (-5,-6,-7,-8) then c.bondAmount else 0 end) as bondAmount,
+			(CASE WHEN cashType IN(-1,-2) THEN c.merSettleAmount 
+			WHEN cashType=-3 THEN c.merSettleAmount
+			WHEN cashType=-4 THEN c.merSettleAmount
+			when cashType=-15 then -c.disFee
+			when cashType=-13 then -IFNULL(c.refundFee,0)
+			when cashType=-11 then -IFNULL(a.amount,0)
+			WHEN cashType=-12 THEN -c.transFailFee
+			when cashType=-14 then -(
+						CASE  WHEN e.applyDate IS NULL THEN 0 WHEN DATE_ADD(d.transDate,INTERVAL  IFNULL(c.transRefundFeeStatus,0) HOUR)>=e.applyDate
+						THEN c.merSettleAmount/d.merSettleAmount*(d.merForAmount) ELSE 0 END
+						)
+			WHEN cashType IN (-5,-6) THEN c.merSettleAmount-c.merForAmount-c.bondAmount-c.singleFee
+			WHEN cashType IN(-7,-8) THEN c.bondAmount ELSE '未知' END) AS operateAmount
+		FROM 
+			gw_merchant_account_access_detail a LEFT JOIN gw_merchant_account_access b ON a.accessId=b.id
+			LEFT JOIN gw_trans_info c ON a.tradeNo=c.tradeNo 
+			LEFT JOIN (SELECT a.tradeNewNo,a.tradeNo,b.merBusCurrency,b.merTransAmount,b.merSettleCurrency,b.merSettleAmount,b.disFee,b.refundFee,b.transRefundFeeStatus,b.merForAmount,b.singleFee,b.transDate 
+		FROM  gw_trans_info_log a LEFT JOIN gw_trans_info b ON a.tradeNo=b.tradeNo where b.merNo=#{merNo} and b.terNo=#{terNo}) AS  d ON a.tradeNo=d.tradeNewNo
+		LEFT JOIN gw_refund_info e on d.tradeNewNo=e.tradeNewNo
+		WHERE  b.merNo=c.merNo AND b.terNo=c.terNo and b.merNo=#{merNo} and b.terNo=#{terNo}
+		and b.cashType not in(1,0,-5) and b.accountType=0
+		and b.moneyDate>=ifNull((select createDate from gw_merchant_account_access 
+			where merNo=#{merNo} and terNo=#{terNo} and cashType=1 and status='5' and createDate &lt;(
+				select createDate from gw_merchant_account_access where id=#{id}
+			) order by id desc limit 0,1
+		),0)
+		and b.moneyDate &lt;=(select createDate from gw_merchant_account_access 
+			where id=#{id}
+		)
+	</select>
+	
+	<!-- 保证金提现导出明细 -->
+	<select id="exportInfoForBondCash" resultType="com.gateway.settlemgr.model.ExportInfo">		
+		SELECT
+		  c.merNo,
+		  c.terNo,
+		  a.tradeNo           AS tradeNo,
+		  c.orderNo,
+		  c.merBusCurrency    AS currency,
+		  c.merTransAmount    AS amount,
+		  c.merSettleCurrency AS settleCurrency,
+		  c.merSettleAmount   AS settleAmount,
+		  b.cashType,
+		  b.accountType,
+		  a.createDate        AS operateDate,
+		  c.bondAmount        AS bondAmount,
+		  c.bondAmount        AS operateAmount
+		FROM gw_merchant_account_access_detail a
+		  LEFT JOIN gw_merchant_account_access b
+		    ON a.accessId = b.id
+		  LEFT JOIN gw_trans_info c
+		    ON a.tradeNo = c.tradeNo
+		WHERE b.merNo = #{merNo}
+		    AND b.terNo = #{terNo}
+		    AND b.cashType = '-8'<!-- 保证金提现-8 -->
+		    AND b.moneyDate &lt;=(SELECT
+		                         createDate
+		                       FROM gw_merchant_account_access a
+		                       WHERE id = #{id})
+		    AND b.moneyDate >= IFNULL((SELECT
+		                                 createDate
+		                               FROM gw_merchant_account_access
+		                               WHERE merNo = #{merNo}
+		                                   AND terNo = #{terNo}
+		                                   AND cashType = 2<!-- 2保证金提现 -->
+		                                   AND STATUS = '5'<!--  提现状态:0待审核 1审核通过 2审核不通过 3复核通过 4复核驳回 5已出款-->
+		                                   AND createDate  &lt;(SELECT
+		                                                       createDate
+		                                                     FROM gw_merchant_account_access
+		                                                     WHERE id = #{id})
+		                               ORDER BY id DESC
+		                               LIMIT 0,1 ),0)
+	</select>
+	
+	<select id="countExceptionSettleTypeInfo" resultType="int">
+		select 
+			count(a.id) 
+		from 
+			gw_exception_settle_type a left join gw_bank_info b on a.bankId=b.id
+		<include refid="Where_Clause_Exception_Settle_Type"/>
+	</select>
+	<select id="queryExceptionSettleTypeInfo" resultType="com.gateway.settlemgr.model.ExceptionSettleType">
+		select 
+			a.*,
+			b.bankName,
+			c.start1,
+			c.end1,
+			c.stepAmount1,
+			c.start2,
+			c.end2,
+			c.stepAmount2,
+			c.start3,
+			c.end3,
+			c.stepAmount3,
+			c.start4,
+			c.end4,
+			c.stepAmount4,
+			c.start5,
+			c.end5,
+			c.stepAmount5
+		from 
+			gw_exception_settle_type a left join gw_bank_info b on a.bankId=b.id
+			left join gw_disfine_step_info c on a.stepId=c.id
+		<include refid="Where_Clause_Exception_Settle_Type"/>
+	</select>
+	<insert id="addExceptionSettleTypeInfo">
+		insert into gw_exception_settle_type(
+			merNo,
+			terNo,
+			bankId,
+			gatherType,
+			enabled,
+			currency,
+			amount,
+			createBy,
+			createDate,
+			disRate,
+			refundHour,
+			isAllOrOver,
+			stepId,
+			refundReturn,
+			cardType
+		)values(
+			#{merNo},
+			#{terNo},
+			#{bankId},
+			#{gatherType},
+			#{enabled},
+			#{currency},
+			#{amount},
+			#{createBy},
+			now(),
+			#{disRate},
+			#{refundHour},
+			#{isAllOrOver},
+			#{stepId},
+			#{refundReturn},
+			#{cardType}		)
+	</insert>
+	<select id="queryDuplicateExceptionSettleTypeInfo" resultType="int">
+		select count(*) from gw_exception_settle_type 
+		where 
+			merNo=#{merNo} 
+			and terNo=#{terNo} 
+			and bankId=#{bankId}
+			and gatherType=#{gatherType} 
+			<if test="cardType != null and cardType != '' ">
+				and cardType=#{cardType}
+			</if>
+		<if test="id!=null and id !='' ">
+			and id!=#{id}
+		</if>
+	</select>
+	<select id="queryExceptionSettleTypeInfoById" resultType="com.gateway.settlemgr.model.ExceptionSettleType">
+		select 
+			a.*,
+			b.bankName 
+		from 
+			gw_exception_settle_type a left join gw_bank_info b on a.bankId=b.id
+		where 
+			a.id=#{id}
+	</select>
+	<update id="updateExceptionSettleTypeInfo">
+		update gw_exception_settle_type
+		set 
+			enabled=#{enabled},
+			currency=#{currency},
+			amount=#{amount},
+			disRate=#{disRate},
+			refundHour=#{refundHour},
+			lastModifyBy=#{lastModifyBy},
+			lastModifyDate=now(),
+			isAllOrOver=#{isAllOrOver},
+			refundReturn=#{refundReturn},
+			cardType=#{cardType}
+		where 
+			id=#{id}
+		
+	</update>
+	<delete id="deleteExceptionSettleTypeInfo">
+		delete from gw_exception_settle_type
+		where id in 
+		<foreach collection="ids" item="id" open="(" close=")" separator=",">
+			#{id}
+		</foreach>
+	</delete>
+	
+	<sql id="Where_Merchant_Account_Access_Info1">
+	 	<where> 
+	 		<if test="condition.cashTypes != null and condition.cashTypes != '' ">
+	 			and cashType in ${condition.cashTypes}
+	 		</if>
+		 	 <if test="condition.merNo != null and condition.merNo != ''">
+			    and a.merNo = #{condition.merNo}
+			</if> 
+			<if test="condition.terNo != null and condition.terNo != ''">
+			    and a.terNo = #{condition.terNo}
+			</if>  
+			<if test="condition.accountType != null and condition.accountType != ''">
+			    and a.accountType = #{condition.accountType}
+			</if>
+			<if test="condition.createBy != null and condition.createBy != ''">
+			    and a.createBy = #{condition.createBy}
+			</if>
+			<if test="condition.checkBy != null and condition.checkBy != ''">
+			    and checkBy = #{condition.checkBy}
+			</if>
+			<if test="condition.reCheckBy != null and condition.reCheckBy != ''">
+			    and reCheckBy = #{condition.reCheckBy}
+			</if>
+			<if test="condition.moneyBy != null and condition.moneyBy != ''">
+			    and moneyBy = #{condition.moneyBy}
+			</if>
+			
+	       <if test="condition.dateStart != null and condition.dateStart != ''">
+		    and moneyDate >= '${condition.dateStart} 00:00:00'
+		</if>
+		<if test="condition.dateEnd != null and condition.dateEnd != ''">
+		    and moneyDate &lt;='${condition.dateEnd} 23:59:59'
+		</if>
+		<if test="condition.status != null and condition.status != ''">
+		    and a.status =${condition.status}
+		</if>
+		<if test="condition.cashType != null and condition.cashType != ''">
+		    and cashType =${condition.cashType}
+		</if>
+		<if test="condition.deductionType != null and condition.deductionType != '' ">
+			 and deductionType =#{condition.deductionType}
+		</if>
+	    </where>
+	
+	</sql>
+	<select id="exportCashInfos" resultType="com.gateway.settlemgr.model.MerchantAccountAccess">
+		select 
+			a.*,
+			b.accountNo,
+			b.accountName,
+			b.accountContryCode,
+			b.accountState,
+			b.accountCity,
+			b.accountAddress,
+			b.bankNo,
+			b.merchantChannel
+		from gw_merchant_account_access a 
+		left join gw_merchant_terno_info b on a.merNo=b.merNo and a.terNo=b.terNo 
+		<include refid="Where_Merchant_Account_Access_Info1"/>
+		order by createDate DESC
+	</select>
+	<insert id="addDeductionType">
+		insert into gw_deductionType_info(deductionType)values(#{dedutionType})
+	</insert>
+	<select id="queryDeductionTypeInfo" resultType="com.gateway.settlemgr.model.DeductionTypeInfo">
+		select * from gw_deductionType_info
+	</select>
+	<update id="updateDeductionType">
+		update gw_deductionType_info set deductionType=#{deductionType} where id=#{id}
+	</update>
+	<delete id="deleteDeductionTypeById">
+		delete from gw_deductionType_info where id=#{id}
+	</delete>
+	<select id="queryDeductionTypeInfoById" resultType="com.gateway.settlemgr.model.DeductionTypeInfo">
+		select * from gw_deductionType_info where id=#{id}
+	</select>
+	<select id="queryCanHandTransInfo" resultType="com.gateway.transmgr.model.TransInfo">
+		SELECT 
+			tradeNo,
+			merNo,
+			terNo,
+			transDate,
+			merBusCurrency,
+			merTransAmount,
+			merSettleCurrency,
+			merSettleAmount,
+			transDishonor,
+			transRefund,
+			orderNo
+		FROM 
+		gw_trans_info
+		<include refid="Where_Can_Hand_Caluse_sql"/>
+		order by id desc
+	</select>
+	<sql id="Where_Can_Hand_Caluse_sql">
+		<where>
+		and transDate&lt;=DATE_ADD(NOW(),INTERVAL -180 DAY)
+		AND respCode='00'
+		AND transType='sales'
+		AND batchNo IS NULL
+		AND access =1 
+		AND ischecked=1
+		<if test="condition.tradeNo !=null and condition.tradeNo != '' ">
+			and tradeNo =#{condition.tradeNo}
+		</if>
+		<if test="condition.orderNo !=null and condition.orderNo != '' ">
+			and orderNo =#{condition.orderNo}
+		</if>
+		<if test="condition.merNo !=null and condition.merNo != '' ">
+			and merNo =#{condition.merNo}
+		</if>
+		<if test="condition.terNo !=null and condition.terNo != '' ">
+			and terNo =#{condition.terNo}
+		</if>
+		<if test="condition.type !=null and condition.type != '' ">
+			and merNo in (select merNo from gw_merchant_info where type=#{condition.type}) 
+		</if>
+		</where>
+	</sql>
+	<select id="countCanHandTransInfo" resultType="int">
+		SELECT 
+		count(id)
+		FROM 
+		gw_trans_info
+		<include refid="Where_Can_Hand_Caluse_sql"/>
+	</select>
+	<select id="queryHandTransInfoByTradeNos" resultType="com.gateway.settlemgr.model.HandTransInfo">
+		select 
+		merNo,
+		terNo,
+		tradeNo
+		from gw_trans_info
+		where tradeNo in 
+		<foreach collection="tradeNos" open="(" close=")" separator="," item="tradeNo">
+			#{tradeNo}
+		</foreach>
+	</select>
+	<insert id="addHandTransInfo">
+		insert into gw_hand_settle_trans_info (tradeNo,merNo,terNo,isAccess,createDate,createBy)
+		values
+		<foreach collection="list" item="info" separator=",">
+		(
+		#{info.tradeNo},
+		#{info.merNo},
+		#{info.terNo},
+		0,
+		now(),
+		#{info.createBy}
+		)
+		</foreach>
+		
+	</insert>
+	<select id="countHandTransInfo" resultType="int">
+		select count(*) from gw_hand_settle_trans_info
+		<include refid="Where_Hand_Trans_infos"/>
+	</select>
+	<sql id="Where_Hand_Trans_infos">
+		<where>
+			<if test="condition.tradeNo !=null and condition.tradeNo != '' ">
+			and tradeNo =#{condition.tradeNo}
+		</if>
+		<if test="condition.merNo !=null and condition.merNo != '' ">
+			and merNo =#{condition.merNo}
+		</if>
+		<if test="condition.terNo !=null and condition.terNo != '' ">
+			and terNo =#{condition.terNo}
+		</if>
+		<if test="condition.dateStart != null and condition.dateStart != ''">
+		  and createDate >= '${condition.dateStart} 00:00:00'
+		</if>
+		<if test="condition.dateEnd != null and condition.dateEnd != ''">
+		  and createDate &lt;='${condition.dateEnd} 23:59:59'
+		</if>
+		<if test="condition.isAccess !=null and condition.isAccess != '' ">
+			and isAccess =#{condition.isAccess}
+		</if>
+		</where>
+	</sql>
+	<select id="queryHandTransInfo" resultType="com.gateway.settlemgr.model.HandTransInfo">
+		select * from gw_hand_settle_trans_info
+		<include refid="Where_Hand_Trans_infos"/>
+		order by id desc
+	</select>
+	<!-- 商户结算汇总 -->
+	<select id="countPoolSettleInfo" resultType="int">
+	select count(*) from (
+		SELECT merNo,terNo,dateStr,currency,
+		SUM(settleAmount) AS settleAmount,
+		SUM(feeAmount) AS feeAmount,
+		SUM(singleAmount) AS singleAmount,
+		SUM(bondAmount) AS bondAmount,
+		SUM(refundAmount) AS refundAmount,
+		SUM(disAmount) AS disAmount,
+		SUM(thawAmount) AS thawAmount,
+		SUM(froznAmount) AS froznAmount,
+		SUM(cashAmount) AS cashAmount,
+		SUM(otherAmount) AS otherAmount
+		FROM (
+		SELECT 
+		merNo,
+		terNo,
+		DATE_FORMAT(moneyDate,'%Y-%m-%d') AS dateStr,
+		currency,
+		0 AS settleAmount,
+		0 AS feeAmount,
+		0 AS singleAmount,
+		0 AS bondAmount,
+		#sum(case when cashType in (-4,-5) then amount else 0 end )inAmount,
+		SUM(CASE WHEN cashType IN (-14,-13,-3) THEN amount ELSE 0 END )refundAmount,
+		SUM(CASE WHEN cashType IN (-11,-15,-4) THEN amount ELSE 0 END )disAmount,
+		SUM(CASE WHEN cashType IN (10,3,-2) THEN amount ELSE 0 END )thawAmount,
+		SUM(CASE WHEN cashType IN (4,-1,9) THEN amount ELSE 0 END )froznAmount,
+		SUM(CASE WHEN cashType IN (2,1) THEN amount ELSE 0 END )cashAmount,
+		SUM(CASE WHEN cashType IN (5,6,7,8,-12) THEN amount ELSE 0 END )otherAmount
+		FROM 
+		gw_merchant_account_access
+		WHERE 
+		cashType IN (
+		-14,-13,-3,-11,-15,-4,10,3,-2,4,-1,9,2,1,5,6,7,8,-12
+		) 
+		AND  moneyDate IS NOT NULL 
+		and merNo=#{condition.merNo}
+		<if test="condition.terNo != null and condition.terNo != '' ">
+			and terNo=#{condition.terNo}
+		</if>
+		GROUP BY
+		merNo,terNo,DATE_FORMAT(moneyDate,'%Y-%m-%d')
+		UNION 
+		SELECT 
+		merNo,terNo,DATE_FORMAT(transDate,'%Y-%m-%d') AS dateStr,
+		merSettleCurrency,
+		SUM(merSettleAmount) settleAmount,
+		SUM(merForAmount) AS feeAmount,
+		SUM(singleFee) AS singleAmount,
+		SUM(bondAmount) AS bondAmount,
+		#sum(case when cashType in (-4,-5) then amount else 0 end )inAmount,
+		0 AS refundAmount,
+		0 AS disAmount,
+		0 AS thawAmount,
+		0 AS froznAmount,
+		0 AS cashAmount,
+		0 AS otherAmount
+		FROM
+		gw_trans_info
+		WHERE 
+		transType='sales'
+		AND 
+		respCode='00'
+		and merNo=#{condition.merNo}
+		<if test="condition.terNo != null and condition.terNo != '' ">
+			and terNo=#{condition.terNo}
+		</if>
+		GROUP BY
+		merNo,terNo,DATE_FORMAT(transDate,'%Y-%m-%d')
+		) AS t GROUP BY merNo,terNo,dateStr
+		) as t1
+	</select>
+	<select id="queryPoolSettleInfo" resultType="com.gateway.settlemgr.model.PoolSettleInfo">
+		SELECT merNo,terNo,dateStr,currency,
+		SUM(settleAmount) AS settleAmount,
+		SUM(feeAmount) AS feeAmount,
+		SUM(singleAmount) AS singleAmount,
+		SUM(bondAmount) AS bondAmount,
+		SUM(refundAmount) AS refundAmount,
+		SUM(disAmount) AS disAmount,
+		SUM(thawAmount) AS thawAmount,
+		SUM(froznAmount) AS froznAmount,
+		SUM(cashAmount) AS cashAmount,
+		SUM(otherAmount) AS otherAmount
+		FROM (
+		SELECT 
+		merNo,
+		terNo,
+		DATE_FORMAT(moneyDate,'%Y-%m-%d') AS dateStr,
+		currency,
+		0 AS settleAmount,
+		0 AS feeAmount,
+		0 AS singleAmount,
+		0 AS bondAmount,
+		#sum(case when cashType in (-4,-5) then amount else 0 end )inAmount,
+		SUM(CASE WHEN cashType IN (-14,-13,-3) THEN amount ELSE 0 END )refundAmount,
+		SUM(CASE WHEN cashType IN (-11,-15,-4) THEN amount ELSE 0 END )disAmount,
+		SUM(CASE WHEN cashType IN (10,3,-2) THEN amount ELSE 0 END )thawAmount,
+		SUM(CASE WHEN cashType IN (4,-1,9) THEN amount ELSE 0 END )froznAmount,
+		SUM(CASE WHEN cashType IN (2,1) THEN amount ELSE 0 END )cashAmount,
+		SUM(CASE WHEN cashType IN (5,6,7,8,-12) THEN amount ELSE 0 END )otherAmount
+		FROM 
+		gw_merchant_account_access
+		WHERE 
+		cashType IN (
+		-14,-13,-3,-11,-15,-4,10,3,-2,4,-1,9,2,1,5,6,7,8,-12
+		) 
+		AND  moneyDate IS NOT NULL 
+		and merNo=#{condition.merNo}
+		<if test="condition.terNo != null and condition.terNo != '' ">
+			and terNo=#{condition.terNo}
+		</if>
+		GROUP BY
+		merNo,terNo,DATE_FORMAT(moneyDate,'%Y-%m-%d')
+		UNION 
+		SELECT 
+		merNo,terNo,DATE_FORMAT(transDate,'%Y-%m-%d') AS dateStr,
+		merSettleCurrency,
+		SUM(merSettleAmount) settleAmount,
+		SUM(merForAmount) AS feeAmount,
+		SUM(singleFee) AS singleAmount,
+		SUM(bondAmount) AS bondAmount,
+		#sum(case when cashType in (-4,-5) then amount else 0 end )inAmount,
+		0 AS refundAmount,
+		0 AS disAmount,
+		0 AS thawAmount,
+		0 AS froznAmount,
+		0 AS cashAmount,
+		0 AS otherAmount
+		FROM
+		gw_trans_info
+		WHERE 
+		transType='sales'
+		AND 
+		respCode='00'
+		and merNo=#{condition.merNo}
+		<if test="condition.terNo != null and condition.terNo != '' ">
+			and terNo=#{condition.terNo}
+		</if>
+		GROUP BY
+		merNo,terNo,DATE_FORMAT(transDate,'%Y-%m-%d')
+		) AS t GROUP BY merNo,terNo,dateStr
+		order by dateStr desc
+	</select>
+	<select id="exportPoolSettleInfoForTrans" resultType="com.gateway.transmgr.model.TransInfo">
+		select 
+			tradeNo,
+			orderNo,
+			merNo,
+			terNo,
+			merBusCurrency,
+			merTransAmount,
+			merSettleCurrency,
+			merSettleAmount,
+			merForAmount,
+			singleFee,
+			bondAmount
+		from 
+		gw_trans_info 
+		where 
+		transType='sales'
+		AND 
+		respCode='00'
+		and merNo=#{condition.merNo}
+		and terNo=#{condition.terNo}
+		and DATE_FORMAT(transDate,'%Y-%m-%d')=#{condition.dateStr}
+	</select>
+	<select id="exportExceptiontTransInfo" resultType="com.gateway.settlemgr.model.ExportInfo">
+		SELECT 				
+			c.merNo,
+			c.terNo,
+			CASE WHEN cashType IN(-1,-2,-3,-4,-13,-14,-15) THEN d1.tradeNo ELSE a.tradeNo END AS tradeNo,
+			c.orderNo,
+			c.merBusCurrency AS currency,
+			CASE WHEN cashType IN (-1,-2,-3,-4,-13,-14,-15) THEN d2.merTransAmount ELSE c.merTransAmount END  AS amount,
+			c.merSettleCurrency AS settleCurrency,
+			CASE WHEN cashType IN (-1,-2,-3,-4,-13,-14,-15) THEN d2.merSettleAmount ELSE c.merSettleAmount END   AS settleAmount,
+			b.cashType,
+			b.accountType,
+			a.createDate AS operateDate,
+			(CASE WHEN cashType IN (-5,-6) THEN c.merForAmount ELSE 0 END) AS merForAmount,
+			(CASE WHEN cashType IN (-5,-6) THEN c.singleFee ELSE 0 END) AS singleFee,
+			(CASE WHEN cashType IN (-5,-6,-7,-8) THEN c.bondAmount ELSE 0 END) AS bondAmount,
+			(CASE WHEN cashType IN(-1,-2) THEN c.merSettleAmount 
+			WHEN cashType=-3 THEN c.merSettleAmount
+			WHEN cashType=-4 THEN c.merSettleAmount
+			WHEN cashType=-15 THEN -c.disFee
+			WHEN cashType=-11 THEN -c.disFine
+			WHEN cashType=-12 THEN -c.transFailFee
+			WHEN cashType=-13 THEN -IFNULL(c.refundFee,0)
+			WHEN cashType=-14 THEN -(
+						CASE  WHEN e.applyDate IS NULL THEN 0 WHEN DATE_ADD(d2.transDate,INTERVAL  IFNULL(c.transRefundFeeStatus,0) HOUR)>=e.applyDate
+						THEN c.merSettleAmount/d2.merSettleAmount*(d2.merForAmount) ELSE 0 END
+						)
+			WHEN cashType IN (-5,-6) THEN c.merSettleAmount-c.merForAmount-c.bondAmount-c.singleFee
+			WHEN cashType IN(-7,-8) THEN c.bondAmount ELSE '未知' END) AS operateAmount
+		FROM 
+			gw_merchant_account_access_detail a LEFT JOIN gw_merchant_account_access b ON a.accessId=b.id
+			LEFT JOIN gw_trans_info c ON a.tradeNo=c.tradeNo 
+			LEFT JOIN 
+		gw_trans_info_log d1 ON a.tradeNo=d1.tradeNewNo LEFT JOIN gw_trans_info d2 ON d1.tradeNo=d2.tradeNo 
+		LEFT JOIN gw_refund_info e on d1.tradeNewNo=e.tradeNewNo
+		WHERE  b.merNo=c.merNo AND b.terNo=c.terNo and b.merNo=#{condition.merNo} and b.terNo=#{condition.terNo}
+		and b.cashType in(-14,-13,-3,-11,-15,-4,10,3,-2,4,-1,9,-12) and b.accountType=0
+		and
+		DATE_FORMAT(b.moneyDate,'%Y-%m-%d')=#{condition.dateStr}
+		
+	</select>
+	
+	<insert id="addDisFineSetpInfo" useGeneratedKeys="true" keyProperty="dfInfo.id">
+		insert into gw_disfine_step_info(
+			start1,
+			end1,
+			stepAmount1,
+			start2,
+			end2,
+			stepAmount2,
+			start3,
+			end3,
+			stepAmount3,
+			start4,
+			end4,
+			stepAmount4,
+			start5,
+			end5,
+			stepAmount5
+		)values(
+			#{dfInfo.start1},
+			#{dfInfo.end1},
+			#{dfInfo.stepAmount1},
+			#{dfInfo.start2},
+			#{dfInfo.end2},
+			#{dfInfo.stepAmount2},
+			#{dfInfo.start3},
+			#{dfInfo.end3},
+			#{dfInfo.stepAmount3},
+			#{dfInfo.start4},
+			#{dfInfo.end4},
+			#{dfInfo.stepAmount4},
+			#{dfInfo.start5},
+			#{dfInfo.end5},
+			#{dfInfo.stepAmount5}
+		)
+	</insert>
+	
+	 <!--通过ID把复核通过修改成审核通过 -->
+	<update id="updateMerchantAccountAccessStatus" parameterType="com.gateway.settlemgr.model.MerchantAccountAccess">
+		update gw_merchant_account_access set status=#{info.status},reCheckBy=#{info.reCheckBy},reCheckDate=#{info.reCheckDate},reCheckRemark=#{info.reCheckRemark} where id=#{info.id} limit 1
+	</update>
+</mapper>
+

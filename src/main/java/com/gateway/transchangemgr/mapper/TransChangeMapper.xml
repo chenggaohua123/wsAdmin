@@ -1,0 +1,368 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="com.gateway.transchangemgr.mapper.TransChangeMapper">
+	<sql id="Where_Clause_Trans_Checked_Info">
+		<where>
+			<if test="condition.tradeNo != null and condition.tradeNo !=''">
+				and tradeNo = #{condition.tradeNo}
+			</if>
+			<if
+				test="condition.relNo != null and condition.relNo !=''">
+				and relNo = #{condition.relNo}
+			</if>
+			<if
+				test="condition.status != null and condition.status !=''">
+				and status = #{condition.status}
+			</if>
+			<if test="condition.dateStart != null and condition.dateStart != ''">
+		     and updateTime >= '${condition.dateStart} 00:00:00'
+		    </if>
+		    <if test="condition.dateEnd != null and condition.dateEnd != ''">
+		      and updateTime &lt;='${condition.dateEnd} 23:59:59'
+		    </if>	
+		</where>
+	</sql>
+	<select id="queryCheckTransInfo" resultType="com.gateway.transchangemgr.model.TransCheckInfo">
+		select * from gw_trans_check_log	
+		<include refid="Where_Clause_Trans_Checked_Info"/>
+		order by updateTime DESC
+	</select>
+	<select id="countTransCheckInfo" resultType="int">
+		select count(*) from gw_trans_check_log	
+		<include refid="Where_Clause_Trans_Checked_Info"/>
+	</select>
+	
+	<insert id="saveTransCheckInfo">
+		insert into gw_trans_check_log(
+			tradeNo,
+			relNo,
+			currency,
+			amount,
+			status,
+			updateBy,
+			updateTime
+		)values(
+			#{tradeNo},
+			#{relNo},
+			#{currency},
+			#{amount},
+			0,
+			#{updateBy},
+			now()
+		)
+	</insert>
+	
+	<select id="queryCheckTransInfoByTradeNo" resultType="com.gateway.transchangemgr.model.TransCheckInfo">
+		select * from gw_trans_check_log where tradeNo=#{tradeNo}
+	</select>
+	
+	<update id="updateTransExpCheckInfo">
+		update gw_trans_check_log set 
+			relNo=#{info.relNo},
+			currency=#{info.currency},
+			amount=#{info.amount},
+			status=#{info.status},
+			lastModifyBy=#{info.lastModifyBy},
+			lastModifyTime=now()
+		where 
+			tradeNo=#{info.tradeNo}
+	</update>
+	
+	<select id="queryCheckTransInfoById" resultType="com.gateway.transchangemgr.model.TransCheckInfo">
+		select * from gw_trans_check_log where id=#{id}
+	</select>
+	<update id="updateTransInfoByTradeNo">
+		update gw_trans_info set 
+			relNo=#{info.relNo},
+			isChecked=1,
+			respCode='00'
+		where 
+			tradeNo=#{info.tradeNo}
+	</update>
+	<update id="updateTransFail">
+		update 
+			gw_trans_info 
+		set 
+			respCode='01',
+			respMsg='Transaction failed'
+		where 
+			tradeNo=#{tradeNo}
+	</update>
+	<!-- 根据流水号查询是否入账 -->
+	<select id="queryTransAccess" resultType="com.gateway.transchangemgr.model.TransCheckInfo">
+		select * from gw_trans_info where tradeNo=#{tradeNo}
+	</select>
+	<!-- 根据流水号查询交易信息 -->
+	<select id="queryRefuseInfoByTradeNo" resultType="com.gateway.transchangemgr.model.RefuseInfo">
+		select a.merNo,a.terNo,a.orderNo,a.tradeNo,a.transDate,a.transStatus,a.merTransAmount,a.merBusCurrency,a.bankTransAmount,a.bankCurrency,a.respCode,a.checkNo,a.last,a.cardType,c.bankName,a.isRefund,a.isDishonor,a.isFrozen from gw_trans_info a 
+		left join gw_currency_info b on a.currencyId=b.id 
+		left join gw_bank_info c on c.id=b.bankId
+		where tradeNo=#{tradeNo}
+	</select>
+	<!-- 根据订单号查询交易信息 -->
+	<select id="queryRefuseInfoByOrderNo" resultType="com.gateway.transchangemgr.model.RefuseInfo">
+		select a.merNo,a.terNo,a.orderNo,a.tradeNo,a.transDate,a.transStatus,a.merTransAmount,a.merBusCurrency,a.bankTransAmount,a.bankCurrency,a.respCode,a.checkNo,a.last,a.cardType,c.bankName,a.isRefund,a.isDishonor,a.isFrozen from gw_trans_info a 
+		left join gw_currency_info b on a.currencyId=b.id 
+		left join gw_bank_info c on c.id=b.bankId
+	    where orderNo=#{orderNo}
+	</select>
+	<insert id="insertTransRerunInfo">
+		insert into gw_trans_rerun_info
+		(tradeNo,createDate,oldCurrencyId,newCurrencyId)
+		values
+		(
+		#{tradeNo},
+		now(),
+		
+		(select currencyId from gw_trans_info where tradeNo=#{tradeNo}),
+		<if test="currencyId !=null and currencyId != '' ">
+			#{currencyId}
+		</if>
+		<if test="currencyId ==null or currencyId == '' ">
+			(select currencyId from gw_trans_info where tradeNo=#{tradeNo})
+		</if>
+		)
+	</insert>
+	<select id="selectMaxIdByTradeNo" resultType="int">
+		select max(id) from gw_trans_rerun_info where tradeNo=#{tradeNo}
+	</select>
+	<update id="updateTransReRunInfo">
+		update gw_trans_rerun_info
+		set respMsg=#{respMsg}
+		,respCode=#{respCode}
+		where id=#{id}
+	</update>
+	<sql id="Where_Clause_Trans_Info">
+		where 1=1
+			
+			and settleBatchNo is null
+			<if test="cr.condition.tradeNo != null and cr.condition.tradeNo != ''">
+			  and	t.tradeNo = #{cr.condition.tradeNo}
+			</if>
+			
+			<if test="cr.condition.relNo !=null and cr.condition.relNo !=''">
+			  and  t.rcr.condition.relNo}
+			</if>
+			<if test="cr.condition.merNo !=null and cr.condition.merNo !=''">
+			  and  t.merNo = #{cr.condition.merNo}
+			</if>
+			<if test="cr.condition.terNo !=null and cr.condition.terNo !=''">
+			  and  t.terNo = #{cr.condition.terNo}
+			</if>
+			<if test="cr.condition.respCode == '00'">
+			  and  t.respCode = #{cr.condition.respCode}
+			</if>
+			<if test="cr.condition.respCode == '01'">
+			  and  (t.respCode &lt;> '00'  or t.respCode is null)
+			</if>
+			<if test="cr.condition.transType !=null and cr.condition.transType !=''">
+			  and  t.transType=#{cr.condition.transType}
+			</if>
+			<if test="cr.condition.transDateStart != null and cr.condition.transDateStart != ''">
+		     and transDate >= '${cr.condition.transDateStart} 00:00:00'
+		    </if>
+		    <if test="cr.condition.transDateEnd != null and cr.condition.transDateEnd != ''">
+		      and transDate &lt;='${cr.condition.transDateEnd} 23:59:59'
+		    </if>	
+			<if test="cr.condition.settleDateStart != null and cr.condition.settleDateStart != ''">
+		     and a.createDate >= '${cr.condition.settleDateStart} 00:00:00'
+		    </if>
+		    <if test="cr.condition.settleDateEnd != null and cr.condition.settleDateEnd != ''">
+		      and a.createDate &lt;='${cr.condition.settleDateEnd} 23:59:59'
+		    </if>
+		    <if test="cr.condition.checkedBatchNo == 1">
+		      and t.checkedBatchNo is not null
+		    </if>
+		    <if test="cr.condition.checkedBatchNo == 2">
+		      and t.checkedBatchNo is null
+		    </if>
+		    <if test="cr.condition.ischecked !=null and cr.condition.ischecked !=''">
+		    	and ischecked=#{cr.condition.ischecked}
+		    </if>
+		    <if test="cr.condition.bankId !=null and cr.condition.bankId !='' and cr.condition.bankId != 0 ">
+		    	and b.id=#{cr.condition.bankId}
+		    </if>
+		    <if test="cr.condition.currencyName !=null and cr.condition.currencyName !=''">
+		    	and a.oldCurrencyId= (SELECT id FROM gw_currency_info  WHERE currencyName=#{cr.condition.currencyName} limit 1 )
+		    </if>
+		     <if test="cr.condition.currencyName1 !=null and cr.condition.currencyName1 !=''">
+		    	and a.newCurrencyId=(SELECT id FROM gw_currency_info  WHERE currencyName=#{cr.condition.currencyName1} limit 1 )
+		    </if>
+	</sql>
+	<select id="getTransList" resultType="com.gateway.transmgr.model.TransInfo">
+		SELECT
+			t.merNo,
+			t.terNo,
+			a.tradeNo,
+			t.merTransAmount,
+			t.merBusCurrency,
+			t.bankCurrency,
+			t.bankTransAmount,
+			t.transDate,
+			c.currencyname as oldCurrencyName,
+			e.currencyName as newCurrencyName,
+			b.bankName as acquiringBank,
+			m.merchantName,
+			a.createDate as reRunDate,
+			a.respCode,
+			a.respMsg
+		FROM
+		gw_trans_rerun_info a left join
+			gw_trans_info t on a.tradeNo=t.tradeNo
+		LEFT JOIN gw_currency_info c ON a.oldCurrencyId = c.id
+		LEFT JOIN gw_currency_info e ON a.newCurrencyId = e.id
+		LEFT JOIN gw_bank_info b ON c.bankId = b.id
+		left join gw_merchant_info m on m.merNo=t.merNo
+		<include refid="Where_Clause_Trans_Info"/>
+		order by a.createDate desc
+	</select>
+	
+	<select id="countTransList" resultType="int">
+		SELECT
+			count(*)
+		FROM
+		gw_trans_rerun_info a left join
+			gw_trans_info t  on a.tradeNo=t.tradeNo
+		LEFT JOIN gw_currency_info c ON t.currencyId = c.id
+		LEFT JOIN gw_bank_info b ON c.bankId = b.id 
+		left join gw_merchant_info m on m.merNo=t.merNo
+		<include refid="Where_Clause_Trans_Info"/>
+	</select>
+	<sql id="Where_Clause_Trans_HishRiskPadding_Info">
+		where 1=1
+			and settleBatchNo is null
+			  and t.respMsg='high risk pending!'
+			  and t.respCode='01'
+			<if test="cr.condition.tradeNo != null and cr.condition.tradeNo != ''">
+			  and	t.tradeNo = #{cr.condition.tradeNo}
+			</if>
+			<if test="cr.condition.relNo !=null and cr.condition.relNo !=''">
+			  and  t.rcr.condition.relNo}
+			</if>
+			<if test="cr.condition.merNo !=null and cr.condition.merNo !=''">
+			  and  t.merNo = #{cr.condition.merNo}
+			</if>
+			<if test="cr.condition.terNo !=null and cr.condition.terNo !=''">
+			  and  t.terNo = #{cr.condition.terNo}
+			</if>
+			<if test="cr.condition.respCode == '00'">
+			  and  t.respCode = #{cr.condition.respCode}
+			</if>
+			<if test="cr.condition.respCode == '11'">
+			  and  (t.respCode &lt;> '00'  or t.respCode is null)
+			</if>
+			<if test="cr.condition.transType !=null and cr.condition.transType !=''">
+			  and  t.transType=#{cr.condition.transType}
+			</if>
+			<if test="cr.condition.transDateStart != null and cr.condition.transDateStart != ''">
+		     and transDate >= '${cr.condition.transDateStart} 00:00:00'
+		    </if>
+		    <if test="cr.condition.transDateEnd != null and cr.condition.transDateEnd != ''">
+		      and transDate &lt;='${cr.condition.transDateEnd} 23:59:59'
+		    </if>	
+		    <if test="cr.condition.checkedBatchNo == 1">
+		      and t.checkedBatchNo is not null
+		    </if>
+		    <if test="cr.condition.checkedBatchNo == 2">
+		      and t.checkedBatchNo is null
+		    </if>
+		    <if test="cr.condition.ischecked !=null and cr.condition.ischecked !=''">
+		    	and ischecked=#{cr.condition.ischecked}
+		    </if>
+	</sql>
+	<select id="getTransHighRiskRerunInfoList" resultType="com.gateway.transmgr.model.TransInfo">
+		SELECT
+			t.*,
+			c.currencyName,
+			b.bankName as acquiringBank,
+			m.merchantName,
+			(TIMESTAMPDIFF(MINUTE, t.transDate, NOW())&lt;=24*60) as reRunStatus 
+		FROM
+		gw_trans_info t 
+		LEFT JOIN gw_currency_info c ON t.currencyId = c.id
+		LEFT JOIN gw_bank_info b ON c.bankId = b.id
+		left join gw_merchant_info m on m.merNo=t.merNo
+		<include refid="Where_Clause_Trans_HishRiskPadding_Info"/>
+		order by transDate desc
+	</select>
+	
+	<select id="countTransHighRiskRerunInfoList" resultType="int">
+		SELECT
+			count(*)
+		FROM
+			gw_trans_info t 
+		LEFT JOIN gw_currency_info c ON t.currencyId = c.id
+		LEFT JOIN gw_bank_info b ON c.bankId = b.id 
+		left join gw_merchant_info m on m.merNo=t.merNo
+		<include refid="Where_Clause_Trans_HishRiskPadding_Info"/>
+	</select>
+	
+	<select id="queryTransInfo" resultType="com.gateway.transmgr.model.TransInfo">
+		select 
+			id,
+			merNo,
+			terNo, 
+			orderNo,
+			tradeNo,
+			date_format(transDate,'%Y-%m-%d') transDate,
+			merBusCurrency,
+			merTransAmount,
+			respCode,
+			checkToNo
+		from gw_trans_info 
+			where transType='sales' 
+			<!-- 过滤预支付成功的订单 -->
+			and respCode !='0000'
+		<if test="condition.tradeNo !=null and condition.tradeNo !=''">
+			and tradeNo = #{condition.tradeNo}
+		</if>
+		<if test="condition.orderNo !=null and condition.orderNo !=''">
+			and orderNo = #{condition.orderNo}
+		</if>
+		<if test="condition.transDate !=null and condition.transDate !=''">
+			and (date_format(transDate,'%Y%m%d') = #{condition.transDate} or bankTransDate=#{condition.transDate})
+		</if>
+		<if test="condition.checkNo !=null and condition.checkNo !=''">
+			and checkNo = #{condition.checkNo}
+		</if>
+		<if test="condition.last !=null and condition.last !=''">
+			and last = #{condition.last}
+		</if>
+		<if test="condition.bankTransAmount !=null and condition.bankTransAmount !=''">
+			AND bankTransAmount > #{condition.bankTransAmount}-0.02 AND bankTransAmount &lt; #{condition.bankTransAmount}+0.02
+		</if>
+		<if test="condition.autoCode !=null and condition.autoCode !=''">
+			and autoCode = #{condition.autoCode}
+		</if>
+		<if test="condition.checkToNo !=null and condition.checkToNo !=''">
+			and checkToNo = #{condition.checkToNo}
+		</if>
+		<if test="condition.ischecked !=null and condition.ischecked !=''">
+			and ischecked = #{condition.ischecked}
+		</if>
+		<if test="condition.merchantNo != null and condition.merchantNo != '' ">
+			and currencyId in(select id from gw_currency_info where merchantNo like '${condition.merchantNo}%' )
+		</if>
+	</select>
+	<update id="updateTransToPendingByTradeNo">
+		update gw_trans_info set respCode='02' , respMsg='pending' where tradeNo=#{tradeNo}
+	</update>
+	
+	
+	<select id="getTransListForTransRerunTradeNos" resultType="string">
+		SELECT
+			a.tradeNo
+		FROM
+		gw_trans_rerun_info a left join
+			gw_trans_info t on a.tradeNo=t.tradeNo
+		LEFT JOIN gw_currency_info c ON a.oldCurrencyId = c.id
+		LEFT JOIN gw_currency_info e ON a.newCurrencyId = e.id
+		LEFT JOIN gw_bank_info b ON c.bankId = b.id
+		left join gw_merchant_info m on m.merNo=t.merNo
+		<include refid="Where_Clause_Trans_Info"/>
+		group by a.tradeNo
+		order by t.id desc 
+	</select>
+</mapper>
+

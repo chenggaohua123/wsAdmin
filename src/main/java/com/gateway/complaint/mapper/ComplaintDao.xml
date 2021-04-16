@@ -1,0 +1,476 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="com.gateway.complaint.mapper.ComplaintDao">
+	<sql id="Where_Complaint_Info">
+		<where>
+			<if test="condition.tradeNo !=null and condition.tradeNo!=''">
+				and c.tradeNo like CONCAT(CONCAT('%',#{condition.tradeNo}),'%')
+			</if>
+			<if test="condition.merNo !=null and condition.merNo!=''">
+				and t.merNo = #{condition.merNo}
+			</if>
+			<if test="condition.orderNo !=null and condition.orderNo!=''">
+				and t.orderNo like CONCAT(CONCAT('%',#{condition.orderNo}),'%')
+			</if>
+			<if test="condition.payWebSite !=null and condition.payWebSite!=''">
+				and t.payWebSite like CONCAT(CONCAT('%',#{condition.payWebSite}),'%')
+			</if>
+			<if test="condition.transDateStart !=null and condition.transDateStart!=''">
+				and t.transDate >= '${condition.transDateStart} 00:00:00'
+			</if>
+			<if test="condition.transDateEnd !=null and condition.transDateEnd!=''">
+				and t.transDate &lt;='${condition.transDateEnd} 23:59:59'
+			</if>
+			<if test="condition.complaintDateStart !=null and condition.complaintDateStart!=''">
+				and c.complaintDate >= '${condition.complaintDateStart} 00:00:00'
+			</if>
+			<if test="condition.complaintDateEnd !=null and condition.complaintDateEnd!=''">
+				and c.complaintDate &lt;='${condition.complaintDateEnd} 23:59:59'
+			</if>
+			<if test="condition.status !=null and condition.status!=''">
+				and c.status = #{condition.status}
+			</if>
+			<if test="condition.type !=null and condition.type!=''">
+				and c.type = #{condition.type}
+			</if>
+			<if test="condition.complaintTypeValue !=null and condition.complaintTypeValue!=''">
+				and i.cValue like CONCAT(CONCAT('%',#{condition.complaintTypeValue}),'%')
+			</if>
+			<if test="condition.currencyName !=null and condition.currencyName!=''">
+				and d.currencyName like CONCAT(CONCAT('%',#{condition.currencyName}),'%')
+			</if>
+			<if test="condition.createdBy !=null and condition.createdBy!=''">
+				and c.createdBy like CONCAT(CONCAT('%',#{condition.createdBy}),'%')
+			</if>
+			<if test="condition.lastUpdateBy !=null and condition.lastUpdateBy!=''">
+				and c.lastUpdateBy like CONCAT(CONCAT('%',#{condition.lastUpdateBy}),'%')
+			</if>
+			<if test="condition.complaintLevel !=null and condition.complaintLevel!=''">
+				and c.complaintLevel = #{condition.complaintLevel}
+			</if>
+			<if test="condition.isMerchantSee != null and condition.isMerchantSee != '' ">
+				and c.isMerchantSee=#{condition.isMerchantSee}
+			</if>
+			<if test="condition.isComp != null and condition.isComp != '' ">
+				and c.isComp=#{condition.isComp}
+			</if>
+			<if test="condition.isSp != null and condition.isSp != '' ">
+				and c.isSp=#{condition.isSp}
+			</if>
+			<if test="condition.ctId != null and condition.ctId != '' ">
+				and i.id=#{condition.ctId}
+			</if>
+			<if test="condition.payWebSite != null and condition.payWebSite != '' ">
+				and t.payWebSite=#{condition.payWebSite}
+			</if>
+				<if test="condition.CPDDateStart !=null and condition.CPDDateStart !=''">
+				and c.CPDDate >= '${condition.CPDDateStart} 00:00:00'
+			</if>
+			<if test="condition.CPDDateEnd !=null and condition.CPDDateEnd !=''">
+				and c.CPDDate &lt;='${condition.CPDDateEnd} 23:59:59'
+			</if>
+			<if test="condition.terNo !=null and condition.terNo !=''">
+				and t.terNo = #{condition.terNo}
+			</if>
+			<if test="condition.cardType !=null and condition.cardType !=''">
+				and t.cardType = #{condition.cardType}
+			</if>
+			<choose>
+			<when test="condition.isFake != null and condition.isFake != '' and condition.isFake == 0 ">
+				and c.tradeNo  in (select tradeNo from gw_trans_complaint_info where type=3)
+			</when>
+			<when test="condition.isFake != null and condition.isFake != '' and condition.isFake == 1 ">
+				and c.tradeNo  not in (select tradeNo from gw_trans_complaint_info where type=3)
+			</when>
+			</choose>
+			<if test="condition.currencyId != null and  condition.currencyId != '' ">
+		    	and t.currencyId=#{condition.currencyId}
+		    </if>
+		    <if test="condition.bankId != null and  condition.bankId != '' and condition.bankId != 0 ">
+		    	and d.bankId=#{condition.bankId}
+		    </if>
+		</where>
+	
+	</sql>
+	
+	
+	<select id="queryComplaintInfoList" resultType="com.gateway.complaint.model.Complaint">
+		select 
+			c.*,
+			i.cValue complaintTypeValue,
+			t.orderNo,
+			t.payWebSite,
+			t.merBusCurrency,
+			t.merTransAmount,
+			t.merNo,
+			t.email,
+			t.checkNo,
+			t.last,
+			t.ipAddress,
+			t.transDishonor,
+			t.transFrozen,
+			t.transRefund,
+			t.riskScore,
+			(select count(*) from gw_trans_complaint_info we where we.tradeNo=c.tradeNo and we.type=3 ) as isFake
+		from gw_trans_complaint_info c 
+		left join gw_trans_complaint_type_info i on i.id=c.complaintType
+		left join gw_trans_info t on t.tradeNo=c.tradeNo
+		LEFT JOIN gw_currency_info d ON t.currencyId = d.id
+		<include refid="Where_Complaint_Info"/>	
+		order by c.id desc 
+	</select>
+	
+	<select id="queryComplaintResultInfo" resultType="com.gateway.complaint.model.ComplaintResult">
+		select * from gw_trans_complaint_result_info 
+		<where>
+			<if test="complaintId != null and complaintId != ''">
+				and  complaintId=#{complaintId}
+			</if>
+			<if test="systemId != null and systemId != ''">
+				and systemId = #{systemId}
+			</if>
+		</where>
+	</select>
+	
+	<select id="countComplaintInfoList" resultType="int">
+	select
+			count(c.id)
+		from gw_trans_complaint_info c 
+		left join gw_trans_complaint_type_info i on i.id=c.complaintType
+		left join gw_trans_info t on t.tradeNo=c.tradeNo
+		LEFT JOIN gw_currency_info d ON t.currencyId = d.id
+		<include refid="Where_Complaint_Info"/>	
+	</select>
+	
+	<insert id="addComplaintInfo" parameterType="com.gateway.complaint.model.Complaint">
+		insert into gw_trans_complaint_info(
+			tradeNo,
+			complaintDate,
+			status,
+			deadline,
+			complaintType,
+			createdBy,
+			createdDate,
+			complaintLevel,
+			type,
+			CPDDate,
+			remark,
+			isMerchantSee,
+			isSp,
+			amount
+		)value(
+			#{tradeNo},
+			#{complaintDate},
+			#{status},
+			#{deadline},
+			#{complaintType},
+			#{createdBy},
+			SYSDATE(),
+			#{complaintLevel},
+			#{type},
+			#{CPDDate},
+			#{remark},
+			#{isMerchantSee},
+			#{isSp},
+			#{amount}
+		)
+	</insert>
+	
+	<select id="queryComplaintById" resultType="com.gateway.complaint.model.Complaint">
+		select 
+			c.id,
+			c.tradeNo,
+			c.complaintType,
+			c.deadline,
+			c.status,
+			c.type,
+			c.remark,
+			c.complaintDate,
+			c.complaintLevel,
+			c.createdBy,
+			c.createdDate,
+			c.lastUpdateBy,
+			c.lastUpdateDate,
+			c.filePath,
+			c.CPDDate,
+			i.cValue complaintTypeValue,
+			t.orderNo,
+			t.payWebSite,
+			t.merBusCurrency,
+			t.merTransAmount,
+			t.merNo
+		from gw_trans_complaint_info c 
+		left join gw_trans_complaint_type_info i on i.id=c.complaintType
+		left join gw_trans_info t on t.tradeNo=c.tradeNo
+		
+			where c.id = #{id}
+	</select>
+	
+	<update id="updateComplaintInfo" parameterType="com.gateway.complaint.model.Complaint">
+		update gw_trans_complaint_info set
+			status=#{status},
+			lastUpdateBy=#{lastUpdateBy},
+			lastUpdateDate=SYSDATE()
+		WHERE 
+			id=#{id}
+	</update>
+	
+	<select id="queryComplaintTypeInfo" resultType="com.gateway.complaint.model.Complaint" parameterType="com.gateway.complaint.model.Complaint">
+		select 
+			c.id,
+			c.tradeNo,
+			c.complaintType,
+			c.deadline,
+			c.status,
+			c.remark,
+			c.complaintDate,
+			c.createdBy,
+			c.createdDate,
+			c.lastUpdateBy,
+			c.lastUpdateDate,
+			sum(c.amount) as amount
+		from gw_trans_complaint_info c 
+			where c.type = #{type} 
+				and c.tradeNo = #{tradeNo}
+				<if test="isMerchantSee != null and isMerchantSee != '' ">
+					and c.isMerchantSee=0
+				</if>
+		group by c.tradeNo
+			limit 1
+	</select>
+	
+	<select id="countComplaintTypeByIdAndType" resultType="int">
+		select count(*) from gw_trans_complaint_type_info where 
+			id=#{complaintType} and type = #{type}
+	</select>
+	
+	<insert id="addComplaintResultInfo">
+		insert into gw_trans_complaint_result_info(result,complaintId,createDate,createBy,systemId)values(
+			#{result},#{complaintId},now(),#{createBy},1
+		)
+	</insert>
+	
+	<select id="queryDisInfoById" resultType="com.gateway.complaint.model.Complaint">
+		select id,tradeNo,DATE_FORMAT(CPDDate,'%Y-%m-%d %k:%i:%s') as CPDDate from gw_trans_complaint_info where id=#{id}
+	</select>
+	<update id="updateDisCPDDateById">
+		update 
+			gw_trans_complaint_info
+		set 
+		<if test="info.CPDDate !=null and info.CPDDate != '' ">
+			CPDDate=#{info.CPDDate},
+			CPDUpdateBy=#{info.CPDUpdateBy},
+			CPDUpdateDate=now()
+		</if>
+		<if test="info.isSp != null and info.isSp != '' ">
+			isSp=#{info.isSp}
+		</if>
+		<if test="info.isComp != null and info.isComp != '' ">
+			isComp=#{info.isComp}
+		</if>
+		where 
+			id=#{info.id}
+	</update>
+	<select id="checkTradeNoInDis" resultType="int">
+		select id from gw_trans_complaint_info where tradeNo=#{tradeNo} and type=1
+	</select>
+	<update id="updateDisOrderToIsCompById">
+		update gw_trans_complaint_info set isComp=1 where id=#{id}
+	</update>
+	<update id="updateCompOrderToIsDis">
+		update gw_trans_complaint_info set status=5 where id=#{id}
+	</update>
+	
+	<sql id="Where_Caluse_Website_Complaint">
+		<where>
+			<if test="condition.payWebSite!=null and condition.payWebSite!=''">
+				AND
+					b.payWebSite=#{condition.payWebSite}
+			</if>
+			<if test="condition.merNo!=null and condition.merNo!=''">
+				AND
+					b.merNo=#{condition.merNo}
+			</if>
+			<if test="condition.terNo!=null and condition.terNo!=''">
+				AND
+					b.terNo=#{condition.terNo}
+			</if>
+			<if test="condition.type!=null and condition.type!=''">
+				AND
+					a.type=#{condition.type}
+			</if>
+			<if test="condition.complaintType!=null and condition.complaintType!=''">
+				AND
+					a.complaintType=#{condition.complaintType}
+			</if>
+			<if test="condition.year!=null and condition.year!=''">
+				AND
+					YEAR(a.createdDate)=#{condition.year}
+			</if>
+			<if test="condition.month!=null and condition.month!=''">
+				AND
+					MONTH(a.createdDate)=#{condition.month}
+			</if>
+		</where>
+	</sql>
+	
+	<select id="queryWebsiteComplaintInfoList" resultType="com.gateway.complaint.model.WebsiteComplaintInfo">
+		SELECT
+			c.complCount,
+			c.complTradeNo,
+			c.type,
+			c.payWebSite,
+			c.merNo,
+			c.terNo,
+			d.status AS websiteStatus,
+			d.brand,
+			d.product
+		FROM
+			(		
+				SELECT
+					COUNT(a.id) AS complCount,
+					GROUP_CONCAT(a.tradeNo) AS complTradeNo,
+					GROUP_CONCAT(DISTINCT a.type) AS TYPE,
+					b.payWebSite,
+					b.merNo,
+					b.terNo
+				FROM
+					gw_trans_complaint_info a
+					LEFT JOIN gw_trans_info b ON a.tradeNo=b.tradeNo
+				<include refid="Where_Caluse_Website_Complaint"/>
+				GROUP BY
+					b.payWebSite,b.terNo
+			)
+		AS
+			c
+			LEFT JOIN gw_merchant_website_info d ON (d.merWebSite=c.payWebSite OR d.merWebSite=CONCAT('www.',c.payWebSite)) AND d.merNo=c.merNo AND d.terNo=c.terNo
+		ORDER BY
+			c.complCount
+		DESC
+	</select>
+	
+	<select id="queryWebsiteComplaintInfoCount" resultType="java.lang.Integer">
+		SELECT
+			COUNT(e.ids)
+		FROM
+			(
+				SELECT
+					COUNT(a.id) AS ids
+				FROM
+					gw_trans_complaint_info a
+					LEFT JOIN gw_trans_info b ON a.tradeNo=b.tradeNo
+				<include refid="Where_Caluse_Website_Complaint"/>
+				GROUP BY
+					b.payWebSite,b.terNo
+			)
+		AS
+			e
+	</select>
+	
+	<select id="queryWebsiteComplaintCountInfo" resultType="com.gateway.complaint.model.WebsiteComplaintCardHolderInfo">
+		SELECT
+			c.type,
+			c.complaintType,
+			d.cValue AS complaintDesc,
+			c.complaintCount,
+			c.payWebSite
+		FROM
+			(
+				SELECT
+					a.type,
+					a.complaintType,
+					COUNT(a.id) AS complaintCount,
+					b.payWebSite
+				FROM
+					gw_trans_complaint_info a
+					LEFT JOIN gw_trans_info b ON a.tradeNo=b.tradeNo
+				WHERE
+					b.payWebSite=#{payWebSite}
+				<if test="type!=null and type!=''">
+					AND
+						a.type=#{type}
+				</if>
+				<if test="complaintType!=null and complaintType!=''">
+					AND
+						a.complaintType=#{complaintType}
+				</if>
+				<if test="year!=null and year!=''">
+					AND
+						YEAR(a.createdDate)=#{year}
+				</if>
+				<if test="month!=null and month!=''">
+					AND
+						MONTH(a.createdDate)=#{month}
+				</if>
+				GROUP BY
+					a.type,a.complaintType
+			)
+		AS
+			c
+			LEFT JOIN gw_trans_complaint_type_info d ON d.id=c.complaintType AND d.type=c.type
+		ORDER BY
+			c.complaintCount
+		DESC
+	</select>
+	
+	<select id="queryCardHodlerInfo" resultType="com.gateway.complaint.model.WebsiteCardHolderInfo">
+		SELECT
+			GROUP_CONCAT(tradeNo) AS complTradeNo,
+			cardFullName AS cardHolderName
+		FROM
+			gw_trans_order_info
+		WHERE
+			FIND_IN_SET(tradeNo,#{complTradeNo})
+		GROUP BY
+			cardFullName
+	</select>
+	
+	<select id="queryWebsiteCardHodlerInfo" resultType="com.gateway.complaint.model.WebsiteComplaintCardHolderInfo">
+		SELECT
+			c.type,
+			c.complaintType,
+			c.complaintCount,
+			c.payWebSite,
+			d.cValue AS complaintDesc
+		FROM
+			(
+				SELECT
+					a.type,
+					a.complaintType,
+					COUNT(a.id) AS complaintCount,
+					b.payWebSite
+				FROM
+					gw_trans_complaint_info a
+					LEFT JOIN gw_trans_info b ON b.tradeNo=a.tradeNo
+				WHERE
+					FIND_IN_SET(a.tradeNo,#{complTradeNo})
+				<if test="type!=null and type!=''">
+					AND
+						a.type=#{type}
+				</if>
+				<if test="complaintType!=null and complaintType!=''">
+					AND
+						a.complaintType=#{complaintType}
+				</if>
+				<if test="year!=null and year!=''">
+					AND
+						YEAR(a.createdDate)=#{year}
+				</if>
+				<if test="month!=null and month!=''">
+					AND
+						MONTH(a.createdDate)=#{month}
+				</if>
+				GROUP BY
+					a.type,a.complaintType,b.payWebSite
+			)
+		AS
+			c
+			LEFT JOIN gw_trans_complaint_type_info d ON d.id=c.complaintType AND d.type=c.type
+		ORDER BY
+			c.complaintCount
+		DESC
+	</select>
+	
+</mapper>
+

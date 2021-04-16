@@ -1,0 +1,800 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.gateway.fraud.mapper.FraudManageDao" >
+
+	<sql id="Mysql_Pagination_Limit" >
+    	<if test="offset != null and rows != null" >
+     		 <![CDATA[ limit #{offset} , #{rows} ]]>
+    	</if>
+  	</sql>
+	 <sql id="Example_Where_Params_Clause" >
+	   <where>
+		<if test="condition.paramId != null and condition.paramId != ''">
+			and paramId = #{condition.paramId}
+		</if>
+		<if test="condition.paramName != null and condition.paramName != ''">
+			and paramName = #{condition.paramName}
+		</if>
+		<if test="condition.paramDescName != null and condition.paramDescName != ''">
+			and paramDescName = #{condition.paramDescName}
+		</if>
+		<if test="condition.comFrom != null and condition.comFrom != ''">
+			and comFrom = #{condition.comFrom}
+		</if>
+ 		<if test="condition.createDateStart != null and condition.createDateStart != ''">
+ 			and createDate > '${condition.createDateStart} 00:00:00'
+ 		</if>
+ 		<if test="condition.createDateEnd != null and condition.createDateEnd != ''">
+ 			and createDate &lt; '${condition.createDateEnd} 23:59:59'
+ 		</if>
+	</where>
+	 </sql>
+	 <sql id="Where_RuleInfo_Clause">
+	 	<where>
+		 	<if test="condition.ruleId != null and condition.ruleId != ''">
+				and r.ruleId = #{condition.ruleId}
+			</if>
+		 		<if test="condition.ruleName != null and condition.ruleName != ''">
+				and r.ruleName like CONCAT(CONCAT('%', '${condition.ruleName}'),'%')
+			</if>
+			<if test="condition.status != null and condition.status != ''">
+				and r.status = #{condition.status}
+			</if>
+			<if test="condition.paramName != null and condition.paramName != ''">
+				and p.paramName = #{condition.paramName}
+			</if>
+			<if test="condition.ruleParamName != null and condition.ruleParamName != ''">
+				and p1.paramName = #{condition.ruleParamName}
+			</if>
+			<if test="condition.processClass != null and condition.processClass != ''">
+				and p2.beanName = #{condition.processClass}
+			</if>
+			 <if test="condition.action != null and condition.action != ''">
+				and r.action = #{condition.action}
+			</if>
+	 		<if test="condition.createDateStart != null and condition.createDateStart != ''">
+	 			and r.createDate > '${condition.createDateStart} 00:00:00'
+	 		</if>
+	 		<if test="condition.createDateEnd != null and condition.createDateEnd != ''">
+	 			and r.createDate &lt; '${condition.createDateEnd} 23:59:59'
+	 		</if>
+	 	</where>
+	 </sql>
+	 <sql id="Where_Rule_Ref_Profole_Clause">
+	 	<where>
+	 		<if test="condition.profileId != null and condition.profileId != ''">
+			and p.profileid = #{condition.profileId}
+			</if>
+			<if test="condition.ruleId != null and condition.ruleId != '0' and condition.ruleId != ''">
+				and r.ruleId= #{condition.ruleId} 
+			</if>
+			<if test="condition.ruleName != null and condition.ruleName != ''">
+				and r.ruleName LIKE CONCAT(CONCAT('%', '${condition.ruleName}'),'%')
+			</if>
+			<if test="condition.statusDate != null and condition.statusDate != ''">
+				and p.createDate > '${condition.statusDate} 00:00:00'
+			</if>
+			<if test="condition.endDate != null and condition.endDate != ''">
+				and p.createDate &lt; '${condition.endDate} 23:59:59'
+			</if>
+	 	</where>
+	 </sql>
+	 <sql id="Where_RiskElement_Clause">
+	 	<where>
+	 		<if test="condition.elementId != null and condition.elementId != ''">
+	 			and elementId = #{condition.elementId}
+	 		</if>
+	 		<if test="condition.elementValue != null and condition.elementValue != ''">
+	 			and elementValue = #{condition.elementValue}
+	 		</if>
+	 		<if test="condition.elementType != null and condition.elementType != ''">
+	 			and elementType  = #{condition.elementType}
+	 		</if>
+	 		<if test="condition.createDateStart != null and condition.createDateStart != ''">
+	 			and createDate > '${condition.createDateStart} 00:00:00'
+	 		</if>
+	 		<if test="condition.createDateEnd != null and condition.createDateEnd != ''">
+	 			and createDate &lt; '${condition.createDateEnd} 23:59:59'
+	 		</if>
+	 	</where>
+	 </sql>
+	 <sql id="Where_Rule_Profile">
+	 		<where>
+	 		<if test="condition.profileId != null and condition.profileId != ''">
+	 			and profileId = #{condition.profileId}
+	 		</if>
+	 		<if test="condition.profileName != null and condition.profileName != ''">
+	 			and profileName = #{condition.profileName}
+	 		</if>
+	 		<if test="condition.status != null and condition.status != ''">
+	 			and status  = #{condition.status}
+	 		</if>
+	 		<if test="condition.createDateStart != null and condition.createDateStart != ''">
+	 			and createDate > '${condition.createDateStart} 00:00:00'
+	 		</if>
+	 		<if test="condition.createDateEnd != null and condition.createDateEnd != ''">
+	 			and createDate &lt; '${condition.createDateEnd} 23:59:59'
+	 		</if>
+	 	</where>
+	 </sql>
+	 <sql id="Where_Account_Ref_Profole_Clause">
+	 	<where>
+	 		<if test="condition.terNo != null and condition.terNo != ''">
+	 			and ar.terNo=#{condition.terNo}
+	 		</if>
+	 		<if test="condition.merNo != null and condition.merNo != ''">
+	 			and ar.merNo=#{condition.merNo}
+	 		</if>
+	 		<if test="condition.createDateStart != null and condition.createDateStart != ''">
+	 			and ar.createDate > '${condition.createDateStart} 00:00:00'
+	 		</if>
+	 		<if test="condition.createDateEnd != null and condition.createDateEnd != ''">
+	 			and ar.createDate &lt; '${condition.createDateEnd} 23:59:59'
+	 		</if>
+	 	</where>
+	 </sql>
+	 <sql id="Where_Fraud_Info_Clause">
+	 	<where>
+	 		<if test="condition.txId != null and condition.txId != ''">
+	 			and txId = #{condition.txId}
+	 		</if>
+	 		<if test="condition.orderNo != null and condition.orderNo != ''">
+	 			and orderNo =#{condition.orderNo}
+	 		</if>
+	 		<if test="condition.ret != null and condition.ret != ''">
+	 			and ret = #{condition.ret}
+	 		</if>	 		
+	 		<if test="condition.accountNo != null and condition.accountNo != ''">
+	 			and accountNo=#{condition.accountNo}
+	 		</if>
+	 		<if test="condition.createDateStart != null and condition.createDateStart != ''">
+	 			and createDate > '${condition.createDateStart} 00:00:00'
+	 		</if>
+	 		<if test="condition.createDateEnd != null and condition.createDateEnd != ''">
+	 			and createDate &lt; '${condition.createDateEnd} 23:59:59'
+	 		</if>
+	 	</where>
+	 </sql>
+	 <sql id="Where_BlackText_Info_Clause">
+		 <where>
+		 		<if test="condition.blackId != null and condition.blackId != ''">
+		 			and blackId =#{condition.blackId}
+		 		</if>
+		 		<if test="condition.blackType != null and condition.blackType != ''">
+		 			and blackType =#{condition.blackType}
+		 		</if>
+		 		<if test="condition.blackText != null and condition.blackText != ''">
+		 			and blackText=#{condition.blackText}
+		 		</if>
+		 		<if test="condition.createDateStart != null and condition.createDateStart != ''">
+		 			and createDate > '${condition.createDateStart} 00:00:00'
+		 		</if>
+		 		<if test="condition.createDateEnd != null and condition.createDateEnd != ''">
+		 			and createDate &lt; '${condition.createDateEnd} 23:59:59'
+		 		</if>
+		 		<if test="condition.merNo != null and condition.merNo != ''">
+		 			and merNo=#{condition.merNo}
+		 		</if>
+		 </where>
+	 </sql>
+	 <sql id="Where_Bin_Info_Clause">
+	 	<where>
+	 		<if test="condition.id != null and condition.id != ''">
+	 			and id =#{condition.id}
+	 		</if>
+	 		<if test="condition.type != null and condition.type != ''">
+	 			and type =#{condition.type}
+	 		</if>
+	 		<if test="condition.startNum != null and condition.startNum != ''">
+	 			and startNum=#{condition.startNum}
+	 		</if>
+	 		<if test="condition.endNum != null and condition.endNum != ''">
+	 			and endNum=#{condition.endNum}
+	 		</if>	 		
+	 		<if test="condition.createDateStart != null and condition.createDateStart != ''">
+	 			and createDate > '${condition.createDateStart} 00:00:00'
+	 		</if>
+	 		<if test="condition.createDateEnd != null and condition.createDateEnd != ''">
+	 			and createDate &lt; '${condition.createDateEnd} 23:59:59'
+	 		</if>
+	 		
+	 	</where>
+	 </sql>
+	 
+	 <sql id="Where_BlackText_Query_Record_Clause">
+	 	<where>
+	 		<if test="condition.tradeNo != null and condition.tradeNo != ''">
+	 			and tradeNo =#{condition.tradeNo}
+	 		</if>
+	 		<if test="condition.accountNo != null and condition.accountNo != ''">
+	 			and accountNo =#{condition.accountNo}
+	 		</if>
+	 		<if test="condition.respCode != null and condition.respCode != ''">
+	 			and respCode=#{condition.respCode}
+	 		</if>
+	 		<if test="condition.shaCardNo != null and condition.shaCardNo != ''">
+	 			and shaCardNo =#{condition.shaCardNo}
+	 		</if>
+	 		<if test="condition.email != null and condition.email != ''">
+	 			and email =#{condition.email}
+	 		</if>
+	 		<if test="condition.ipAddress != null and condition.ipAddress != ''">
+	 			and ipAddress=#{condition.ipAddress}
+	 		</if>
+	 		<if test="condition.createDateStart != null and condition.createDateStart != ''">
+	 			and queryTime > '${condition.createDateStart} 00:00:00'
+	 		</if>
+	 		<if test="condition.createDateEnd != null and condition.createDateEnd != ''">
+	 			and queryTime &lt; '${condition.createDateEnd} 23:59:59'
+	 		</if>
+	 	</where>
+	 </sql>
+  	
+  	<select id="queryParamInfoList" parameterType="com.gateway.common.adapter.web.model.Criteria" resultType="com.gateway.fraud.model.ParamInfo">
+  		select * from rule_param 
+  		<include refid="Example_Where_Params_Clause"/>
+  		<include refid="Mysql_Pagination_Limit" />
+  	</select>
+  	
+  	<select id="countParamsByCriteria" parameterType="com.gateway.common.adapter.web.model.Criteria" resultType="int">
+  		select count(*) from rule_param 
+  		<include refid="Example_Where_Params_Clause"/>
+  	</select>
+  	<insert id="addParam">
+  		insert into rule_param (paramName,paramDescName,type,comFrom,createDate,createBy,remark) values(#{info.paramName},#{info.paramDescName},#{info.type},#{info.comFrom},SYSDATE(),#{info.createBy},#{info.remark})
+  	</insert>
+  	<update id="updateParamInfo">
+  		update rule_param set paramName = #{info.paramName},paramDescName = #{info.paramDescName},type=#{info.type},comFrom=#{info.comFrom},remark=#{info.remark},createDate = SYSDATE(),createBy = #{info.createBy} where paramId = #{info.paramId}
+  	</update>	
+  	<select id="queryParamInfoByParamId" resultType="com.gateway.fraud.model.ParamInfo">
+  		select * from rule_param where paramId = #{paramId}
+  	</select>
+  	
+  	<select id="queryParamListValuesByParamId" resultType="String">
+  		select value from rule_param_value where paramId = #{paramId} 
+  	</select>
+  	<select id="queryParamValuesInfoByParamId" resultType="com.gateway.fraud.model.ParamValueInfo">
+  		select * from rule_param_value where paramId = #{paramId} 
+  	</select>
+  	<select id="queryParamTableValues" resultType="java.util.HashMap">
+  		select colKey as ${colKey},colValue as ${colValue} from  base_table_info where tableName = #{tableName}
+  	</select>
+  	<delete id="delBaseTableInfoByTableName">
+  		delete from base_table_info where tableName = #{tableName}
+  	</delete>
+  	
+  	<delete id="delParamValuesByParamId">
+  		delete from rule_param_value where paramId =#{paramId}
+  	</delete>
+  	
+  	<delete id="delParamByParamId">
+  		delete from rule_param where paramId = #{paramId}
+  	</delete>
+  	
+  	<insert id="insertParamListValues">
+  		insert into rule_param_value (paramId,value,tableName,colKey,colValue) values(#{info.paramId},#{info.value},#{info.tableName},#{info.colKey},#{info.colValue})
+  	</insert>
+  	<insert id="insertBaseTableInfo">
+  		insert into base_table_info (tableName,colkey,colValue,createDate,createBy) values (#{info.tableName},#{info.colKey},#{info.colValue},SYSDATE(),#{info.createBy})
+  	</insert>
+  	<select id="queryRulesList" parameterType="com.gateway.common.adapter.web.model.Criteria" resultType="com.gateway.fraud.model.RulesInfo">
+  		SELECT
+			r.*, p.paramDescName,
+			p1.paramDescName AS ruleParamValueDescName,
+			p2.classDesc AS processClassName
+		FROM
+			rule_info r
+		LEFT JOIN rule_param p ON r.paramId = p.paramId
+		LEFT JOIN rule_param p1 ON r.ruleParamValueId = p1.paramId
+		LEFT JOIN rule_processClass p2 ON r.processClassId = p2.processClassId 
+  		<include refid="Where_RuleInfo_Clause"/>
+  		order by r.createDate desc
+  		<include refid="Mysql_Pagination_Limit" />
+  	</select>
+  	<select id="queryProcessClassList" resultType="com.gateway.fraud.model.RuleProcessClass">
+  		select * from rule_processClass
+  	</select>
+  	<insert id="addRuleInfo">
+  		insert into rule_info (ruleName,paramId,ruleParamValueId,processClassId,status,createDate,createBy,action)
+  		values(#{info.ruleName},#{info.paramId},#{info.ruleParamValueId},#{info.processClassId},#{info.status},SYSDATE(),#{info.createBy},#{info.action})
+  	</insert>
+  	
+  	<update id="updateRuleInfo">
+  		update rule_info set ruleName = #{info.ruleName},paramId =#{info.paramId},ruleParamValueId = #{info.ruleParamValueId},action = #{info.action},
+  		processClassId = #{info.processClassId},status = #{info.status},createDate = SYSDATE(),createBy = #{info.createBy} where ruleId = #{info.ruleId}
+  	</update>
+  	
+  	<select id="countRuleInfoByCriteria" resultType="int">
+  		SELECT
+			count(*)
+		FROM
+			rule_info r
+		LEFT JOIN rule_param p ON r.paramId = p.paramId
+		LEFT JOIN rule_param p1 ON r.ruleParamValueId = p1.paramId
+		LEFT JOIN rule_processClass p2 ON r.processClassId = p2.processClassId
+  		<include refid="Where_RuleInfo_Clause"/>
+  	</select>
+  	<select id="queryRulesInfoDetailByRuleId" resultType="com.gateway.fraud.model.RulesInfo">
+  		SELECT
+			r.*, p.paramDescName,
+			p1.paramDescName AS ruleParamValueDescName,
+			p2.classDesc AS processClassName
+		FROM
+			rule_info r
+		LEFT JOIN rule_param p ON r.paramId = p.paramId
+		LEFT JOIN rule_param p1 ON r.ruleParamValueId = p1.paramId
+		LEFT JOIN rule_processClass p2 ON r.processClassId = p2.processClassId 
+  		where r.ruleId = #{ruleId}
+  	</select>
+  	<select id="queryRiskElementInfo" parameterType="com.gateway.common.adapter.web.model.Criteria"  resultType="com.gateway.fraud.model.RiskElementInfo">
+  		select * from risk_element_info
+  		<include refid="Where_RiskElement_Clause"/>
+  		order by createDate desc
+  		<include refid="Mysql_Pagination_Limit" />
+  	</select>
+  	<select id="queryRiskRiskElementCount" parameterType="com.gateway.common.adapter.web.model.Criteria"  resultType="int">
+  		select count(*) from risk_element_info
+  		<include refid="Where_RiskElement_Clause"/>
+  	</select>
+  	<insert id="addRiskElementInfo">
+  		insert into risk_element_info (elementType,elementValue,createDate,createBy) 
+  		values(#{info.elementType},#{info.elementValue},SYSDATE(),#{info.createBy})
+  	</insert>
+  	<delete id="delRiskElementInfo">
+  		delete from risk_element_info where elementId = #{elementId}
+  	</delete>
+  	
+  	<select id="queryRiskElementInfoByTypeAndValue" resultType="com.gateway.fraud.model.RiskElementInfo">
+  		select * from risk_element_info where elementType = #{elementType} and elementValue = #{elementValue} limit 1
+  	</select>
+  	<select id="queryRuleProfileList" parameterType="com.gateway.common.adapter.web.model.Criteria" resultType="com.gateway.fraud.model.RuleProfileInfo">
+  		select * from rule_profile 
+  		<include refid="Where_Rule_Profile"/>
+  		<include refid="Mysql_Pagination_Limit" />
+  	</select>
+  	<select id="countRuleProfileInfo" parameterType="com.gateway.common.adapter.web.model.Criteria" resultType="int">
+  		select count(*) from rule_profile
+  		<include refid="Where_Rule_Profile"/>
+  	</select>
+  	<select id="queryRuleProFileInfoByProfileId" resultType="com.gateway.fraud.model.RuleProfileInfo">
+  		select * from rule_profile where profileId = #{proFileId}
+  	</select>
+  	<insert id="addRuleProFileInfo">
+  		insert into rule_profile (proFileName,status,createDate,createBy)
+  		values(#{info.proFileName},#{info.status},SYSDATE(),#{info.createBy})
+  	</insert>
+  	<update id="updateRuleProfileInfo">
+  		update rule_profile set proFileName = #{info.proFileName},status = #{info.status},createDate = SYSDATE(),
+  		createBy =#{info.createBy} where profileId = #{info.proFileId}
+  	</update>
+  	<insert id="addRulesToRuleProfile">
+  		insert into rule_profile_ref_ruleinfo (profileId,ruleId,createDate,createBy)
+  		values(#{info.profileId},#{info.ruleId},SYSDATE(),#{info.createBy})
+  	</insert>
+  	<select id="queryRefRulesInfoByProFileIdAndRuleId" resultType="com.gateway.fraud.model.RulesRefProFileInfo">
+  		select * from rule_profile_ref_ruleinfo where profileId = #{profileId} and ruleId = #{ruleId}
+  	</select>
+  	
+  	<select id="queryRefRuleProfileLits" parameterType="com.gateway.common.adapter.web.model.Criteria" resultType="com.gateway.fraud.model.RulesInfo">
+  		SELECT
+			r.ruleName,
+			r.paramId,
+			r.processClassId,
+			r.ruleId,
+			r.ruleParamValueId,
+			r.`status`,
+			r.action,
+			p.createBy,
+			p.createDate,
+			p2.paramDescName,
+			p2.paramDescName AS ruleParamValueDescName,
+			p3.classDesc AS processClassName
+		FROM
+			rule_profile_ref_ruleinfo p
+		LEFT JOIN rule_info r ON p.ruleId = r.ruleId
+		LEFT JOIN rule_param p1 on r.paramId = p1.paramId
+		LEFT JOIN rule_param p2 on r.ruleParamValueId = p2.paramId
+		LEFT JOIN rule_processClass p3 ON r.processClassId = p3.processClassId 
+		<include refid="Where_Rule_Ref_Profole_Clause"/>
+		<include refid="Mysql_Pagination_Limit" />	
+  	</select>
+  	
+  	<select id="countRefRuleProfileList" parameterType="com.gateway.common.adapter.web.model.Criteria" resultType="int">
+  		SELECT
+			count(*)
+		FROM
+			rule_profile_ref_ruleinfo p
+		LEFT JOIN rule_info r ON p.ruleId = r.ruleId
+		LEFT JOIN rule_param p1 on r.paramId = p1.paramId
+		LEFT JOIN rule_param p2 on r.ruleParamValueId = p2.paramId
+		LEFT JOIN rule_processClass p3 ON r.processClassId = p3.processClassId 
+		<include refid="Where_Rule_Ref_Profole_Clause"/>
+		<include refid="Mysql_Pagination_Limit" />	
+  	</select>
+  	
+  	<delete id="delRulesFromRulesProFile">
+  		delete from rule_profile_ref_ruleinfo where profileId = #{profileId} and ruleId = #{ruleId}
+  	</delete>
+  	
+  	<select id="queryAccountRefProfileList" parameterType="com.gateway.common.adapter.web.model.Criteria" resultType="com.gateway.fraud.model.MerchantRefRuleProfileInfo">
+  		SELECT
+  			ar.id,
+			ar.merNo,
+			ar.terNo,
+			ar.createBy,
+			ar.status,
+			ar.createDate,
+			r.profileName,
+			r.profileId
+		FROM
+			gw_mer_ref_ruleprofie ar
+		LEFT JOIN rule_profile r ON ar.profileId = r.profileId
+		<include refid="Where_Account_Ref_Profole_Clause"/>
+		<include refid="Mysql_Pagination_Limit" />
+  	</select>
+  	
+  	<select id="countAccountRefProfile" parameterType="com.gateway.common.adapter.web.model.Criteria" resultType="int">
+  		SELECT
+			count(*)
+		FROM
+			gw_mer_ref_ruleprofie ar
+		LEFT JOIN rule_profile r ON ar.profileId = r.profileId
+		<include refid="Where_Account_Ref_Profole_Clause"/>
+		<include refid="Mysql_Pagination_Limit" />  		
+  	</select>
+  	
+  	<insert id="addProfileToAccount">
+  		insert into gw_mer_ref_ruleprofie (profileId,merNo,terNo,status,createDate,createBy)
+  		values(#{info.proFileId},#{info.merNo},#{info.terNo},#{info.status},SYSDATE(),#{info.createBy})
+  	</insert>
+  	<select id="queryProfileInfoByMerNoAndTerNo"  resultType="com.gateway.fraud.model.MerchantRefRuleProfileInfo">
+  		SELECT
+  			ar.id,
+			ar.merNo,
+			ar.terNo,
+			ar.createBy,
+			ar.status,
+			ar.createDate,
+			r.profileName,
+			r.profileId
+		FROM
+			gw_mer_ref_ruleprofie ar
+		LEFT JOIN rule_profile r ON ar.profileId = r.profileId
+		where ar.merNo =#{merNo} and ar.terNo =#{terNo} and ar.profileId = #{profileId}
+  	</select>
+  	
+  	<select id="queryProfileInfoById"  resultType="com.gateway.fraud.model.MerchantRefRuleProfileInfo">
+  		SELECT
+  			ar.id,
+			ar.merNo,
+			ar.terNo,
+			ar.createBy,
+			ar.status,
+			ar.createDate,
+			r.profileName,
+			r.profileId
+		FROM
+			gw_mer_ref_ruleprofie ar
+		LEFT JOIN rule_profile r ON ar.profileId = r.profileId
+		where ar.id=#{id}
+  	</select>
+  	
+  	<update id="updateAccountRefProfileInfoById">
+  		update gw_mer_ref_ruleprofie set status = #{info.status} ,profileid = #{info.proFileId} ,createDate =SYSDATE(),
+  		createBy = #{info.createBy} where id = #{info.id}
+  	</update>
+  	
+  	<delete id="delAccountFromList">
+  		delete from gw_mer_ref_ruleprofie where id = #{id}
+  	</delete>
+  	
+  	<select id="queryRuleProcessClassByClassId" resultType="com.gateway.fraud.model.RuleProcessClass">
+  		select * from rule_processClass where processClassID = #{classId}
+  	</select>
+  	<insert id="addFraudRecord">
+  		insert into fraud_info(
+  			txId,
+  			orderNo,
+  			accountNo,
+  			profileId,
+  			cardBin,
+  			ipAddress,
+  			hashCardNo,
+  			shipCountry,
+  			shipCity,
+  			shipState,
+  			shipAddress,
+  			billCountry,
+  			billCity,
+  			billState,
+  			billAddress,
+  			email,
+  			phone,
+  			shipFirstName,
+  			shipLastName,
+  			billFirstName,
+  			billLastName,
+  			zip,
+  			sourceAmount,
+  			sourceCurrency,
+  			website,
+  			cardType,
+  			createDate,
+  			ret,
+  			msg
+  		) values(
+  			#{info.txId},
+  			#{info.orderNo},
+  			#{info.accountNo},
+  			#{info.profileId},
+  			#{info.cardBin},
+  			#{info.ipAddress},
+  			#{info.hashCardNo},
+  			#{info.shipCountry},
+  			#{info.shipCity},
+  			#{info.shipState},
+  			#{info.shipAddress},
+  			#{info.billCountry},
+  			#{info.billCity},
+  			#{info.billState},
+  			#{info.billAddress},
+  			#{info.email},
+  			#{info.phone},
+  			#{info.shipFirstName},
+  			#{info.shipLastName},
+  			#{info.billFirstName},
+  			#{info.billLastName},
+  			#{info.zip},
+  			#{info.sourceAmount},
+  			#{info.sourceCurrency},
+  			#{info.website},
+  			#{info.cardType},
+  			SYSDATE(),
+  			#{info.ret},
+  			#{info.msg}
+  		)
+  	</insert>
+  	
+  	<insert id="addMaxmindInfo">
+  		insert into fraud_maxmind_info (
+  			txId,
+  			fraudScore,
+  			IPCountry,
+  			countryMatch,
+  			highRiskCountry,
+  			distance,
+  			ipAccuracyRadius,
+  			ipCity,
+  			ipRegion,
+  			ipRegionName,
+  			ipPostalCode,
+  			ipMetroCode,
+  			ipAreaCode,
+  			countryCode,
+  			ipCountryName,
+  			ipContinentCode,
+  			ipLatitude,
+  			ipLongitude,
+  			ipTimeZone,
+  			ipAsnum,
+  			ipUserType,
+  			ipNetSpeedCell,
+  			ipDomain,
+  			ipIsp,
+  			ipOrg,
+  			ipCityConf,
+  			ipRegionConf,
+  			ipPostalConf,
+  			ipCountryConf,
+  			anonymousProxy,
+  			proxyScore,
+  			isTransProxy,
+  			ipCorporateProxy,
+  			freeMail,
+  			carderEmail,
+  			binMatch,
+  			binCountry,
+  			binNameMatch,
+  			binName,
+  			binPhoneMatch,
+  			binPhone,
+  			prepaid,
+  			custPhoneInBillingLoc,
+  			shipForward,
+  			cityPostalMatch,
+  			shipCityPostalMatch,
+  			queriesRemaining,
+  			maxmindID,
+  			minfraudVersion,
+  			serviceLevel,
+  			err
+  		) values(
+  			#{info.txId},
+  			#{info.fraudScore},
+  			#{info.IPCountry},
+  			#{info.countryMatch},
+  			#{info.highRiskCountry},
+  			#{info.distance},
+  			#{info.ipAccuracyRadius},
+  			#{info.ipCity},
+  			#{info.ipRegion},
+  			#{info.ipRegionName},
+  			#{info.ipPostalCode},
+  			#{info.ipMetroCode},
+  			#{info.ipAreaCode},
+  			#{info.countryCode},
+  			#{info.ipCountryName},
+  			#{info.ipContinentCode},
+  			#{info.ipLatitude},
+  			#{info.ipLongitude},
+  			#{info.ipTimeZone},
+  			#{info.ipAsnum},
+  			#{info.ipUserType},
+  			#{info.ipNetSpeedCell},
+  			#{info.ipDomain},
+  			#{info.ipIsp},
+  			#{info.ipOrg},
+  			#{info.ipCityConf},
+  			#{info.ipRegionConf},
+  			#{info.ipPostalConf},
+  			#{info.ipCountryConf},
+  			#{info.anonymousProxy},
+  			#{info.proxyScore},
+  			#{info.isTransProxy},
+  			#{info.ipCorporateProxy},
+  			#{info.freeMail},
+  			#{info.carderEmail},
+  			#{info.binMatch},
+  			#{info.binCountry},
+  			#{info.binNameMatch},
+  			#{info.binName},
+  			#{info.binPhoneMatch},
+  			#{info.binPhone},
+  			#{info.prepaid},
+  			#{info.custPhoneInBillingLoc},
+  			#{info.shipForward},
+  			#{info.cityPostalMatch},
+  			#{info.shipCityPostalMatch},
+  			#{info.queriesRemaining},
+  			#{info.maxmindID},
+  			#{info.minfraudVersion},
+  			#{info.serviceLevel},
+  			#{info.err}
+  		)
+  	</insert>
+  	
+  	<update id="updateQueryFraudRecordInfo">
+  		update fraud_info set ret = #{info.ret} ,msg = #{info.msg} where txid = #{info.txId}
+  	</update>
+  	
+  	<select id="queryFraudRecordList" parameterType="com.gateway.common.adapter.web.model.Criteria" resultType="com.gateway.fraud.model.FraudInfo">
+  		select * from fraud_info
+  		<include refid="Where_Fraud_Info_Clause"/>
+  		order by createDate desc
+		<include refid="Mysql_Pagination_Limit" />  	
+  	</select>
+  	
+  	<select id="countFraudRecord" resultType="int">
+  		select count(*) from fraud_info
+  		<include refid="Where_Fraud_Info_Clause"/>
+  	</select>
+  	
+  	<select id="queryFraudDetailByTxId" resultType="com.gateway.fraud.model.FraudInfo">
+  		select * from fraud_info f left join fraud_maxmind_info m on f.txId = m.txId where f.txId =#{txId}
+  	</select>
+  	
+  	<select id="queryElementPayCount" resultType="int">
+  		SELECT
+			count(*)
+		FROM
+			fraud_info
+		WHERE
+			createDate >= DATE_ADD(SYSDATE(), INTERVAL -${hour} HOUR)
+		AND ${paramName} = #{paramValue}
+  	</select>
+  	
+  	<select id="queryBlackText" resultType="int">
+  		select count(*) from blacktext_info where blackText = #{blackText} and blackType = #{blackType}
+  	</select>
+  	
+  	<select id="queryIntervalInfo" resultType="int">
+  		select count(*) from Interval_info where type=#{type} and startNum &lt;= #{paramValue} and endNum >= #{paramValue}
+  	</select>
+  	
+  	<select id="queryBlackInfoList" resultType="com.gateway.fraud.model.BlackTextInfo">
+  		select * from blacktext_info
+  		<include refid="Where_BlackText_Info_Clause"/>
+  		order by createDate desc
+		<include refid="Mysql_Pagination_Limit" />  
+  	</select>
+  	<select id="countBlackInfoList" resultType="int">
+  		select count(*) from blacktext_info
+  		<include refid="Where_BlackText_Info_Clause"/>
+  	</select>
+  	<select id="queryBinList" resultType="com.gateway.fraud.model.BinInfo">
+  		select * from Interval_info
+  		<include refid="Where_Bin_Info_Clause"/>
+  		order by createDate desc
+		<include refid="Mysql_Pagination_Limit" />  
+  	</select>
+  	<select id="countBinInfoList" resultType="int">
+  	  	select count(*) from Interval_info
+  		<include refid="Where_Bin_Info_Clause"/>
+  	</select>
+  	<insert id="addBlackTextInfo">
+  		insert into blacktext_info (blackText,blackType,createDate,createBy)
+  		values(#{info.blackText},#{info.blackType},SYSDATE(),#{info.createBy})
+  	</insert>
+  	
+  	<delete id="delBlackTextById">
+  		delete from blacktext_info where blackId = #{blackId}
+  	</delete>
+  	
+  	<insert id="addBinInfo">
+  		insert into Interval_info (startNum,endNum,type,createDate,createBy) 
+  		values(#{info.startNum},#{info.endNum},#{info.type},SYSDATE(),#{info.createBy})
+  	</insert>
+  	
+  	<delete id="deleteBinInfoById">
+  		delete from Interval_info where id = #{id}
+  	</delete>
+  	
+  	<select id="queryBlackTextInfoByValueAndType" resultType="com.gateway.fraud.model.BlackTextInfo">
+  		select * from blacktext_info where blackType = #{blackType} and blackText = #{blackText} and merNo is null limit 1
+  	</select>
+  	
+  	<select id="queryAccountNotifyUrlInfoByAccountNo" resultType="String">
+  		select notifyUrl from account_notify_urlinfo where accountNo = #{accountNo} limit 1
+  	</select>
+  	
+  	<select id="queryBlackTextLimitList" resultType="com.gateway.fraud.model.AutoRiskInfo">
+  		select * from query_blacktext_record 
+  		<include refid="Where_BlackText_Query_Record_Clause"/>
+  		order by queryTime desc
+  		<include refid="Mysql_Pagination_Limit" />  
+  	</select>
+  	<select id="countBalckTextLimitRecord" resultType="int">
+  		select count(*) from query_blacktext_record 
+  		<include refid="Where_BlackText_Query_Record_Clause"/>
+  	</select>
+  	
+  	<insert id="saveQueryBlackTextRecord">
+  		INSERT INTO query_blacktext_record
+  		(
+  			tradeNo,
+  			accountNo,
+  			shaCardNo,
+  			email,
+  			webSite,
+  			uid,
+  			ipAddress,
+  			police1,
+  			police2,
+  			police3,
+  			police4,
+  			respCode,
+  			respMsg,
+  			queryTime
+  		)
+  		 VALUES 
+  		(
+	  		 #{info.tradeNo},
+	  		 #{info.accountNo},
+	  		 #{info.shaCardNo},
+	  		 #{info.email},
+	  		 #{info.webSite},
+	  		 #{info.uid},
+	  		 #{info.ipAddress},
+			 #{info.police1},
+			 #{info.police2},
+			 #{info.police3},
+			 #{info.police4},
+			 #{info.respCode},
+			 #{info.respMsg},
+			 SYSDATE()
+		 )  	
+  	</insert>
+  	<select id="queryRuleValueName" parameterType="com.gateway.fraud.model.RulesInfo" resultType="com.gateway.fraud.model.RulesInfo">
+  		select * from rule_info where ruleName = #{ruleName} limit 1
+  	</select>
+</mapper>

@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans 
+	xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc" 
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	
+	xsi:schemaLocation="
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.0.xsd
+		http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.0.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd
+		http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.0.xsd">
+	<!--配置数据源  -->
+    <bean id="mposdataSource"  class="com.alibaba.druid.pool.DruidDataSource">  
+        <property name="driverClassName"> 
+        	<value>com.mysql.jdbc.Driver</value> 
+        </property>
+        <property name="url">
+			<value>${jdbc.url}</value> 
+        </property>
+        <property name="username">
+        	<value>${jdbc.username}</value>
+        </property>
+        <property name="password">
+        	<value>${jdbc.password}</value>
+        </property>
+        <property name="maxActive">
+        	<value>100</value>
+        </property>
+        <property name="maxWait">
+        	<value>120000</value> 
+        </property>
+        <!-- 连接池中连接，在时间段内一直空闲，被逐出连接池的时间，默认为30分钟 -->
+        <property name="minEvictableIdleTimeMillis">
+        	<value>15</value> 
+        </property>
+        <!-- 超过时间限制，回收没有用(废弃)的连接（默认为 300秒，调整为180） -->
+        <property name="removeAbandonedTimeout">
+        	<value>180</value>
+        </property>
+        <property name="removeAbandoned">
+        	<value>true</value>
+        </property>
+        <!-- 开启Druid的监控统计功能 -->
+   		 <property name="filters" value="stat"/>
+    </bean>
+
+<!--配置数据源  -->
+    <bean id="mposBakdataSource"  class="com.alibaba.druid.pool.DruidDataSource">  
+        <property name="driverClassName"> 
+        	<value>com.mysql.jdbc.Driver</value> 
+        </property>
+        <property name="url">
+			<value>${jdbc.url}</value> 
+        </property>
+        <property name="username">
+        	<value>${jdbc.username}</value>
+        </property>
+        <property name="password">
+        	<value>${jdbc.password}</value>
+        </property>
+        <property name="maxActive">
+        	<value>10</value>
+        </property>
+        <property name="maxWait">
+        	<value>120000</value> 
+        </property>
+        <!-- 连接池中连接，在时间段内一直空闲，被逐出连接池的时间，默认为30分钟 -->
+        <property name="minEvictableIdleTimeMillis">
+        	<value>15</value> 
+        </property>
+        <!-- 超过时间限制，回收没有用(废弃)的连接（默认为 300秒，调整为180） -->
+        <property name="removeAbandonedTimeout">
+        	<value>180</value>
+        </property>
+        <property name="removeAbandoned">
+        	<value>true</value>
+        </property>
+         <!-- 开启Druid的监控统计功能 -->
+   		 <property name="filters" value="stat" />
+    </bean>
+
+	<!-- enable autowire -->
+    <context:annotation-config />
+	<!--MyBatis integration with Spring as define sqlSessionFactory -->
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="mposdataSource" />
+		<property name="configLocation" value="classpath:mybatis-configuration.xml"/>
+	</bean>
+	
+	<bean id="sqlBakSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="mposBakdataSource" />
+		<property name="configLocation" value="classpath:mybatis-configuration.xml"/>
+	</bean>
+	
+	<bean id="mapperScanner" class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.gateway.*.mapper" />
+		<property name="sqlSessionFactory" ref="sqlSessionFactory" />
+	</bean>
+   
+   <bean id="mapperBakScanner" class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.gateway.report.*.mapper" />
+		<property name="sqlSessionFactory" ref="sqlBakSessionFactory" />
+	</bean>
+   
+	<!-- 扫描业务层service实现类 -->
+	<bean id="springContextHolder" class="com.gateway.common.framework.spring.SpringContextHolder" />
+	
+	<bean id="propertyConfigurer" class="com.gateway.common.utils.SysPropertiesConfig">
+        <property name="locations">
+            <list>
+                <value>classpath:jdbc.properties</value>
+                <!--要是有多个配置文件，只需在这里继续添加即可 -->
+            </list>
+        </property>
+    </bean>
+    
+    <bean id="taskExecutor" class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
+		<property name ="corePoolSize" value ="50" /> 
+    	<property name ="keepAliveSeconds" value ="30000" /> 
+    	<property name ="maxPoolSize" value ="150" /> 
+    	<property name ="queueCapacity" value ="1000" />
+	</bean>
+	
+    <!--Start druid开启spring的监控 需要引入aspectjweaver包-->
+    <!--p:filters="stat,wall,log4j"   stat和wall。一个是用于监控，一个是用于防火墙。如果想使用sql防火墙，必须加上wall，只用是stat,-->
+    <!--druid spring monitor setting-->
+    
+    <!--  <bean id="druid-stat-interceptor" class="com.alibaba.druid.support.spring.stat.DruidStatInterceptor" />
+    <bean id="druid-stat-pointcut" class="org.springframework.aop.support.JdkRegexpMethodPointcut" scope="prototype">
+        <property name="patterns">
+            <list>
+                配置监听的bean路径 支持方法名的拦截 
+                <value>com.gateway.*.service.*</value>
+                <value>com.gateway.*.mapper.*</value>
+            </list>
+        </property>
+    </bean>
+    
+    <aop:aspectj-autoproxy proxy-target-class="true"/>
+    <aop:config>
+        <aop:advisor advice-ref="druid-stat-interceptor"
+                     pointcut-ref="druid-stat-pointcut" />
+    </aop:config>-->
+    <aop:aspectj-autoproxy proxy-target-class="true"/>
+    <!--End druid开启spring的监控 -->
+    
+</beans> 

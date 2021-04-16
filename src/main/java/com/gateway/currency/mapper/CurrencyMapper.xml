@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+<mapper namespace="com.gateway.currency.mapper.CurrencyMapper">
+	<!-- 根据通道ids查询通道名称 -->
+	<select id="getCurrencyDayAmountNamesByIds" resultType="String">
+		SELECT
+		  GROUP_CONCAT(currencyName)
+		FROM gw_currency_info
+		WHERE id IN
+		<foreach item="item" index="index" collection="currencyDayAmountIds.split(',')"  open="(" separator="," close=")">
+                #{item}
+   		 </foreach>
+	</select>
+</mapper>
+

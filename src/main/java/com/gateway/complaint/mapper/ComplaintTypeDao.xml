@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="com.gateway.complaint.mapper.ComplaintTypeDao">
+	<sql id="Where_Complaint_Type_Info">
+		<where>
+			<if test="condition.cKey !=null and condition.cKey!=''">
+				and t.cKey like CONCAT(CONCAT('%',#{condition.cKey}),'%')
+			</if>
+			<if test="condition.cValue !=null and condition.cValue!=''">
+				and t.cValue like CONCAT(CONCAT('%',#{condition.cValue}),'%')
+			</if>
+			<if test="condition.enabled !=null and condition.enabled!=''">
+				and t.enabled = #{condition.enabled}
+			</if>
+			<if test="condition.type !=null and condition.type!=''">
+				and t.type = #{condition.type}
+			</if>
+		</where>
+	</sql>
+
+	
+	<select id="queryComplaintTypeInfoList" resultType="com.gateway.complaint.model.ComplaintType">
+		select 
+			t.id,
+			t.cKey,
+			t.cValue,
+			t.enabled,
+			t.type,
+			t.createdBy,
+			t.createdDate,
+			t.lastUpdateBy,
+			t.lastUpdateDate
+		from gw_trans_complaint_type_info t
+		<include refid="Where_Complaint_Type_Info"/>	
+	</select>
+	
+	<select id="countComplaintTypeInfoList" resultType="int">
+	select
+			count(t.id)
+		from gw_trans_complaint_type_info t
+		<include refid="Where_Complaint_Type_Info"/>	
+	</select>
+	
+	<insert id="addComplaintTypeInfo" parameterType="com.gateway.complaint.model.ComplaintType">
+		insert into gw_trans_complaint_type_info(
+			cKey,
+			cValue,
+			enabled,
+			createdBy,
+			type,
+			createdDate
+		)value(
+			#{cKey},
+			#{cValue},
+			#{enabled},
+			#{createdBy},
+			#{type},
+			SYSDATE()
+		)
+	</insert>
+	
+	<select id="queryComplaintTypeInfoId" resultType="com.gateway.complaint.model.ComplaintType" >
+	select 
+			t.id,
+			t.cKey,
+			t.cValue,
+			t.enabled,
+			t.type,
+			t.createdBy,
+			t.createdDate,
+			t.lastUpdateBy,
+			t.lastUpdateDate
+		from gw_trans_complaint_type_info t
+	where 
+		t.id = #{id}
+	</select>
+	
+	<update id="updateComplaintTypeInfo" parameterType="com.gateway.complaint.model.ComplaintType">
+		update gw_trans_complaint_type_info set
+			cKey=#{cKey},
+			cValue=#{cValue},
+			enabled=#{enabled},
+			type=#{type},
+			lastUpdateBy=#{lastUpdateBy},
+			lastUpdateDate=SYSDATE()
+		WHERE
+			id=#{id}
+	</update>
+	
+</mapper>
+

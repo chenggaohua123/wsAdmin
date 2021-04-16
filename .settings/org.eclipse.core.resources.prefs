@@ -1,0 +1,16 @@
+eclipse.preferences.version=1
+encoding//src/main/java=UTF-8
+encoding//src/main/java/com/gateway/api/rest/ApiBaseController.java=UTF-8
+encoding//src/main/java/com/gateway/bankOrder/utils/BankOrderUtils.java=UTF-8
+encoding//src/main/java/com/gateway/common/adapter/web/BaseController.java=UTF-8
+encoding//src/main/java/com/gateway/fraud/web/FraudRuleManageController.java=UTF-8
+encoding//src/main/java/com/gateway/riskmgr/web/RiskMgrController.java=UTF-8
+encoding//src/main/java/com/gateway/rocketmq/service/impl/RocketMQProducerServiceImpl.java=UTF-8
+encoding//src/main/webapp/WEB-INF/jsp/emailmgr/emailBoard/register_hooppay_merchant.jsp=UTF-8
+encoding//src/main/webapp/dwz=UTF-8
+encoding//src/main/webapp/dwz/js=UTF-8
+encoding//src/main/webapp/dwz/xheditor=UTF-8
+encoding//src/main/webapp/dwz/xheditor/xheditor_lang/zh-cn.js=UTF-8
+encoding//src/main/webapp/dwz/xheditor/xheditor_lang/zh-tw.js=UTF-8
+encoding//src/test/java/com/gateway/common/utils/MyTest.java=UTF-8
+encoding//src/test/java/com/gateway/common/utils/Test005.java=UTF-8

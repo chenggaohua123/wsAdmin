@@ -1,0 +1,435 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gateway.warnmgr.mapper.WarnManageDao">
+
+	<select id="countMerchantWarnInfoCount" resultType="int">
+		select count(*) from (
+			SELECT
+			merNo
+			FROM 
+			gw_trans_info 
+			<include refid="Where_Merchant_Warn_Info"></include>
+			GROUP BY  merNo,bankCurrency
+		)as t
+	</select>
+	
+	<sql id="Where_Merchant_Warn_Info">
+		<where>
+			<if test="condition.startDate != null and condition.startDate != '' ">
+				and transDate>=#{condition.startDate}
+			</if>
+			<if test="condition.endDate != null and condition.endDate != '' ">
+				and transDate&lt;='${condition.endDate} 23:59:59'
+			</if>
+			AND transType='sales'
+			<if test="condition.merNo != null and condition.merNo != '' ">
+				and merNo = #{condition.merNo}
+			</if>
+			<if test="condition.type != null and condition.type != '' ">
+				and merNo in (select merNo from  gw_merchant_info where type=#{condition.type})
+			</if>
+		</where>
+	</sql>
+	
+	<select id="queryMerchantWarnInfoCount" resultType="com.gateway.warnmgr.model.MerchantWarnInfo">
+		SELECT
+		merNo,
+		bankCurrency,
+		TIMESTAMPDIFF(DAY,#{condition.startDate},#{condition.endDate})+1 AS dateCount,
+		COUNT(DISTINCT DATE_FORMAT(transDate,'%Y-%m-%d')) AS transDateCount,
+		MAX(transDate) AS lastTransDate,
+		(select type from  gw_merchant_info where gw_merchant_info.merNo =gw_trans_info.merNo) as type,
+		SUM(CASE WHEN respCode='00' THEN 1 ELSE 0 END ) successCount,
+		SUM(CASE WHEN respCode='00' THEN bankTransAmount ELSE 0 END) AS successAmount
+		FROM 
+		gw_trans_info 
+		<include refid="Where_Merchant_Warn_Info"></include>
+		GROUP BY  merNo,bankCurrency
+		order by merNo,bankCurrency desc 
+	</select>
+	
+	<sql id="Where_Calues_Trans_Rule_Info">
+		<where>
+			<if test="condition.queryType==1 or condition.queryType=='1'">
+				AND
+					a.merNo IS NULL
+			</if>
+			<if test="condition.queryType==2 or condition.queryType=='2'">
+				AND
+					a.merNo IS NOT NULL
+			</if>
+			<if test="condition.bankId!=null and condition.bankId!='' and condition.bankId!=0">
+				AND
+					b.id=#{condition.bankId}
+			</if>
+			<if test="condition.type!=null and condition.type!=''">
+				AND
+					a.type=#{condition.type}
+			</if>
+			<if test="condition.merNo!=null and condition.merNo!=''">
+				AND
+					a.merNo=#{condition.merNo}
+			</if>
+		</where>
+	</sql>
+	
+	<select id="queryTransWarnRuleInfoList" resultType="com.gateway.warnmgr.model.TransWarnRuleInfo">
+		SELECT
+			a.id,
+			a.merNo,
+			a.bankId,
+			a.type,
+			a.activeTime,
+			a.emails,
+			a.createBy,
+			a.createDate,
+			a.lastModifyBy,
+			a.lastModifyDate,
+			a.time,
+			a.respMsg,
+			a.cycle,
+			b.bankName,
+			IFNULL(a.lastModifyDate, a.createDate) AS sortDate
+		FROM
+			gw_trans_warning_info a
+			LEFT JOIN gw_bank_info b ON b.id=a.bankId
+		<include refid="Where_Calues_Trans_Rule_Info"/>
+	ORDER BY
+		sortDate
+	DESC
+	</select>
+	
+	<select id="queryTransWarnRuleInfoCount" resultType="java.lang.Integer">
+		SELECT
+			COUNT(a.id)
+		FROM
+			gw_trans_warning_info a
+			LEFT JOIN gw_bank_info b ON b.id=a.bankId
+		<include refid="Where_Calues_Trans_Rule_Info"/>
+	</select>
+	
+	<insert id="saveTransWarnRuleInfo" useGeneratedKeys="true" keyProperty="vo.id">
+		INSERT INTO
+			gw_trans_warning_info
+			(
+				merNo,
+				bankId,
+				type,
+				activeTime,
+				emails,
+				createBy,
+				time,
+				respMsg,
+				cycle,
+				createDate
+			)
+		VALUES
+			(
+				#{vo.merNo},
+				#{vo.bankId},
+				#{vo.type},
+				#{vo.activeTime},
+				#{vo.emails},
+				#{vo.createBy},
+				#{vo.time},
+				#{vo.respMsg},
+				#{vo.cycle},
+				NOW()
+			)
+	</insert>
+	
+	<delete id="deleteTransWarnRuleInfoById">
+		DELETE FROM
+			gw_trans_warning_info
+		WHERE
+			id=#{id}
+	</delete>
+	
+	<update id="updateTransWarnRuleInfoById">
+		UPDATE
+			gw_trans_warning_info
+		SET
+			merNo=#{vo.merNo},
+			bankId=#{vo.bankId},
+			type=#{vo.type},
+			time=#{vo.time},
+			activeTime=#{vo.activeTime},
+			emails=#{vo.emails},
+			respMsg=#{vo.respMsg},
+			cycle=#{vo.cycle},
+			lastModifyBy=#{vo.lastModifyBy},
+			lastModifyDate=NOW()
+		WHERE
+			id=#{vo.id}
+	</update>
+	
+	<select id="queryTransWarnRuleInfoById" resultType="com.gateway.warnmgr.model.TransWarnRuleInfo">
+		SELECT
+			a.id,
+			a.activeTime,
+			a.type,
+			a.merNo,
+			a.bankId,
+			a.emails,
+			a.time,
+			a.respMsg,
+			a.cycle,
+			b.bankName
+		FROM
+			gw_trans_warning_info a
+			LEFT JOIN gw_bank_info b ON b.id=a.bankId
+		WHERE
+			a.id=#{id}
+	</select>
+	
+	<sql id="Where_Calues_Bank_Info">
+		WHERE
+			enabled=1
+		<if test="condition.bankName!=null and condition.bankName!=''">
+			AND
+				bankName LIKE CONCAT('%', #{condition.bankName}, '%')
+		</if>
+	</sql>
+	
+	<select id="queryBankInfoList" resultType="com.gateway.warnmgr.model.BankInfo">
+		SELECT
+			id,
+			bankName,
+			host,
+			port,
+			isProxy,
+			proxyHost,
+			proxyPort
+		FROM
+			gw_bank_info
+		<include refid="Where_Calues_Bank_Info"/>
+	</select>
+	
+	<select id="queryBankInfoCount" resultType="java.lang.Integer">
+		SELECT
+			COUNT(id)
+		FROM
+			gw_bank_info
+		<include refid="Where_Calues_Bank_Info"/>
+	</select>
+	
+	<sql id="Where_Caluse_Trans_Warn_Phone_Info">
+		WHERE
+			a.systemId=1
+		<if test="cr.condition.userName!=null and cr.condition.userName!=''">
+			AND
+				a.userName=#{cr.condition.userName}
+		</if>
+	</sql>
+	
+	<select id="queryTransWarnPhoneInfoList" resultType="com.gateway.warnmgr.model.TransWarnPhoneInfo">
+		SELECT
+			a.id,
+			a.phoneNo,
+			GROUP_CONCAT(b.warnId) AS warnId,
+			a.systemId,
+			a.email,
+			a.userName,
+			createDate
+		FROM
+			gw_trans_warn_phone_info a
+			LEFT JOIN gw_trans_warn_rel_phone b ON b.phoneId=a.id
+			<if test="cr.condition.warnId!=null and cr.condition.warnId!=''">
+				AND
+					b.warnId=#{cr.condition.warnId}
+			</if>
+		<include refid="Where_Caluse_Trans_Warn_Phone_Info"/>
+		GROUP BY
+			a.id
+		ORDER BY
+			createDate
+		DESC
+	</select>
+	
+	<select id="queryTransWarnPhoneInfoCount" resultType="java.lang.Integer">
+		SELECT
+			COUNT(e.ids)
+		FROM
+			(
+				SELECT
+					COUNT(a.id) AS ids
+				FROM
+					gw_trans_warn_phone_info a
+					LEFT JOIN gw_trans_warn_rel_phone b ON b.phoneId=a.id
+					<if test="cr.condition.warnId!=null and cr.condition.warnId!=''">
+						AND
+							b.warnId=#{cr.condition.warnId}
+					</if>
+				<include refid="Where_Caluse_Trans_Warn_Phone_Info"/>
+				GROUP BY
+					a.id
+			)
+		AS
+			e
+	</select>
+	
+	<select id="queryTransWarnPhoenInfoById" resultType="com.gateway.warnmgr.model.TransWarnPhoneInfo">
+		SELECT
+			a.id,
+			a.phoneNo,
+			a.email,
+			GROUP_CONCAT(b.warnId),
+			a.systemId,
+			a.userName,
+			a.createDate
+		FROM
+			gw_trans_warn_phone_info a
+			LEFT JOIN gw_trans_warn_rel_phone b ON b.phoneId=a.id
+		WHERE
+			a.id=#{id}
+		GROUP BY
+			a.id
+	</select>
+	
+	<insert id="saveTransWarnPhoneInfo" useGeneratedKeys="true" keyProperty="vo.id">
+		INSERT INTO
+			gw_trans_warn_phone_info
+			(
+				phoneNo,
+				email,
+				systemId,
+				userName,
+				createDate
+			)
+		VALUES
+			(
+				#{vo.phoneNo},
+				#{vo.email},
+				#{vo.systemId},
+				#{vo.userName},
+				NOW()
+			)
+	</insert>
+	
+	<delete id="deleteTransWarnPhoneInfoById">
+		DELETE FROM
+			gw_trans_warn_phone_info
+		WHERE
+			id=#{id}
+	</delete>
+	
+	<update id="updateTransWarnPhoneInfoById">
+		UPDATE
+			gw_trans_warn_phone_info
+		SET
+			phoneNo=#{vo.phoneNo},
+			email=#{vo.email},
+			systemId=#{vo.systemId},
+			userName=#{vo.userName}
+		WHERE
+			id=#{vo.id}
+	</update>
+	
+	<insert id="saveTransWarnRelPhoneInfo">
+		INSERT INTO
+			gw_trans_warn_rel_phone
+			(
+				warnId,
+				phoneId
+			)
+		VALUES
+			(
+				#{warnId},
+				#{phoneId}
+			)
+	</insert>
+	
+	<delete id="deleteTransWarnRelPhoneInfoByWarnId">
+		DELETE FROM
+			gw_trans_warn_rel_phone
+		WHERE
+			warnId=#{warnId}
+	</delete>
+	
+	<delete id="deleteTransWarnRelPhoneInfoByPhoneId">
+		DELETE FROM
+			gw_trans_warn_rel_phone
+		WHERE
+			phoneId=#{phoneId}
+	</delete>
+	
+	<select id="queryPhoneRelTransRuleInfoByWarnIds" resultType="com.gateway.warnmgr.model.TransWarnRuleInfo">
+		SELECT
+			a.id,
+			a.activeTime,
+			a.type,
+			a.merNo,
+			a.bankId,
+			a.emails,
+			a.time,
+			a.respMsg,
+			a.cycle,
+			b.bankName
+		FROM
+			gw_trans_warning_info a
+			LEFT JOIN gw_bank_info b ON b.id=a.bankId
+		WHERE
+			FIND_IN_SET(a.id, #{warnIds})
+	</select>
+	
+	<insert id="saveTransWarnMessageInfo" useGeneratedKeys="true" keyProperty="vo.id">
+		INSERT INTO
+			gw_trans_warn_message_info
+			(
+				systemId,
+				warnId,
+				message,
+				createBy,
+				createDate
+			)
+		VALUES
+			(
+				#{vo.systemId},
+				#{vo.warnId},
+				#{vo.message},
+				#{vo.createBy},
+				NOW()
+			)
+	</insert>
+	
+	<update id="updateTransWarnMessageInfoById">
+		UPDATE
+			gw_trans_warn_message_info
+		SET
+			message=#{vo.message},
+			lastModifyBy=#{vo.lastModifyBy},
+			lastModifyDate=NOW()
+		WHERE
+			id=#{vo.id}
+	</update>
+	
+	<delete id="deleteTransWarnMessageInfoById">
+		DELETE FROM
+			gw_trans_warn_message_info
+		WHERE
+			id=#{id}
+	</delete>
+	
+	<delete id="deleteTransWarnMessageInfoByWarnId">
+		DELETE FROM
+			gw_trans_warn_message_info
+		WHERE
+			warnId=#{warnId}
+	</delete>
+	
+	<select id="queryTransWarnMessageInfoByWarnId" resultType="com.gateway.warnmgr.model.TransWarnMessageInfo">
+		SELECT
+			id,
+			systemId,
+			warnId,
+			message,
+			createBy,
+			createDate,
+			lastModifyBy,
+			lastModifyDate
+		FROM
+			gw_trans_warn_message_info
+		WHERE
+			warnId=#{warnId}
+	</select>
+</mapper>

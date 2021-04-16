@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="com.gateway.report.riskreport.mapper.RiskReportDao">
+    <select id="queryRiskTransLoseCount" resultType="com.gateway.report.riskreport.model.RiskReportInfo">
+         select COUNT(*) as riskCount,respCode
+         <if test="condition.radType != null and condition.radType == 1">
+		      ,merNo
+		 </if>
+         <if test="condition.radType != null and condition.radType == 2">
+		      ,terNo
+		 </if>
+          from gw_trans_info
+         <where>
+		    <if test="condition.merNo != null and condition.merNo != ''">
+		      and merNo =#{condition.merNo}
+		    </if>
+		    <if test="condition.terNo != null and condition.terNo != ''">
+		      and terNo =#{condition.terNo}
+		   </if>
+		    <if test="condition.transDateStart != null and condition.transDateStart != ''">
+		      and transDate >= '${condition.transDateStart} 00:00:00'
+		    </if>
+		    <if test="condition.transDateEnd != null and condition.transDateEnd != ''">
+		      and transDate &lt;='${condition.transDateEnd} 23:59:59'
+		    </if>
+		</where>
+		 group by respCode
+		 <if test="condition.radType != null and condition.radType== 1">
+		      ,merNo
+		  </if>
+		 <if test="condition.radType != null and condition.radType== 2">
+		      ,terNo
+		  </if>
+    </select>
+    
+    <select id="countRiskTransLose" resultType="int">
+     select count(*) from (
+         select COUNT(*) as riskCount,respCode
+          <if test="condition.radType != null and condition.radType == 1">
+		      ,merNo
+		  </if>
+          <if test="condition.radType != null and condition.radType == 2">
+		      ,terNo
+		  </if>
+           from gw_trans_info
+         <where>
+		    <if test="condition.merNo != null and condition.merNo != ''">
+		      and merNo =#{condition.merNo}
+		    </if>
+		    <if test="condition.terNo != null and condition.terNo != ''">
+		      and terNo =#{condition.terNo}
+		   </if>
+		    <if test="condition.transDateStart != null and condition.transDateStart != ''">
+		      and transDate >= '${condition.transDateStart} 00:00:00'
+		    </if>
+		    <if test="condition.transDateEnd != null and condition.transDateEnd != ''">
+		      and transDate &lt;='${condition.transDateEnd} 23:59:59'
+		    </if>
+		</where>
+	  group by respCode
+	  <if test="condition.radType != null and condition.radType== 1">
+	      ,merNo
+	  </if>
+	  <if test="condition.radType != null and condition.radType== 2">
+	      ,terNo
+	  </if>
+     ) as t
+     
+    </select>
+    
+    
+    
+    <sql id="Where_Clause_Risk_Trans_Info">
+       <where>
+          <if test="condition.tradeNo != null and condition.tradeNo != ''">
+		      and t.tradeNo =#{condition.tradeNo}
+		  </if>
+		  <if test="condition.riskType != null and condition.riskType != ''">
+		      and t.riskType =#{condition.riskType}
+		  </if>
+		  <if test="condition.status != null and condition.status != ''">
+		      and t.status =#{condition.status}
+		  </if>
+		  <if test="condition.transDateStart != null and condition.transDateStart != ''">
+		      and t1.transDate >= '${condition.transDateStart} 00:00:00'
+		  </if>
+		  <if test="condition.transDateEnd != null and condition.transDateEnd != ''">
+		      and t1.transDate &lt;='${condition.transDateEnd} 23:59:59'
+		   </if>
+       </where>
+    </sql>
+    
+    <select id="queryGwRiskTransList" resultType="com.gateway.report.riskreport.model.GwRiskTransinfo">
+       select 
+            t.*,
+            t1.*,
+			c.currencyName,
+			b.bankName as acquiringBank from gw_risk_trans_info t left join  gw_trans_info t1 on t.tradeNo=t1.tradeNo 
+        LEFT JOIN gw_currency_info c ON t1.currencyId = c.id
+		LEFT JOIN gw_bank_info b ON c.bankId = b.id
+       <include refid="Where_Clause_Risk_Trans_Info"/>
+    </select>
+    
+    <select id="countGwRiskTransList" resultType="int">
+		SELECT
+			count(*)
+		FROM
+			gw_risk_trans_info t left join  gw_trans_info t1 on t.tradeNo=t1.tradeNo
+			LEFT JOIN gw_currency_info c ON t1.currencyId = c.id
+		    LEFT JOIN gw_bank_info b ON c.bankId = b.id
+		<include refid="Where_Clause_Risk_Trans_Info"/>
+	</select>
+	
+	
+	
+	
+	<select id="queryGwInvesTradeTotal" resultType="com.gateway.report.riskreport.model.InvesTotal">
+		select count(*) as invesCount,invesType
+		<if test="condition.type!=null and condition.type==1">
+		 ,i.merNo
+		</if>
+		<if test="condition.type!=null and condition.type==2">
+		 ,i.merNo,i.terNo
+		</if>
+		<if test="condition.type != null and (condition.type==1 or condition.type==2)">
+		 ,tool.totalCount 
+		</if>
+		 from 
+		gw_investigate_trade i left join gw_trans_info t on i.tradeNo=t.tradeNo  
+		<if test="condition.type != null and (condition.type==1 or condition.type==2)">
+		   left join (
+		   select count(*) as totalCount
+		   <if  test="condition.type!=null and condition.type==1">
+		   ,merNo
+		   </if> 
+		   <if test="condition.type!=null and condition.type==2">
+		    ,merNo,terNo
+		   </if>
+		   from gw_trans_info 
+		   <where>
+			   <if test="condition.merNo!=null and condition.merNo!=''">
+			     and merNo=#{condition.merNo}
+			   </if>
+			   <if test="condition.terNo!=null and condition.terNo!=''">
+			     and terNo=#{condition.terNo}
+			   </if>
+			   <if test="condition.transDateStart != null and condition.transDateStart != ''">
+			      and transDate >= '${condition.transDateStart} 00:00:00'
+			    </if>
+			    <if test="condition.transDateEnd != null and condition.transDateEnd != ''">
+			      and transDate &lt;='${condition.transDateEnd} 23:59:59'
+			    </if>
+		   </where>
+		   group by 
+		   <if test="condition.type!=null and condition.type==1">
+		    merNo
+		   </if>
+		   <if test="condition.type!=null and condition.type==2">
+		    merNo,terNo
+		   </if>
+		    ) tool on 
+			 <if  test="condition.type!=null and condition.type==1">
+			  tool.merNo=i.merNo 
+			 </if>
+			 <if test="condition.type!=null and condition.type==2">
+			  tool.merNo=i.merNo and tool.terNo=i.terNo
+			 </if>
+		</if>
+		<where>
+		   <if test="condition.merNo!=null and condition.merNo!=''">
+		     and i.merNo=#{condition.merNo}
+		   </if>
+		   <if test="condition.terNo!=null and condition.terNo!=''">
+		     and i.terNo=#{condition.terNo}
+		   </if>
+		   <if test="condition.transDateStart != null and condition.transDateStart != ''">
+		      and t.transDate >= '${condition.transDateStart} 00:00:00'
+		    </if>
+		    <if test="condition.transDateEnd != null and condition.transDateEnd != ''">
+		      and t.transDate &lt;='${condition.transDateEnd} 23:59:59'
+		    </if>
+		</where>
+		group by i.invesType
+		<if test="condition.type!=null and condition.type==1">
+		 ,i.merNo
+		</if>
+		<if test="condition.type!=null and condition.type==2">
+		 ,i.merNo,i.terNo
+		</if>
+	</select>
+	
+	<select id="countGwInvesTradeTotal" resultType="int">
+	   select count(*) from (
+	         select count(*) as invesCount,invesType
+		<if test="condition.type!=null and condition.type==1">
+		 ,i.merNo
+		</if>
+		<if test="condition.type!=null and condition.type==2">
+		 ,i.merNo,i.terNo
+		</if>
+		<if test="condition.type != null and (condition.type==1 or condition.type==2)">
+		 ,tool.totalCount 
+		</if>
+		 from 
+		gw_investigate_trade i left join gw_trans_info t on i.tradeNo=t.tradeNo  
+		<if test="condition.type != null and (condition.type==1 or condition.type==2)">
+		   left join (
+		   select count(*) as totalCount
+		   <if  test="condition.type!=null and condition.type==1">
+		   ,merNo
+		   </if> 
+		   <if test="condition.type!=null and condition.type==2">
+		    ,merNo,terNo
+		   </if>
+		   from gw_trans_info 
+		   <where>
+			   <if test="condition.merNo!=null and condition.merNo!=''">
+			     and merNo=#{condition.merNo}
+			   </if>
+			   <if test="condition.terNo!=null and condition.terNo!=''">
+			     and terNo=#{condition.terNo}
+			   </if>
+			   <if test="condition.transDateStart != null and condition.transDateStart != ''">
+			      and transDate >= '${condition.transDateStart} 00:00:00'
+			    </if>
+			    <if test="condition.transDateEnd != null and condition.transDateEnd != ''">
+			      and transDate &lt;='${condition.transDateEnd} 23:59:59'
+			    </if>
+		   </where>
+		   group by 
+		   <if test="condition.type!=null and condition.type==1">
+		    merNo
+		   </if>
+		   <if test="condition.type!=null and condition.type==2">
+		    merNo,terNo
+		   </if>
+		    ) tool on 
+			 <if  test="condition.type!=null and condition.type==1">
+			  tool.merNo=i.merNo 
+			 </if>
+			 <if test="condition.type!=null and condition.type==2">
+			  tool.merNo=i.merNo and tool.terNo=i.terNo
+			 </if>
+		</if>
+		<where>
+		   <if test="condition.merNo!=null and condition.merNo!=''">
+		     and i.merNo=#{condition.merNo}
+		   </if>
+		   <if test="condition.terNo!=null and condition.terNo!=''">
+		     and i.terNo=#{condition.terNo}
+		   </if>
+		   <if test="condition.transDateStart != null and condition.transDateStart != ''">
+		      and t.transDate >= '${condition.transDateStart} 00:00:00'
+		    </if>
+		    <if test="condition.transDateEnd != null and condition.transDateEnd != ''">
+		      and t.transDate &lt;='${condition.transDateEnd} 23:59:59'
+		    </if>
+		</where>
+		group by i.invesType
+		<if test="condition.type!=null and condition.type==1">
+		 ,i.merNo
+		</if>
+		<if test="condition.type!=null and condition.type==2">
+		 ,i.merNo,i.terNo
+		</if>
+	   ) as t
+	</select>
+	
+	
+	
+	<select id="selectInvesCount" resultType="int">
+	  select count(*) from gw_trans_info
+	  <where>
+	    <if test="condition.transDateStart != null and condition.transDateStart != ''">
+		      and transDate >= '${condition.transDateStart} 00:00:00'
+		    </if>
+		    <if test="condition.transDateEnd != null and condition.transDateEnd != ''">
+		      and transDate &lt;='${condition.transDateEnd} 23:59:59'
+		    </if>
+	  </where>
+	</select>
+</mapper>

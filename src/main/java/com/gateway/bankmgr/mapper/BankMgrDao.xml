@@ -1,0 +1,483 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="com.gateway.bankmgr.mapper.BankMgrDao">
+
+	<sql id="Where_Clause_Bank_Info">
+		<where>
+		<if test="condition!=null and condition !=''">
+			<if test="condition.bankName != null and condition.bankName !=''">
+				and bankName = #{condition.bankName}
+			</if>
+			<if test="condition.enabled != null and condition.enabled !=''">
+				and enabled = #{condition.enabled}
+			</if>
+		</if>	
+		</where>
+	</sql>
+	
+	<sql id="Where_Clause_Currency_Info">
+		<where>
+		<if test="condition!=null and condition !=''">
+			<if test="condition.bankName != null and condition.bankName != ''">
+				and b.bankName = #{condition.bankName}
+			</if>
+			<if test="condition.currencyName != null and condition.currencyName != ''">
+				and c.currencyName = #{condition.currencyName}
+			</if>
+			<if test="condition.enabled != null and condition.enabled != ''">
+				and c.enabled = #{condition.enabled}
+			</if>
+			<if test="condition.merchantNo != null and condition.merchantNo != ''">
+				and c.merchantNo = #{condition.merchantNo}
+			</if>
+			<if test="condition.acquirer != null and condition.acquirer != ''">
+				and c.acquirer = #{condition.acquirer}
+			</if>
+		</if>
+		</where>
+	</sql>
+	<sql id="Where_Clause_Currency_KeyValue">
+		<where>
+			<if test="condition.merchantNo != null and condition.merchantNo != ''">
+				and KeyAlias like CONCAT(CONCAT('%',#{condition.merchantNo}),'%')
+			</if>
+			<if test="condition.terNo != null and condition.terNo != ''">
+				and KeyAlias like CONCAT(CONCAT('%',#{condition.terNo}),'%')
+			</if>
+			<if test="condition.enabled != null and condition.enabled != ''">
+				and c.enabled = #{condition.enabled}
+			</if>
+			
+		</where>
+	</sql>
+	<select id="getBankList" resultType="com.gateway.bankmgr.model.BankInfo">
+		select * from gw_bank_info
+		<include refid="Where_Clause_Bank_Info"/>
+	</select>
+	
+	<select id="countBankList" resultType="int">
+		select count(*) from gw_bank_info
+		<include refid="Where_Clause_Bank_Info"/>
+	</select>
+	
+	<select id="getCurrencyList" resultType="com.gateway.bankmgr.model.CurrencyInfo">
+		SELECT
+			c.*,
+			b.bankName
+		FROM
+			gw_currency_info c
+		LEFT JOIN gw_bank_info b ON c.bankId = b.id
+		<include refid="Where_Clause_Currency_Info"/>
+	</select>
+	
+	<select id="countCurrencyList" resultType="int">
+		SELECT
+			count(*)
+		FROM
+			gw_currency_info c
+		LEFT JOIN gw_bank_info b ON c.bankId = b.id
+		<include refid="Where_Clause_Currency_Info"/>
+	</select>
+	
+	<insert id="addBankInfo">
+	  insert into gw_bank_info
+	  (
+	  bankName,
+	  host,
+	  port,
+	  isProxy,
+	  proxyHost,
+	  proxyPort,
+	  enabled,
+	  createDate,
+	  createBy
+	  )
+	  values
+	  (
+	  #{bank.bankName},
+	  #{bank.host},
+	  #{bank.port},
+	  #{bank.isProxy},
+	  #{bank.proxyHost},
+	  #{bank.proxyPort},
+	  #{bank.enabled},
+	  SYSDATE(),
+	  #{bank.createBy}
+	  )
+	</insert>
+	
+	<select id="queryBankInfoById" resultType="com.gateway.bankmgr.model.BankInfo">
+	  select * from gw_bank_info where id=#{id}
+	</select>
+	
+	<update id="updateBankInfo">
+	   update gw_bank_info set 
+	   bankName=#{bankInfo.bankName},
+	   host=#{bankInfo.host}, 
+	   port=#{bankInfo.port}, 
+	   isProxy=#{bankInfo.isProxy}, 
+	   proxyHost=#{bankInfo.proxyHost},
+	   proxyPort=#{bankInfo.proxyPort}, 
+	   enabled=#{bankInfo.enabled}, 
+	   createDate=SYSDATE(),
+	   createBy=#{bankInfo.createBy} 
+	   where id=#{bankInfo.id} 
+	</update>
+	
+	<insert id="addCurrencyInfo">
+	   insert into gw_currency_info(
+	   currencyName,
+	   bankId,
+	   merchantNo,
+	   terNo,
+	   enabled,
+	   createDate,
+	   createBy,
+	   acquirer,
+	   currencyBelongs,
+	   topAmount,<!--  通道每日限额-->
+	   remark
+	   )
+	   values
+	   (
+	    #{info.currencyName},
+	    #{info.bankId},
+	    #{info.merchantNo},
+	    #{info.terNo},
+	    #{info.enabled},
+	    SYSDATE(),
+	    #{info.createBy},
+	    #{info.acquirer},
+	    #{info.currencyBelongs},
+	    #{info.topAmount},
+	    #{info.remark}
+	   )
+	</insert>
+	
+	<insert id="addKeyStore">
+	   insert into gw_key_store(
+	   keyType,
+	   keyValue,
+	   KeyLength,
+	   keyAlias,
+	   className,
+	   checkValue
+	   )
+	   values
+	   (
+	    #{key.keyType},
+	    #{key.keyValue},
+	    #{key.keyLength},
+	    #{key.keyAlias},
+	    #{key.className},
+	    #{key.checkValue}
+	   )
+	</insert>
+	
+	
+	<select id="querykeyAlias" resultType="com.gateway.bankmgr.model.CurrencyInfo">
+	  select keyAlias from gw_key_store where keyAlias=#{Alias}
+	</select>
+	
+	<select id="queryKeyValueInfo" resultType="com.gateway.bankmgr.model.CurrencyInfo">
+	 select * from gw_key_store 
+	 <include refid="Where_Clause_Currency_KeyValue"/>
+	 
+	</select>
+	<select id="countKeyValue" resultType="int">
+	SELECT COUNT(keyValue) from gw_key_store
+	</select>
+	<update id="updatekeyAlias" >
+	   update gw_key_store set 
+	   keyAlias=#{info}
+	</update>
+	
+	<update id="updatekeyandcheck">
+		update gw_key_store set
+		keyValue=#{keyandcheck.keyValue},
+		checkValue=#{keyandcheck.checkValue}
+		where keyAlias=#{keyandcheck.keyAlias}
+	</update>
+	
+	<insert id="addCurrencyConfigInfo">
+	    insert into gw_currency_config_info(
+	     currencyId,
+	     configName,
+	     configValue,
+	     createDate,
+	     createBy,
+	     remark
+	    )
+	   values
+	   (
+	    #{info.currencyId},
+	    #{info.configName},
+	    #{info.configValue},
+	    SYSDATE(),
+	    #{info.createBy},
+	    #{info.remark}
+	   )
+	</insert>
+	
+	<select id="queryCurrencyInfoById" resultType="com.gateway.bankmgr.model.CurrencyInfo">
+	  SELECT
+			c.*,
+			b.bankName
+		FROM
+			gw_currency_info c
+		LEFT JOIN gw_bank_info b ON c.bankId = b.id where c.id=#{id}
+	</select>
+	
+	<select id="queryCurrencyConfig" resultType="com.gateway.bankmgr.model.CurrencyConfigInfo">
+	  select c.*,i.currencyName from gw_currency_config_info c LEFT JOIN gw_currency_info i on c.currencyId=i.id 
+	  where c.currencyId=#{currencyId}
+	</select>
+	
+	<update id="updateCurrencyInfo">
+	  update  gw_currency_info set
+	   currencyName=#{info.currencyName},
+	   bankId=#{info.bankId},
+	   merchantNo=#{info.merchantNo},
+	   terNo=#{info.terNo},
+	   enabled=#{info.enabled},
+	   createDate=SYSDATE(),
+	   createBy=#{info.createBy},
+	   acquirer=#{info.acquirer},
+	   remark=#{info.remark},
+	   currencyBelongs=#{info.currencyBelongs},
+	   topAmount=#{info.topAmount}
+	   where id=#{info.id}
+	</update>
+	
+	<insert id="addCurrencyInfoLog">
+	  insert into gw_currency_info_log(
+	   currencyId,
+	   currencyName,
+	   bankId,
+	   mcc,
+	   merchantNo,
+	   terNo,
+	   enabled,
+	   createDate,
+	   createBy,
+	   ucreateBy,
+	   updateDate
+	   )
+	   values
+	   (
+	    #{info.currencyId},
+	    #{info.currencyName},
+	    #{info.bankId},
+	    #{info.mcc},
+	    #{info.merchantNo},
+	    #{info.terNo},
+	    #{info.enabled},
+	    SYSDATE(),
+	    #{info.createBy},
+	    #{info.ucreateBy},
+	    SYSDATE()
+	   )
+	</insert>
+	
+	<select id="queryCurrencyListLog" resultType="com.gateway.bankmgr.model.CurrencyInfo">
+	   SELECT
+			c.*,
+			b.bankName
+		FROM
+			gw_currency_info_log c
+		LEFT JOIN gw_bank_info b ON c.bankId = b.id where c.currencyId=#{id}
+	</select>
+	
+	
+	<insert id="addBankConfigInfo">
+	   insert into gw_bank_config_info
+	   (
+	     bankId,
+	     configName,
+	     configValue,
+	     createDate,
+	     createBy,
+	     remark
+	   )
+	   values
+	   (
+	    #{bank.bankId},
+	    #{bank.configName},
+	    #{bank.configValue},
+	    SYSDATE(),
+	    #{bank.createBy},
+	    #{bank.remark}
+	   )
+	</insert>
+	
+	<select id="queryBankConfigList" resultType="com.gateway.bankmgr.model.BankConfigInfo">
+      select b.*,g.bankName from gw_bank_config_info b left join gw_bank_info g on b.bankId=g.id 
+      where b.bankId=#{bankId}
+	</select>
+	
+	
+	
+	<update id="updateCurrencyConfigInfo">
+	    update gw_currency_config_info
+	    set configName=#{info.configName},
+	     configValue=#{info.configValue},
+	     createDate=SYSDATE(),
+	     createBy=#{info.createBy},
+	     remark=#{info.remark}
+	    where id=#{info.id} 
+	</update>
+	
+	<delete id="deleteCurrencyConfig">
+	  delete from gw_currency_config_info where id=#{id}
+	</delete>
+	
+	<select id="queryCurrencyConfigByID" resultType="com.gateway.bankmgr.model.CurrencyConfigInfo">
+	   select * from gw_currency_config_info where id=#{id}
+	</select>
+	
+	<delete id="deleteBankConfig">
+	   delete from gw_bank_config_info where id=#{id}
+	</delete>
+	
+	<update id="updateBankConfig">
+	   update gw_bank_config_info set
+       configName=#{bank.configName},
+       configValue=#{bank.configValue},
+       createDate=SYSDATE(),
+       createBy=#{bank.createBy},
+       remark=#{bank.remark}
+       where id=#{bank.id}
+	</update>
+	
+	<select id="queryBankConfig" resultType="com.gateway.bankmgr.model.BankConfigInfo">
+	   select * from gw_bank_config_info where id=#{id}
+	</select>
+	
+	<sql id="where_maste_key">
+	   <where>
+	      <if test="condition.tersn!=null and condition.tersn!=''">
+	        and tersn=#{condition.tersn}
+	      </if>
+	      <if test="condition.type!=null and condition.type!=''">
+	        and type=#{condition.type}
+	      </if>
+	      <if test="condition.status!=null and condition.status!=''">
+	        and status=#{condition.status}
+	      </if>
+	   </where>
+	</sql>
+	
+	<select id="queryMasteKeyList" resultType="com.gateway.bankmgr.model.MasteKey">
+	   select * from gw_key_maste
+	   <include refid="where_maste_key"/>
+	    order by tersn desc
+	</select>
+	
+	<select id="countMasteKey" resultType="int">
+	   select count(*) from gw_key_maste
+	   <include refid="where_maste_key"/>
+	</select>
+	
+	<insert id="saveMasteKey">
+	    insert into gw_key_maste
+		(tersn,sndate,sncreate,key_index,brand,type,status) values
+		<foreach collection="list" item="item" index="index"
+			separator=",">
+			(#{item.tersn},SYSDATE(),#{item.sncreate},#{item.key_index},#{item.brand},#{item.type},#{item.status})
+		</foreach>
+	</insert>
+	
+	<select id="queryMasteKeyBySn" resultType="com.gateway.bankmgr.model.MasteKey">
+	  	select * from gw_key_maste where tersn=#{tersn}
+	</select>
+	
+	<update id="updateMasteKeyBySn">
+		update gw_key_maste set 
+		key_content = #{key.key_content},
+		check_value = #{key.check_value} ,
+		key_expdate = SYSDATE(),
+		key_person = #{key.key_person} 
+		where tersn = #{key.tersn}
+	</update>
+	<select id="searchPaymentPage" resultType="com.gateway.bankmgr.model.GwPaymentPage">
+		select id,pageName,pageUrl,status,createdPerson,createdDate,
+		lastUpdatePerson,lastUpdateDate from gw_payment_page 
+		<where>
+			<if test="condition.pageName!=null and condition.pageName!=''">
+				and pageName like CONCAT('%', #{condition.pageName}, '%')
+			</if>
+			<if test="condition.status>0">
+				and status=#{condition.status}
+			</if>
+		</where>
+	</select>
+	<select id="countPaymentPage" resultType="int">
+		select count(*) from (select id,pageName,pageUrl,status,createdPerson,createdDate,
+		lastUpdatePerson,lastUpdateDate from gw_payment_page 
+		<where>
+			<if test="condition.pageName!=null and condition.pageName!=''">
+				and pageName like CONCAT('%', #{condition.pageName}, '%')
+			</if>
+			<if test="condition.status>0">
+				and status=#{condition.status}
+			</if>
+		</where>)t
+	</select>
+	<select id="searchPaymentPageById" resultType="com.gateway.bankmgr.model.GwPaymentPage">
+		select id,pageName,pageUrl,status,createdPerson,createdDate,
+		lastUpdatePerson,lastUpdateDate from gw_payment_page 
+		where id=#{vo.id} 
+	</select>
+	<insert id="addPaymentPage">
+		insert into gw_payment_page(pageName,pageUrl,status,createdPerson,
+		createdDate,lastUpdatePerson,lastUpdateDate) values(#{vo.pageName},
+		#{vo.pageUrl},#{vo.status},#{vo.createdPerson},#{vo.createdDate},
+		#{vo.lastUpdatePerson},#{vo.lastUpdateDate})
+	</insert>
+	<update id="updatePaymentPage">
+		update gw_payment_page set pageName=#{vo.pageName},
+		pageUrl=#{vo.pageUrl},status=#{vo.status},
+		lastUpdatePerson=#{vo.lastUpdatePerson},
+		lastUpdateDate=#{vo.lastUpdateDate}
+		where id=#{vo.id}
+	</update>
+	<delete id="deletePaymentPage">
+		delete from gw_payment_page where id=#{vo.id}
+	</delete>
+	<!-- 查密钥和银行商户号 -->
+	<select id="queryCurrencyConfigByCurrencyId" resultType="map">
+	  select c.configValue as md5Key,i.merchantNo as merchantid from gw_currency_config_info c LEFT JOIN gw_currency_info i on c.currencyId=i.id 
+	  where c.configName='md5Key' and c.currencyId=#{currencyId}
+	</select>
+	<!--通过银行id查和通道名称查通道  -->
+	<select id="queryCurrencyIdByBankId" resultType="com.gateway.bankmgr.model.CurrencyInfo">
+		SELECT
+			c.*,
+			b.bankName
+		FROM  gw_currency_info c  left join gw_bank_info b ON c.bankId=b.id 
+		where
+		
+		<choose>
+			<when test="bankIdList!=null and bankIdList.size()>0">
+				<foreach collection="bankIdList" item="bankId" index="index1" open="(" separator="or" close=")">
+					 b.id=#{bankId} and c.currencyName IN (
+					<foreach collection="list" item="item" index="index" separator=",">
+						#{item}
+					</foreach>
+					)
+				</foreach>
+			</when>
+			<otherwise>
+				c.currencyName IN (
+				<foreach collection="list" item="item" index="index" separator=",">
+						#{item}
+				</foreach>
+				)
+			</otherwise>
+		</choose>
+		
+		
+	</select>
+	
+</mapper>

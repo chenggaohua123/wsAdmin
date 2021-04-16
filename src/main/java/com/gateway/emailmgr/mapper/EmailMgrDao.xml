@@ -1,0 +1,439 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="com.gateway.emailmgr.mapper.EmailMgrDao">
+	<sql id="Where_Email_Send_Type">
+		<where>
+			<if test="condition.sendType!=null and condition.sendType!=''">
+				and sendType=#{condition.sendType}
+			</if>
+		</where>
+	</sql>
+	<insert id="addEmailSendType">
+		insert into 
+			gw_email_send_type_info
+		(
+			sendType,
+			sendService,
+			emailSubject,
+			name,
+			type
+		)values(
+			#{info.sendType},
+			#{info.sendService},
+			#{info.emailSubject},
+			#{info.name},
+			#{info.type}
+		)
+	</insert>
+	<update id="updateEmailSendType">
+		update 
+			gw_email_send_type_info
+		set 
+			sendType=#{info.sendType},
+			sendService=#{info.sendService},
+			emailSubject=#{info.emailSubject},
+			name=#{info.name},
+			type=#{info.type}
+		where 
+			id=#{info.id}
+	</update>
+	
+	<update id="bindingEmailInfo" parameterType="com.gateway.emailmgr.model.EmailSendType">
+		update 
+			gw_email_send_type_info 
+		set 
+			emailSubId=#{emailSubId}
+		where 
+			id=#{id}
+	</update>
+	<select id="queryEmailSendTypeById" resultType="com.gateway.emailmgr.model.EmailSendType">
+		select * from gw_email_send_type_info where id=#{id}
+	</select>
+	<select id="queryEmailSendType" resultType="com.gateway.emailmgr.model.EmailSendType">
+		select * from gw_email_send_type_info
+		<include refid="Where_Email_Send_Type"/>
+	</select>
+	<select id="countEmailSendType" resultType="int">
+		select count(*) from gw_email_send_type_info
+		<include refid="Where_Email_Send_Type"/>
+	</select>
+	
+	<sql id="Where_Email_Info">
+		<where>
+			<if test="condition.emailAccount!=null and condition.emailAccount!=''">
+				and emailAccount=#{condition.emailAccount}
+			</if>
+			<if test="condition.enabled!=null and condition.enabled!=''">
+				and enabled=#{condition.enabled}
+			</if>
+		</where>
+	
+	</sql>
+	
+	<select id="queryEmailInfo" resultType="com.gateway.emailmgr.model.EmailInfo">
+		select * from gw_email_info
+		<include refid="Where_Email_Info"/>
+	</select>
+	<select id="countEmailInfo" resultType="int">
+		select count(*) from gw_email_info
+		<include refid="Where_Email_Info"/>
+	</select>
+	
+	<insert id="addEmailInfo" parameterType="com.gateway.emailmgr.model.EmailInfo">
+		insert into gw_email_info(
+			emailHost,
+			emailAccount,
+			emailPassword,
+			emailPort,
+			sendCount,
+			sendCountLimit,
+			createBy,
+			createDate,
+			emailType,
+			enabled
+		)value(
+			#{emailHost},
+			#{emailAccount},
+			#{emailPassword},
+			#{emailPort},
+			#{sendCount},
+			#{sendCountLimit},
+			#{createBy},
+			SYSDATE(),
+			#{emailType},
+			#{enabled}
+		)
+	
+	</insert>
+	
+	<select id="queryEmailInfoById" resultType="com.gateway.emailmgr.model.EmailInfo">
+		select * from gw_email_info where id=#{id}
+	</select>
+	
+	<update id="updateEmailInfo">
+		update gw_email_info
+		set 
+			emailHost=#{info.emailHost},
+			emailAccount=#{info.emailAccount},
+			emailPassword=#{info.emailPassword},
+			emailPort=#{info.emailPort},
+			sendCountLimit=#{info.sendCountLimit},
+			emailType=#{info.emailType},
+			lastModifyBy=#{info.lastModifyBy},
+			lastModifyDate= SYSDATE(),
+			enabled=#{info.enabled}
+		where 
+			id=#{info.id}	
+	</update>
+	
+	<delete id="deleteEmailInfo">
+		delete from gw_email_info where id=#{id}
+	</delete>
+	
+	<sql id="Where_Email_Sub_Info">
+		<where>
+			<if test="condition.tel!=null and condition.tel!=''">
+				and tel=#{condition.tel}
+			</if>
+			<if test="condition.fax!=null and condition.fax!=''">
+				and fax=#{condition.fax}
+			</if>
+			<if test="condition.email!=null and condition.email!=''">
+				and email=#{condition.email}
+			</if>
+			<if test="condition.enabled!=null and condition.enabled!=''">
+				and enabled=#{condition.enabled}
+			</if>
+			<if test="condition.replyEmail!=null and condition.replyEmail!=''">
+				and replyEmail=#{condition.replyEmail}
+			</if>
+			<if test="condition.helpWebsite!=null and condition.helpWebsite!=''">
+				and helpWebsite=#{condition.helpWebsite}
+			</if>
+			<if test="condition.website!=null and condition.website!=''">
+				and website=#{condition.website}
+			</if>
+		</where>
+	</sql>
+	
+	<select id="queryEmailSubInfo" resultType="com.gateway.emailmgr.model.EmailSubInfo">
+		select * from gw_email_sub_info
+		<include refid="Where_Email_Sub_Info"/>
+	</select>
+	
+	<select id="countEmailSubInfo" resultType="int">
+		select count(id) from gw_email_sub_info
+		<include refid="Where_Email_Sub_Info"/>
+	</select>
+	
+	<insert id="addEmailSubInfo" parameterType="com.gateway.emailmgr.model.EmailSubInfo">
+		insert into gw_email_sub_info(
+			tel,
+			fax,
+			email,
+			replyEmail,
+			helpWebsite,
+			website,
+			createBy,
+			createDate,
+			enabled
+		)value(
+			#{tel},
+			#{fax},
+			#{email},
+			#{replyEmail},
+			#{helpWebsite},
+			#{website},
+			#{createBy},
+			SYSDATE(),
+			#{enabled}
+		)
+	</insert>
+	
+	<select id="queryEmailSubInfoById" resultType="com.gateway.emailmgr.model.EmailSubInfo">
+		select * from gw_email_sub_info where id=#{id}
+	</select>
+	
+	<update id="updateEmailSubInfo" parameterType="com.gateway.emailmgr.model.EmailSubInfo">
+		update gw_email_sub_info set
+			tel=#{tel},
+			fax=#{fax},
+			email=#{email},
+			replyEmail=#{replyEmail},
+			helpWebsite=#{helpWebsite},
+			website=#{website},
+			enabled=#{enabled},
+			lastModifyBy=#{lastModifyBy},
+			lastModifyDate=SYSDATE()
+		WHERE 
+			id=#{id}
+	</update>
+	
+	<sql id="Where_Caluse_Email_Send_Info">
+		<where>
+			<if test="condition.sendStart!=null and condition.sendStart!=''">
+				AND
+					e.sendDate >= CONCAT(#{condition.sendStart},' 00:00:00')
+			</if>
+			<if test="condition.sendEnd !=null and condition.sendEnd !=''">
+				AND
+					e.sendDate &lt;= CONCAT(#{condition.sendEnd},' 23:59:59')
+			</if>
+			and e.tradeNo IS NOT NULL
+			<if test="condition.tradeNo!=null and condition.tradeNo!=''">
+				AND
+					b.tradeNo=#{condition.tradeNo}
+			</if>
+			<if test="condition.transStart!=null and condition.transStart!=''">
+				AND
+					b.transDate >= CONCAT(#{condition.transStart},' 00:00:00')
+			</if>
+			<if test="condition.transEnd!=null and condition.transEnd!=''">
+				AND
+					b.transDate &lt;= CONCAT(#{condition.transEnd},' 23:59:59')
+			</if>
+		</where>
+	</sql>
+	
+	<select id="queryEmailSendInfoList" resultType="com.gateway.emailmgr.model.EmailSendInfoList">
+				SELECT
+					GROUP_CONCAT(e.id) AS ids,
+					e.tradeNo,
+					IFNULL(SUM(CASE e.sendtypeId IS NOT NULL WHEN e.sendtypeId=1 THEN e.status END), -1) AS successToCard,
+					IFNULL(SUM(CASE e.sendtypeId IS NOT NULL WHEN e.sendtypeId=2 THEN e.status END), -1) AS successToMer,
+					IFNULL(SUM(CASE e.sendtypeId IS NOT NULL WHEN e.sendtypeId=3 THEN e.status END), -1) AS faildTocard,
+					IFNULL(SUM(CASE e.sendtypeId IS NOT NULL WHEN e.sendtypeId=4 THEN e.status END), -1) AS divToCard,
+					IFNULL(SUM(CASE e.sendtypeId IS NOT NULL WHEN e.sendtypeId=5 THEN e.status END), -1) AS refundToCard,
+					IFNULL(SUM(CASE e.sendtypeId IS NOT NULL WHEN e.sendtypeId=6 THEN e.status END), -1) AS refuseToMer,
+					IFNULL(SUM(CASE e.sendtypeId IS NOT NULL WHEN e.sendtypeId=7 THEN e.status END), -1) AS addComToMer,
+					IFNULL(SUM(CASE e.sendtypeId IS NOT NULL WHEN e.sendtypeId=8 THEN e.status END), -1) AS comToMer,
+					IFNULL(SUM(CASE e.sendtypeId IS NOT NULL WHEN e.sendtypeId=9 THEN e.status END), -1) AS comToCard,
+					IFNULL(SUM(CASE e.sendtypeId IS NOT NULL WHEN e.sendtypeId=10 THEN e.status END), -1) AS merReg,
+					IFNULL(SUM(CASE e.sendtypeId IS NOT NULL WHEN e.sendtypeId=11 THEN e.status END), -1) AS payPendToCard,
+					IFNULL(SUM(CASE e.sendtypeId IS NOT NULL WHEN e.sendtypeId=12 THEN e.status END), -1) AS surveyToMerchant,
+					GROUP_CONCAT((CASE e.sendtypeId IS NOT NULL WHEN e.sendtypeId=1 THEN e.id END)) AS successToCardIds,
+					GROUP_CONCAT((CASE e.sendtypeId IS NOT NULL WHEN e.sendtypeId=2 THEN e.id END)) AS successToMerIds,
+					GROUP_CONCAT((CASE e.sendtypeId IS NOT NULL WHEN e.sendtypeId=3 THEN e.id END)) AS faildTocardIds,
+					GROUP_CONCAT((CASE e.sendtypeId IS NOT NULL WHEN e.sendtypeId=4 THEN e.id END)) AS divToCardIds,
+					GROUP_CONCAT((CASE e.sendtypeId IS NOT NULL WHEN e.sendtypeId=5 THEN e.id END)) AS refundToCardIds,
+					GROUP_CONCAT((CASE e.sendtypeId IS NOT NULL WHEN e.sendtypeId=6 THEN e.id END)) AS refuseToMerIds,
+					GROUP_CONCAT((CASE e.sendtypeId IS NOT NULL WHEN e.sendtypeId=7 THEN e.id END)) AS addComToMerIds,
+					GROUP_CONCAT((CASE e.sendtypeId IS NOT NULL WHEN e.sendtypeId=8 THEN e.id END)) AS comToMerIds,
+					GROUP_CONCAT((CASE e.sendtypeId IS NOT NULL WHEN e.sendtypeId=9 THEN e.id END)) AS comToCardIds,
+					GROUP_CONCAT((CASE e.sendtypeId IS NOT NULL WHEN e.sendtypeId=10 THEN e.id END)) AS merRegIds,
+					GROUP_CONCAT((CASE e.sendtypeId IS NOT NULL WHEN e.sendtypeId=11 THEN e.id END)) AS payPendToCardIds,
+					GROUP_CONCAT((CASE e.sendtypeId IS NOT NULL WHEN e.sendtypeId=12 THEN e.id END)) AS surveyToMerchantIds,
+					GROUP_CONCAT((CASE e.sendtypeId IS NOT NULL WHEN e.sendtypeId=1 THEN e.terNo END)) AS successToCardEmail,
+					GROUP_CONCAT((CASE e.sendtypeId IS NOT NULL WHEN e.sendtypeId=2 THEN e.terNo END)) AS successToMerEmail,
+					GROUP_CONCAT((CASE e.sendtypeId IS NOT NULL WHEN e.sendtypeId=3 THEN e.terNo END)) AS faildTocardEmail,
+					GROUP_CONCAT((CASE e.sendtypeId IS NOT NULL WHEN e.sendtypeId=4 THEN e.terNo END)) AS divToCardEmail,
+					GROUP_CONCAT((CASE e.sendtypeId IS NOT NULL WHEN e.sendtypeId=5 THEN e.terNo END)) AS refundToCardEmail,
+					GROUP_CONCAT((CASE e.sendtypeId IS NOT NULL WHEN e.sendtypeId=6 THEN e.terNo END)) AS refuseToMerEmail,
+					GROUP_CONCAT((CASE e.sendtypeId IS NOT NULL WHEN e.sendtypeId=7 THEN e.terNo END)) AS addComToMerEmail,
+					GROUP_CONCAT((CASE e.sendtypeId IS NOT NULL WHEN e.sendtypeId=10 THEN e.terNo END)) AS merRegEmail,
+					GROUP_CONCAT((CASE e.sendtypeId IS NOT NULL WHEN e.sendtypeId=11 THEN e.terNo END)) AS payPendToCardEmail,
+					GROUP_CONCAT((CASE e.sendtypeId IS NOT NULL WHEN e.sendtypeId=12 THEN e.terNo END)) AS surveyToMerchantEmail,
+					1 AS successToCardType,
+					2 AS successToMerType,
+					3 AS faildTocardType,
+					4 AS divToCardType,
+					5 AS refundToCardType,
+					6 AS refuseToMerType,
+					7 AS addComToMerType,
+					8 AS comToMerType,
+					9 AS comToCardType,
+					10 AS merRegType,
+					11 AS payPendToCardType,
+					12 AS surveyToMerchantType
+				FROM
+					gw_email_send_info e
+					left join gw_trans_info  b ON e.tradeNo=b.tradeNo
+				<include refid="Where_Caluse_Email_Send_Info"/>	
+				GROUP BY
+					e.tradeNo
+				order by b.transDate desc 
+	</select>
+	
+	<select id="queryEmailSendInfoCount" resultType="java.lang.Integer">
+	select count(*) from (
+			SELECT
+					e.tradeNo
+				FROM
+					gw_email_send_info e
+					left join gw_trans_info  b ON e.tradeNo=b.tradeNo
+				<include refid="Where_Caluse_Email_Send_Info"/>	
+				GROUP BY
+					e.tradeNo
+					) as t
+	</select>
+	
+	<update id="updateEmailSendStatus">
+		UPDATE
+			gw_email_send_info
+		SET
+			status=0
+		WHERE
+			id=#{id}
+	</update>
+	
+	<insert id="addEmailSendInfo">
+		INSERT INTO
+			gw_email_send_info
+			(
+				tradeNo,
+				sendTypeId,
+				status
+			)
+		VALUES
+			(
+				#{vo.tradeNo},
+				#{vo.sendTypeId},
+				0
+			)
+	</insert>
+	<select id="queryTradeRocordByTradeNo" resultType="com.gateway.emailmgr.model.GwTradeRecord">
+		SELECT 
+			a.merNo,
+			a.terNo,
+			a.tradeNo,
+			a.orderNo,
+			a.email AS cardHoldEmail,
+			a.currencyId,
+			b.email AS merchantEmail,
+			a.merBusCurrency AS currency,
+			a.mertransAmount AS amount,
+			a.payWebSite,
+			a.transDate,
+			f.tel,
+			f.fax,
+			f.helpWebsite,
+			f.replyEmail,
+			g.Iogistics,
+			g.trackNo,
+			g.UploadTime,
+			i.IogisticsUrl,
+			a.acquirer,
+			(select refundAmount from gw_refund_info where tradeNo=#{tradeNo} order by refundDate DESC limit 1)as refundAmount
+		FROM 
+			gw_trans_info a 
+			LEFT JOIN gw_merchant_info b ON a.merNo=b.merNo
+			LEFT JOIN gw_GoodsPress g on g.tradeNo = a.tradeNo
+			LEFT JOIN gw_currency_info cu on cu.id = a.currencyId
+			LEFT JOIN gw_iogistics_info i on g.Iogistics = i.Iogistics
+			LEFT JOIN gw_email_send_info d ON a.tradeNo=d.tradeNo 
+			LEFT JOIN gw_email_send_type_info e ON d.sendTypeId=e.id
+			LEFT JOIN gw_email_sub_info f ON e.emailSubId=f.id
+		WHERE 
+			a.tradeNO=#{tradeNo}
+		AND 
+			e.id=#{sendTypeId}
+		limit 
+			1
+	</select>
+	
+	<select id="queryMerEmailConfigByMerNoAndTerNo" resultType="com.gateway.emailmgr.model.MerchantEmailConfigInfo">
+		select * from gw_merchant_email_info where merNo = #{merNo} and terNo = #{terNo} and emailSendType = #{emailSendType}
+	</select>
+	<select id="queryComplaintTransByTradeNoAndComplainType" resultType="com.gateway.emailmgr.model.Complaint">
+		select 
+			c.id,
+			c.tradeNo,
+			c.complaintType,
+			c.deadline,
+			c.status,
+			c.remark,
+			c.complaintDate,
+			c.complaintLevel,
+			c.createdBy,
+			c.createdDate,
+			c.lastUpdateBy,
+			c.lastUpdateDate,
+			c.filePath,
+			c.CPDDate,
+			i.cValue complaintTypeValue,
+			t.orderNo,
+			t.payWebSite,
+			t.merBusCurrency,
+			t.merTransAmount,
+			t.merNo
+		from gw_trans_complaint_info c 
+		left join gw_trans_complaint_type_info i on i.id=c.complaintType
+		left join gw_trans_info t on t.tradeNo=c.tradeNo
+		LEFT JOIN gw_currency_info d ON t.currencyId = d.id
+		where t.tradeNo = #{tradeNo} and c.type = #{complaintType} limit 1
+	</select>
+	
+	<select id="queryMerchantRiskTransInfo" resultType="com.gateway.emailmgr.model.RiskTransInfo">
+		select 
+			a.id,
+			a.tradeNo,
+			b.merNo,
+			b.payWebSite as website,
+			a.createDate as doDate,
+			a.status as doStatus,
+			b.orderNo,
+			b.terNo,
+			(case a.ruleId when -1 then a.riskMsg else c.ruleName end) as doReason,
+			b.respCode,
+			a.ruleId,
+			b.respMsg,
+			e.email,
+			e.merchantName,
+			b.transDate,
+			b.merTransAmount,
+			b.merBusCurrency
+		from 
+			gw_risk_trans_info a 
+			left join gw_trans_info b on a.tradeNo=b.tradeNo
+			left join rule_info c on a.ruleId=c.ruleId
+			left join gw_merchant_info e on e.merNo=b.merNo
+		where
+			a.tradeNo=#{tradeNo}
+		and
+			a.status='review'
+		and
+			e.enabled=1
+	</select>
+</mapper>
+

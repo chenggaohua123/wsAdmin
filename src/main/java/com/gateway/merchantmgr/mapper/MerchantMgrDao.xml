@@ -1,0 +1,2832 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="com.gateway.merchantmgr.mapper.MerchantMgrDao">
+	<sql id="Where_Clause_Mcc_Info">
+		<where>
+		   
+			<if test="condition.mccDescribe != null and condition.mccDescribe != ''">
+				and mccDescribe like '%${condition.mccDescribe}%'
+			</if>
+			<if test="condition.mccValue != null and condition.mccValue != ''">
+				and mccValue like '%${condition.mccValue}%'
+			</if>
+			
+		</where>
+	</sql>
+	
+		<sql id="Where_Clause_Product_Info">
+		<where>
+		     type=1
+			<if test="condition.bpname != null and condition.bpname != ''">
+			and 
+				<foreach collection="condition.bpname" item="bp" open="(" close=")" separator=" or " >
+						 bpname like '%${bp}%'
+				</foreach>
+			</if>
+			<if test="condition.bpValue != null and condition.bpValue != ''">
+				and bpValue like '%${condition.bpValue}%'
+			</if>
+			
+		</where>
+	</sql>
+	
+	<sql id="Where_Clause_Brand_Info">
+		<where>
+		     type=2
+			<if test="condition.bpname != null and condition.bpname != ''">
+			and 
+				<foreach collection="condition.bpname" item="bp" open="(" close=")" separator=" or " >
+						 bpname like '%${bp}%'
+				</foreach>
+			</if>
+			<if test="condition.bpValue != null and condition.bpValue != ''">
+				and bpValue like '%${condition.bpValue}%'
+			</if>
+			
+		</where>
+	</sql>
+	<sql id="Where_Clause_Merchant_Info">
+		<where>
+			<if test="condition.merNos != null and condition.merNos != '' ">
+				and m.merNo in (${condition.merNos})
+			</if>
+			<if test="condition.merNo != null and condition.merNo != ''">
+				and m.merNo = #{condition.merNo}
+			</if>
+			<if test="condition.merchantName != null and condition.merchantName != ''">
+			    and m.merchantName like '%${condition.merchantName}%'
+			</if>
+			<if test="condition.linkName != null and condition.linkName != ''">
+			    and m.linkName like '%${condition.linkName}%'
+			</if>
+			<if test="condition.phoneNo != null and condition.phoneNo !=''">
+			    and m.phoneNo =#{condition.phoneNo}
+			</if>
+			<if test="condition.email != null and condition.email !=''">
+			    and m.email =#{condition.email}
+			</if>
+			<if test="condition.qq != null and condition.qq !=''">
+			    and m.qq =#{condition.qq}
+			</if>
+			<if test="condition.address != null and condition.address !=''">
+			    and m.address like '%${condition.address}%'
+			</if>
+			<if test="condition.oaOrderNo != null and condition.oaOrderNo !=''">
+			    and m.address like '%${condition.oaOrderNo}%'
+			</if>
+			<if test="condition.sales != null and condition.sales !=''">
+			    and m.sales like  CONCAT(CONCAT('%', '${condition.sales}'),'%')
+			</if>
+			<if test="condition.createDateStart != null and condition.createDateStart != ''">
+		        and m.regDate >= '${condition.createDateStart} 00:00:00'
+		    </if>
+		    <if test="condition.createDateEnd != null and condition.createDateEnd != ''">
+		        and m.regDate &lt;='${condition.createDateEnd} 23:59:59'
+		    </if>
+		    
+		    <if test="condition.activationDateStart != null and condition.activationDateStart != ''">
+		        and m.activationDate >= '${condition.activationDateStart} 00:00:00'
+		    </if>
+		    <if test="condition.activationDateEnd != null and condition.activationDateEnd != ''">
+		        and m.activationDate &lt;='${condition.activationDateEnd} 23:59:59'
+		    </if>
+		    
+		     <if test="condition.expireDateStart != null and condition.expireDateStart != ''">
+		        and m.expireDate >= '${condition.expireDateStart} 00:00:00'
+		    </if>
+		    <if test="condition.expireDateEnd != null and condition.expireDateEnd != ''">
+		        and m.expireDate &lt;='${condition.expireDateEnd} 23:59:59'
+		    </if>
+		    <if test="condition.accountStatus != null and condition.accountStatus !=''">
+			    and m.accountStatus =#{condition.accountStatus}
+			</if>
+			<if test="condition.type != null and condition.type !=''">
+			    and m.type =#{condition.type}
+			</if>
+			<if test="condition.merLev != null and condition.merLev !=''">
+			    and m.merLev =#{condition.merLev}
+			</if>
+			<if test="condition.enabled != null and condition.enabled !=''">
+			    and m.enabled =#{condition.enabled}
+			</if>
+			<if test="condition.merCurrencyType != null and condition.merCurrencyType !=''">
+			    and m.merCurrencyType =#{condition.merCurrencyType}
+			</if>
+			<if test="condition.industry != null and condition.industry !=''">
+			    and m.industry =#{condition.industry}
+			</if>
+			<if test="condition.dirStatus != null and condition.dirStatus !=''">
+			    and m.dirStatus =#{condition.dirStatus}
+			</if>
+			
+		</where>
+	</sql>
+	
+	<sql id="Where_Clause_Merchant_Trt_info">
+		<where>
+			<if test="condition.merNo != null and condition.merNo != ''">
+				and t.merNo = #{condition.merNo}
+			</if>
+			<if test="condition.terNo != null and condition.terNo !=''">
+			    and t.terNo =#{condition.terNo}
+			</if>
+			<if test="condition.enabled !=null and condition.enabled!=''">
+			    and t.enabled=#{condition.enabled}
+			</if>
+			<if test="condition.accountName !=null and condition.accountName!=''">
+			    and t.accountName=#{condition.accountName}
+			</if>
+			<if test="condition.accountAddress !=null and condition.accountAddress!=''">
+			    and t.accountAddress like '%${condition.accountAddress}%'
+			</if>
+			<if test="condition.accountNo !=null and condition.accountNo!=''">
+			    and t.accountNo=#{condition.accountNo}
+			</if>
+		</where>
+	</sql>
+	
+	<sql id="Where_Clause_Merchnat_Rel_Currency_Info">
+		<where>
+			<if test="condition.merNo != null and condition.merNo != ''">
+				and mr.merNo = #{condition.merNo}
+			</if>
+			<if test="condition.terNo != null and condition.terNo != ''">
+				and mr.terNo = #{condition.terNo}
+			</if>
+			<if test="condition.enabled != null and condition.enabled != ''">
+				and mr.enabled = #{condition.enabled}
+			</if>
+			<if test="condition.bankId != null and condition.bankId != '' and condition.bankId != 0 ">
+				and b.id=#{condition.bankId}
+			</if>
+			<if test="condition.currencyId != null and condition.currencyId != ''">
+				and c.id=#{condition.currencyId}
+			</if>
+			<if test="condition.cardType != null and condition.cardType != ''">
+				and mr.cardType=#{condition.cardType}
+			</if>
+			<if test="condition.autoChange != null and condition.autoChange != ''">
+				<choose>
+					<when test="condition.autoChange == 1 ">
+						mcs.id is not null 
+					</when>
+					<otherwise>
+						mcs.id is null
+					</otherwise>
+				</choose>
+			</if>
+		</where>
+	</sql>
+	
+	<sql id="Where_BatchUpdate_Merchant_Rel_Currency_Info">
+		<where>
+			<if test="info.oriCurrencyId != null and info.oriCurrencyId != ''">
+				and currencyId = #{info.oriCurrencyId} 
+			</if>
+			<if test="info.cardType != null and info.cardType != ''">
+				and cardType = #{info.cardType}
+			</if>
+			<if test="info.merNos != null">
+				and merNo in
+				<foreach collection="info.merNos" item="merNo" open="(" close=")" separator=",">
+					#{merNo}
+				</foreach>
+			</if>
+			<if test="info.terNos != null">
+				and terNo in
+				<foreach collection="info.terNos" item="terNo" open="(" close=")" separator=",">
+					#{terNo}
+				</foreach>
+			</if>
+			
+		</where>
+	</sql>
+	<sql id="Where_Clause_Agent_Info">
+		<where>
+			<if test="condition.agentNo != null and condition.agentNo != ''">
+				and agentNo = #{condition.agentNo}
+			</if>
+			<if test="condition.agentName != null and condition.agentName != ''">
+				and agentName = #{condition.agentName}
+			</if>
+			<if test="condition.enabled != null and condition.enabled != ''">
+				and enabled = #{condition.enabled}
+			</if>
+			<if test="condition.parentAgentNo!=null and condition.parentAgentNo!=''">
+			   and parentAgentNo =#{condition.parentAgentNo}
+			</if>
+		</where>
+	</sql>
+	<sql id="Where_SN_Rel_Agent_Culaus_Info">
+		<where>
+			<if test="condition.parentAgentNo!=null and condition.parentAgentNo!=''">
+			   and parentAgentNo =#{condition.parentAgentNo}
+			</if>
+			<if test="condition.agentNo != null and condition.agentNo != ''">
+				and agentNo = #{condition.agentNo}
+			</if>
+		</where>
+	
+	</sql>
+	
+	<sql id="Where_Clause_MerchantSettleCycle_Info">
+		<where>
+			<if test="condition.merNo != null and condition.merNo != ''">
+				and merNo = #{condition.merNo}
+			</if>
+		</where>
+	</sql>
+	
+	<sql id="Where_Clause_MerchantWebsite_Info">
+		<where>
+			<if test="condition.merNo != null and condition.merNo != ''">
+				and a.merNo =#{condition.merNo}
+			</if>
+			<if test="condition.terNo != null and condition.terNo != ''">
+				and a.terNo=#{condition.terNo}
+			</if>
+			<if test="condition.status != null and condition.status != ''">
+				and a.status = #{condition.status}
+			</if>
+			<if test="condition.merWebSite != null and condition.merWebSite != ''">
+				and a.merWebSite like  CONCAT(CONCAT('%', '${condition.merWebSite}'),'%')
+			</if>
+			<if test="condition.MCC != null and condition.MCC != ''">
+				and a.MCC =#{condition.MCC}
+			</if>
+			<if test="condition.merWebLanguage != null and condition.merWebLanguage != ''">
+				and a.merWebLanguage like  CONCAT(CONCAT('%', '${condition.merWebLanguage}'),'%')
+			</if>
+			<if test="condition.merWebProgram != null and condition.merWebProgram != ''">
+				and a.merWebProgram like  CONCAT(CONCAT('%', '${condition.merWebProgram}'),'%')
+			</if>
+			<if test="condition.brand != null and condition.brand != ''">
+				and a.brand like  CONCAT(CONCAT('%', '${condition.brand}'),'%')
+			</if>
+			<if test="condition.product != null and condition.product != ''">
+				and a.product like  CONCAT(CONCAT('%', '${condition.product}'),'%')
+			</if>
+			<if test="condition.appDateStart != null and condition.appDateStart != ''">
+				and a.appDate >=  '${condition.appDateStart} 00:00:00'
+			</if>
+		    <if test="condition.appDateEnd != null and condition.appDateEnd != ''">
+		        and a.appDate &lt;='${condition.appDateEnd} 23:59:59'
+		    </if>
+		    <if test="condition.createDateStart != null and condition.createDateStart != ''">
+				and a.createDate >=  '${condition.createDateStart} 00:00:00'
+			</if>
+		    <if test="condition.createDateEnd != null and condition.createDateEnd != ''">
+		        and a.createDate &lt;='${condition.createDateEnd} 23:59:59'
+		    </if>
+		    <if test="condition.websiteList != null and condition.websiteList != ''">
+		    	and 
+				<foreach collection="condition.websiteList" item="website" open="(" close=")" separator=" or " >
+						 a.merWebsite='${website}'
+				</foreach>
+		    </if>
+		</where>
+	</sql>
+	
+	<sql id="Where_Reg_Clause">
+		<where>
+			<if test="condition.email != null and condition.email != ''">
+				and email = #{condition.email}
+			</if>
+			<if test="condition.regCode != null and condition.regCode != ''">
+				and regCode = #{condition.regCode}
+			</if>
+		</where>
+	</sql>
+	
+	<select id="getListMerchant" resultType="com.gateway.merchantmgr.model.MerchantInfo">
+        select m.* from gw_merchant_info m
+		<include refid="Where_Clause_Merchant_Info"/>
+		order by regDate desc
+	</select>
+	<select id="countMerchant" resultType="int">
+		select count(*) from gw_merchant_info m 
+		<include refid="Where_Clause_Merchant_Info"/>
+		order by regDate desc
+	</select>
+	
+	<select id="getMerchantTerList" resultType="com.gateway.merchantmgr.model.MerchantTerInfo">
+        select  
+        t.*,
+        m.merchantName
+        from gw_merchant_terno_info t 
+		left join gw_merchant_info m on t.merNo=m.merNo
+		<include refid="Where_Clause_Merchant_Trt_info"/>
+		order by t.createDate desc
+	</select>
+	<select id="countMerchantTerList" resultType="int">
+		 select count(*) from gw_merchant_terno_info t 
+		 left join gw_merchant_info m on t.merNo=m.merNo
+		<include refid="Where_Clause_Merchant_Trt_info"/>
+		order by t.createDate desc
+	</select>
+	
+	<select id="queryMerchantInfoById" resultType="com.gateway.merchantmgr.model.MerchantInfo">
+	   select * from gw_merchant_info where id = #{id}
+	</select>
+	
+	<select id="queryMerchantInfoByMerNo" resultType="com.gateway.merchantmgr.model.MerchantInfo">
+	   select * from gw_merchant_info where merNo = #{merNo}
+	</select>
+	
+	
+	
+	<!-- 修改商户信息 -->
+	<update id="updateMerchantInfo">
+	   update gw_merchant_info set 
+	   merchantName=#{info.merchantName},
+	   phoneNo=#{info.phoneNo},
+	   enabled=#{info.enabled},
+	   type=#{info.type},
+	   countryCode=#{info.countryCode},
+	   state=#{info.state},
+	   city=#{info.city},
+	   address=#{info.address},
+	   accountName=#{info.accountName},
+	   accountState=#{info.accountState},
+	   accountCity=#{info.accountCity},
+	   accountContryCode=#{info.accountContryCode},
+	   accountNo=#{info.accountNo},
+	   accountAddress=#{info.accountAddress},
+	   applyFileDataPath=#{info.applyFileDataPath},
+	   activationDate=#{info.activationDate},
+	   expireDate=#{info.expireDate},
+	   sales=#{info.sales},
+	   industry=#{info.industry},
+	   email=#{info.email},
+	   iDCardNo=#{info.iDCardNo},
+	   reState=#{info.reState},
+	   topRate=#{info.topRate},
+	   agentMerRate=#{info.agentMerRate},
+	   qq=#{info.qq},
+	   linkName=#{info.linkName},
+	   merCurrencyType=#{info.merCurrencyType},
+	   linkPhoneNo=#{info.linkPhoneNo},
+	   oaOrderNo=#{info.oaOrderNo},
+	   accountStatus=#{info.accountStatus},
+	   merLev=#{info.merLev},
+	   remark=#{info.remark},
+	   hisFee=#{info.hisFee},
+	   dirStatus = #{info.dirStatus},
+	   merchantAddress=#{info.merchantAddress},
+	   swift=#{info.swift},
+	   bankAddress=#{info.bankAddress}
+	   where id=#{info.id}
+	</update>
+	
+	<!--插入商户信息历史记录  -->
+	<insert id="addMerchantInfoLog">
+	   insert into gw_merchant_info_log
+	   (
+		   merNo,
+		   merchantName,
+		   phoneNo,
+		   enabled,
+		   type,
+		   countryCode,
+		   state,
+		   city,
+		   address,
+		   accountName,
+		   accountState,
+		   accountCity,
+		   accountContryCode,
+		   accountNo,
+		   accountAddress,
+		   applyFileDataPath,
+		   activationDate,
+		   expireDate,
+		   sales,
+		   updateDate,
+		   updatePerson,
+		   industry,
+		   email,
+		   iDCardNo,
+		   topRate,
+		   agentMerRate,
+		   qq,
+		   linkName,
+		   merCurrencyType,
+		   linkPhoneNo,
+		   oaOrderNo,
+		   accountStatus,
+		   dirStatus,
+		   remark,
+		   hisFee,
+		   merLev
+	   )
+	   values
+	   (
+		   #{info.merNo},
+		   #{info.merchantName},
+		   #{info.phoneNo},
+		   #{info.enabled},
+		   #{info.type},
+		   #{info.countryCode},
+		   #{info.state},
+		   #{info.city},
+		   #{info.address},
+		   #{info.accountName},
+		   #{info.accountState},
+		   #{info.accountCity},
+		   #{info.accountContryCode},
+		   #{info.accountNo},
+		   #{info.accountAddress},
+		   #{info.applyFileDataPath},
+		   #{info.activationDate},
+		   #{info.expireDate},
+		   #{info.sales},
+		   SYSDATE(),
+		   #{info.updatePerson},
+		   #{info.industry},
+		   #{info.email},
+		   #{info.iDCardNo},
+		   #{info.topRate},
+		   #{info.agentMerRate},
+		   #{info.qq},
+		   #{info.linkName},
+		   #{info.merCurrencyType},
+		   #{info.linkPhoneNo},
+		   #{info.oaOrderNo},
+		   #{info.accountStatus},
+		   #{info.dirStatus},
+		   #{info.remark},
+		   #{info.hisFee},
+		   #{info.merLev}
+	   )
+	</insert>
+	
+
+	
+	<!-- 查询商户历史记录 -->
+	<select id="queryMerchantLogList" resultType="com.gateway.merchantmgr.model.MerchantInfo">
+	  select * from gw_merchant_info_log where merNo=#{merNo} order by updateDate desc
+	</select>
+	
+	<insert id="addTerInfo">
+		insert into gw_merchant_terno_info 
+		(
+			merNo,
+			terNo,
+			createDate,
+			createby,
+			enabled,
+			shaKey,
+			remark,
+			terName,
+			accountName,
+			accountState,
+			accountCity,
+			accountContryCode,
+			accountNo,
+			accountAddress,
+			bluetoothName,
+			settleCurrency,
+			transCurrency,
+			email,
+			brandStatus,
+			merchantAddress,
+		   swift,
+		   bankAddress,
+		   bankNo
+		)
+		values
+		(
+			#{terInfo.merNo},
+			#{terInfo.terNo},
+			SYSDATE(),
+			#{terInfo.createby},
+			#{terInfo.enabled},
+			#{terInfo.shaKey},
+			#{terInfo.remark},
+			#{terInfo.terName},
+			#{terInfo.accountName},
+			#{terInfo.accountState},
+			#{terInfo.accountCity},
+			#{terInfo.accountContryCode},
+			#{terInfo.accountNo},
+			#{terInfo.accountAddress},
+			#{terInfo.bluetoothName},
+			#{terInfo.settleCurrency},
+			#{terInfo.transCurrency},
+			#{terInfo.email},
+			#{terInfo.brandStatus},
+			#{terInfo.merchantAddress},
+		    #{terInfo.swift},
+		    #{terInfo.bankAddress},
+		    #{terInfo.bankNo}
+		)
+	</insert>
+	
+	<insert id="addTerInfoHis">
+		insert into gw_merchant_terno_info_log 
+			(
+				merNo,
+				terNo,
+				createDate,
+				createby,
+				enabled,
+				shaKey,
+				remark,
+				terName,
+				accountName,
+				accountState,
+				accountCity,
+				accountContryCode,
+				accountNo,
+				accountAddress,
+				updateDate,
+				updateBy,
+				bluetoothName,
+				email,
+				transCurrency,
+				settleCurrency,
+				merchantChannel
+			)
+			values
+			(
+				#{terInfo.merNo},
+				#{terInfo.terNo},
+				#{terInfo.createDate},
+				#{terInfo.createby},
+				#{terInfo.enabled},
+				#{terInfo.shaKey},
+				#{terInfo.remark},
+				#{terInfo.terName},
+				#{terInfo.accountName},
+				#{terInfo.accountState},
+				#{terInfo.accountCity},
+				#{terInfo.accountContryCode},
+				#{terInfo.accountNo},
+				#{terInfo.accountAddress},
+				SYSDATE(),
+				#{terInfo.updateBy},
+				#{terInfo.bluetoothName},
+				#{terInfo.email},
+				#{terInfo.transCurrency},
+				#{terInfo.settleCurrency},
+				#{terInfo.merchantChannel}
+			)
+	</insert>
+	
+	<select id="queryTerInfoById" resultType="com.gateway.merchantmgr.model.MerchantTerInfo">
+		select m.*,u.phoneNo from gw_merchant_terno_info m left join gw_user_rel_merchant_info u on m.merNo=u.merNo  where m.id =#{id}
+	</select>
+	
+	<select id="queryMerchantTerNoById" resultType="com.gateway.merchantmgr.model.MerchantTerInfo">
+	 select * from gw_merchant_terno_info where id=#{id}
+	</select>
+	
+	<update id="updateMerchantTerNoInfo">
+		update gw_merchant_terno_info 
+		set reStatus = #{terInfo.reStatus},
+		enabled=#{terInfo.enabled}
+		where id = #{terInfo.id}
+	</update>
+	
+	<!-- 修改终端信息 -->
+	<update id="updateMerchantTerInfo">
+		update gw_merchant_terno_info 
+		set enabled = #{terInfo.enabled},
+		terName = #{terInfo.terName},
+		accountName = #{terInfo.accountName},
+		accountState = #{terInfo.accountState},
+		accountCity = #{terInfo.accountCity},
+		accountContryCode = #{terInfo.accountContryCode},
+		accountNo = #{terInfo.accountNo},
+		accountAddress = #{terInfo.accountAddress},
+		bluetoothName=#{terInfo.bluetoothName},
+		settleCurrency=#{terInfo.settleCurrency},
+		transCurrency=#{terInfo.transCurrency},
+		email=#{terInfo.email},
+		brandStatus=#{terInfo.brandStatus},
+		isRisk=#{terInfo.isRisk},
+		remark=#{terInfo.remark},
+		merchantAddress=#{terInfo.merchantAddress},
+	    swift=#{terInfo.swift},
+	    bankAddress=#{terInfo.bankAddress},
+	    bankNo=#{terInfo.bankNo},
+		merchantChannel=#{terInfo.merchantChannel},
+		productType=#{terInfo.productType}
+		where id = #{terInfo.id}
+	</update>
+	
+	
+	<select id="queryTerInfoByMerNoAndTerNo" resultType="com.gateway.merchantmgr.model.MerchantTerInfo">
+		select * from gw_merchant_terno_info where merNo =#{merNo} and terNo = #{terNo}
+	</select>
+	
+	<select id="queryMaxTerNo" resultType="string">
+		SELECT MAX(CAST(terNo AS SIGNED)) from gw_merchant_terno_info where merNo =#{merNo}
+	</select>
+	
+	<select id="queryTerInfoByMerNoAndTerNoLog" resultType="com.gateway.merchantmgr.model.MerchantTerInfo">
+		select * from gw_merchant_terno_info_log where merNo =#{merNo} and terNo = #{terNo}
+	</select>
+	
+	<insert id="addMerchantConfig">
+	   insert into gw_merchant_config_info 
+			(
+				merNo,
+				terNo,
+				configName,
+				configValue,
+				configKey,
+				createDate,
+				createBy,
+				remark
+			)
+			values
+			(
+				#{config.merNo},
+				#{config.terNo},
+				#{config.configName},
+				#{config.configValue},
+				#{config.configKey},
+				SYSDATE(),
+				#{config.createBy},
+				#{config.remark}
+			)
+	</insert>
+	
+	<select id="queryMerchantConfigInfo" resultType="com.gateway.merchantmgr.model.MerchantConfig">
+	    select * from gw_merchant_config_info where terNo=#{config.terNo}
+	</select>
+	
+	<select id="queryMerchantConfigById" resultType="com.gateway.merchantmgr.model.MerchantConfig">
+	    select * from gw_merchant_config_info where id=#{id}
+	</select>
+	
+	<update id="updateMerchantConfig">
+	   update gw_merchant_config_info 
+	   set merNo=#{config.merNo},
+	   terNo=#{config.terNo},
+	   configName=#{config.configName},
+	   configValue=#{config.configValue},  
+	   configKey=#{config.configKey},
+	   createDate=SYSDATE(),
+	   createBy=#{config.createBy},
+	   remark=#{config.remark}
+	   where id=#{config.id}
+	</update>
+	
+	<delete id="deleteMerchantConfig">
+	   delete from gw_merchant_config_info where id=#{id}
+	</delete>
+	
+	
+	
+	<select id="getMerchnatRelCurrencyList" resultType="com.gateway.merchantmgr.model.MerchantRelCurrencyInfo">
+		SELECT
+			mr.*,
+			c.currencyName,
+			c2.currencyName as currencyName2,
+			c3.currencyName as currencyName3,
+			b.bankName,
+			b2.bankName as bankName2,
+			b3.bankName as bankName3,
+			m.merchantName,
+			c.acquirer,
+			(case when mcs.merchantCurrencyId is not null
+			and (singleType+dayCountType+dayAmountType+monthCountType+monthAmountType)>=1
+			 then 1 else 0 end)as autoChange,
+			 mcs.currencyDayAmountIds,
+			 mcs.currencyDayAmountType
+		FROM
+			gw_merchant_rel_currency_info mr
+		left join gw_merchant_info m on mr.merNo=m.merNo	
+		LEFT JOIN gw_currency_info c ON mr.currencyId = c.id
+		LEFT JOIN gw_currency_info c2 ON mr.currencyId2 = c2.id
+		LEFT JOIN gw_currency_info c3 ON mr.currencyId3 = c3.id
+		LEFT JOIN gw_bank_info b ON c.bankId = b.id
+		LEFT JOIN gw_bank_info b2 ON c2.bankId = b2.id
+		LEFT JOIN gw_bank_info b3 ON c3.bankId = b3.id
+		left join gw_merchant_ref_currency_special_info mcs on mr.id=mcs.merchantCurrencyId
+		
+		<include refid="Where_Clause_Merchnat_Rel_Currency_Info"/>
+		order by mr.createDate desc
+	</select>
+	
+	<select id="countMerchnatRelCurrencyList" resultType="int">
+		SELECT
+			count(*)
+		FROM
+			gw_merchant_rel_currency_info mr
+		left join gw_merchant_info m on mr.merNo=m.merNo	
+		LEFT JOIN gw_currency_info c ON mr.currencyId = c.id
+		LEFT JOIN gw_currency_info c2 ON mr.currencyId = c2.id
+		LEFT JOIN gw_currency_info c3 ON mr.currencyId = c3.id
+		LEFT JOIN gw_bank_info b ON c.bankId = b.id
+		LEFT JOIN gw_bank_info b2 ON c2.bankId = b2.id
+		LEFT JOIN gw_bank_info b3 ON c3.bankId = b3.id
+		left join gw_merchant_ref_currency_special_info mcs on mr.id=mcs.merchantCurrencyId
+		<include refid="Where_Clause_Merchnat_Rel_Currency_Info"/>
+	</select>
+	
+	<insert id="addCurrencyToMerchnat">
+		insert into gw_merchant_rel_currency_info
+		(
+			merNo,
+			terNo,
+			cardType,
+			currencyId,
+			currencyId2,
+			currencyId3,
+			enabled,
+			batchNo,
+			acquirerDiy,
+			createDate,
+			createBy
+		) 
+		values
+		(
+			#{info.merNo},
+			#{info.terNo},
+			#{info.cardType},
+			#{info.currencyId},
+			#{info.currencyId2},
+			#{info.currencyId3},
+			#{info.enabled},
+			'100000',
+			#{info.acquirerDiy},
+			SYSDATE(),
+			#{info.createBy}
+		)
+	</insert>
+	
+	<insert id="addCurrencyToMerchantLog">
+		insert into gw_merchant_rel_currency_info_log
+		(
+			merNo,
+			terNo,
+			cardType,
+			currencyId,
+			currencyId2,
+			currencyId3,
+			enabled,
+			createDate,
+			createBy,
+			updateDate,
+			updateBy
+		) 
+		values
+		(
+			#{info.merNo},
+			#{info.terNo},
+			#{info.cardType},
+			#{info.currencyId},
+			#{info.currencyId2},
+			#{info.currencyId3},
+			#{info.enabled},
+			SYSDATE(),
+			#{info.createBy},
+			SYSDATE(),
+			#{info.updateBy}
+		)
+	</insert>
+	
+	<select id="queryMerchantRelCurrencyById" resultType="com.gateway.merchantmgr.model.MerchantRelCurrencyInfo">
+		SELECT
+			mr.*,
+			c.currencyName,
+			c2.currencyName as currencyName2,
+			c3.currencyName as currencyName3,
+			b.bankName,
+			b2.bankName as bankName2,
+			b3.bankName as bankName3
+		FROM
+			gw_merchant_rel_currency_info mr
+		LEFT JOIN gw_currency_info c ON mr.currencyId = c.id
+		LEFT JOIN gw_currency_info c2 ON mr.currencyId2 = c2.id
+		LEFT JOIN gw_currency_info c3 ON mr.currencyId3 = c3.id
+		LEFT JOIN gw_bank_info b ON c.bankId = b.id
+		LEFT JOIN gw_bank_info b2 ON c2.bankId = b2.id
+		LEFT JOIN gw_bank_info b3 ON c3.bankId = b3.id
+		where mr.id =#{id}
+	</select>
+	
+	<update id="updateCurrencyToMerchnat">
+		UPDATE gw_merchant_rel_currency_info
+		SET currencyId =#{info.currencyId},
+		 cardType =#{info.cardType},
+		 enabled =#{info.enabled},
+		 currencyId2 =#{info.currencyId2},
+		 currencyId3 =#{info.currencyId3},
+		 acquirerDiy =#{info.acquirerDiy}
+		WHERE id = #{info.id}
+	</update>
+	
+	<select id="getCurrencyToMerchnatHisList" resultType="com.gateway.merchantmgr.model.MerchantRelCurrencyInfo">
+		SELECT
+			mr.*,
+			c.currencyName,
+			b.bankName,
+			c2.currencyName as currencyName2,
+			c3.currencyName as currencyName3,
+			b.bankName,
+			b2.bankName as bankName2,
+			b3.bankName as bankName3
+		FROM
+			gw_merchant_rel_currency_info_log mr
+		LEFT JOIN gw_currency_info c ON mr.currencyId = c.id
+		LEFT JOIN gw_currency_info c2 ON mr.currencyId2 = c2.id
+		LEFT JOIN gw_currency_info c3 ON mr.currencyId3 = c3.id
+		LEFT JOIN gw_bank_info b ON c.bankId = b.id
+		LEFT JOIN gw_bank_info b2 ON c2.bankId = b2.id
+		LEFT JOIN gw_bank_info b3 ON c3.bankId = b3.id
+		where mr.merNo = #{merNo} and mr.terNo = #{terNo} and mr.cardType = #{cardType}
+		order by mr.updateDate desc
+	</select>
+	
+	<update id="batchUpdateCurrencyToMerchant">
+		update gw_merchant_rel_currency_info 
+		set currencyId = #{info.currencyId} , 
+		enabled = #{info.enabled} 
+		<include refid="Where_BatchUpdate_Merchant_Rel_Currency_Info"/>
+	</update>
+	
+	<insert id="batchAddCurrencyToMerchnatLog">
+		insert into gw_merchant_rel_currency_info_log
+		(
+			merNo,
+			terNo,
+			cardType,
+			currencyId,
+			enabled,
+			createDate,
+			createBy,
+			updateDate,
+			updateBy
+		) 
+		select 
+			merNo,
+			terNo,
+			cardType,
+			currencyId,
+			enabled,
+			createDate,
+			createBy,
+			SYSDATE(),
+			'${info.updateBy}'
+		from gw_merchant_rel_currency_info
+		<include refid="Where_BatchUpdate_Merchant_Rel_Currency_Info"/>
+	</insert>
+	
+	<select id="getAgentList" resultType="com.gateway.merchantmgr.model.AgentInfo">
+		select * from gw_agent_info 
+		<include refid="Where_Clause_Agent_Info"/>
+	</select>
+	
+	<select id="countAgentList" resultType="int">
+		select count(*) from gw_agent_info 
+		<include refid="Where_Clause_Agent_Info"/>
+	</select>
+	
+	
+	<insert id="addAgentInfo" >
+	    insert into gw_agent_info
+		(
+			agentNo,
+			agentName,
+			parentAgentNo,
+			enabled,
+			phoneNo,
+			accountName,
+			accountState,
+			accountCity,
+			accountContryCode,
+			accountNo,
+			accountAddress,
+			regDate,
+			activationDate,
+			expDate,
+			createBy,
+			sysSource
+		 ) 
+		 values
+		 (
+			#{info.agentNo},
+			#{info.agentName},
+			#{info.parentAgentNo},
+			#{info.enabled},
+			#{info.phoneNo},
+			#{info.accountName},
+			#{info.accountState},
+			#{info.accountCity},
+			#{info.accountContryCode},
+			#{info.accountNo},
+			#{info.accountAddress},
+			SYSDATE(),
+			SYSDATE(),
+			SYSDATE(),
+			#{info.createBy},
+			#{info.sysSource}
+		)
+	</insert>
+	
+	
+	<insert id="addAgentLogInfo">
+	    insert into gw_agent_info_log
+		(
+			agentNo,
+			agentName,
+			parentAgentNo,
+			enabled,
+			phoneNo,
+			accountName,
+			accountState,
+			accountCity,
+			accountContryCode,
+			accountNo,
+			accountAddress,
+			regDate,
+			activationDate,
+			expDate,
+			createBy,
+			uDate,
+			ucreateBy
+		 ) 
+		 values
+		 (
+			#{info.agentNo},
+			#{info.agentName},
+			#{info.parentAgentNo},
+			#{info.enabled},
+			#{info.phoneNo},
+			#{info.accountName},
+			#{info.accountState},
+			#{info.accountCity},
+			#{info.accountContryCode},
+			#{info.accountNo},
+			#{info.accountAddress},
+			SYSDATE(),
+			SYSDATE(),
+			SYSDATE(),
+			#{info.createBy},
+			SYSDATE(),
+			#{info.ucreateBy}
+		)
+	</insert>
+	
+	<update id="updateAgentInfo">
+	    update gw_agent_info set 
+		agentName = #{info.agentName},
+		parentAgentNo = #{info.parentAgentNo},
+		enabled = #{info.enabled},
+		phoneNo = #{info.phoneNo},
+		accountName = #{info.accountName},
+		accountState = #{info.accountState},
+		accountCity = #{info.accountCity},
+		accountContryCode = #{info.accountContryCode},
+		accountNo = #{info.accountNo},
+		accountAddress = #{info.accountAddress},
+		regDate = SYSDATE(),
+		activationDate = SYSDATE(),
+		expDate = SYSDATE(),
+		createBy = #{info.createBy},
+		sysSource=#{info.sysSource} 
+		where id = #{info.id}
+	</update>
+	
+	<select id="queryAgentById" resultType="com.gateway.merchantmgr.model.AgentInfo">
+	  select * from gw_agent_info where id=#{id}
+	</select>
+	
+	<select id="queryAgentByAgentNo" resultType="com.gateway.merchantmgr.model.AgentInfo">
+	  select * from gw_agent_info where agentNo=#{agentNo}
+	</select>
+	
+	
+	<select  id="queryAgentLog" resultType="com.gateway.merchantmgr.model.AgentInfo">
+	   select * from gw_agent_info_log where agentNo=#{agentNo}
+	</select>
+	
+	<insert id="addMerchantRelAgent">
+	   insert into gw_agent_rel_merchant(merNo,terNo,createDate,createBy) values(#{merNo},${terNo},SYSDATE(),#{createBy})
+	</insert>
+	
+	<select id="queryAgentRelMerchant" resultType="com.gateway.merchantmgr.model.GwAgentRelMerchant">
+	  select * from gw_agent_rel_merchant where merNo=#{merNo} and terNo=#{terNo}
+	</select>
+	
+	<select id="queryAgentRelMerchantByMerNo" resultType="com.gateway.merchantmgr.model.GwAgentRelMerchant">
+	  select * from gw_agent_rel_merchant where merNo=#{merNo} LIMIT 1
+	</select>
+	
+	
+	
+	<select id="queryUserRelMerchant" resultType="com.gateway.merchantmgr.model.GwUserRelMerchantInfo">
+	  select * from gw_user_rel_merchant_info where merNo=#{merNo}
+	</select>
+	
+	<insert id="addUserRefMerchant">
+	   insert into gw_user_rel_merchant_info
+		(
+			phoneNo,
+			merNo,
+			createDate,
+			createBy
+		 ) 
+		 values
+		 (
+			#{info.phoneNo},
+			#{info.merNo},
+			SYSDATE(),
+			#{info.createBy}
+		)
+	</insert>
+	
+	<update id="updateChecnkTerNo">
+	   update gw_merchant_terno_info set  enabled=${terInfo.enabled} where id=#{terInfo.id}
+	</update>
+	
+	<select id="queryTerSNRelAgentInfoList" resultType="com.gateway.merchantmgr.model.TerSnRelAgentInfo">
+		select * from gw_tersn_rel_agent_info 
+		<include refid="Where_SN_Rel_Agent_Culaus_Info"/>
+		order by createDate desc
+	</select>
+	
+	<select id="countTerSNRelAgentInfoList" resultType="int">
+		select count(*) from gw_tersn_rel_agent_info 
+		<include refid="Where_SN_Rel_Agent_Culaus_Info"/>
+		order by createDate desc
+	</select>
+	
+	<insert id="addTerSnRelAgent">
+	   insert into gw_tersn_rel_agent_info
+	   (
+	    SNNo,
+	    agentNo,
+	    parentAgentNo,
+	    creatBy,
+	    createDate,
+	    updateBy,
+	    updateDate,
+	    state
+	   )
+	   values
+	   (
+	    #{ter.SNNo},
+	    #{ter.agentNo},
+	    #{ter.parentAgentNo},
+	    #{ter.creatBy},
+	    SYSDATE(),
+	    #{ter.creatBy},
+	    SYSDATE(),
+	    #{ter.state}
+	   )
+	</insert>
+	
+	<update id="updateKeyMaste">
+	   update gw_key_maste set status=#{status} where tersn=#{tersn}
+	</update>
+	
+	<select id="queryTersnRelAgentList" resultType="com.gateway.merchantmgr.model.TerSnRelAgentInfo">
+	  select * from gw_tersn_rel_agent_info 
+	  <where>
+	  	<if test="snNo != null and snNo.length > 0">
+	  		and snno in
+	  		<foreach collection="snNo" open="(" close=")" separator="," item="sn">
+	  			#{sn}
+	  		</foreach> 
+	  	</if>
+	  </where>
+	</select>
+	
+	<sql id="Where_terLimit_Info">
+	    <where>
+	      <if test="condition.merNo!=null and condition.merNo!=''">
+			   and t.merNo =#{condition.merNo}
+			</if>
+			<if test="condition.terNo != null and condition.terNo != ''">
+				and t.terNo = #{condition.terNo}
+			</if>
+			<if test="condition.createDateStart != null and condition.createDateStart != ''">
+		        and t.createDate >= '${condition.createDateStart} 00:00:00'
+		    </if>
+		    <if test="condition.createDateEnd != null and condition.createDateEnd != ''">
+		        and t.createDate &lt;='${condition.createDateEnd} 23:59:59'
+		    </if>
+		    <if test="condition.amountOrCount != null and condition.amountOrCount != '' ">
+		    	and t.amountOrCount=#{condition.amountOrCount}
+		    </if>
+	    </where>
+	</sql>
+	
+	<select id="terLimitInfoList" resultType="com.gateway.merchantmgr.model.GwTernoLmitInfo">
+	   select t.*,
+			b.settleCurrency ,
+			m.merchantname
+ 		from gw_ter_limit_info t 
+	  left join gw_merchant_info m on t.merNo=m.merNo 
+	  left join gw_merchant_terno_info b on t.merNo=b.merNo and t.terNo=b.terNo
+
+	  <include refid="Where_terLimit_Info"/>
+		order by t.createDate DESC
+	</select>
+	
+	<select id="countterLimitInfoList" resultType="int">
+		 select count(*) from  (
+		 	select t.*,
+			m.merchantname
+	 from gw_ter_limit_info t 
+		  left join gw_merchant_info m on t.merNo=m.merNo 
+	
+		  <include refid="Where_terLimit_Info"/>
+		order by t.createDate DESC
+		 )t
+	</select>
+	<select id="queryTerLimitRateInfo" resultType="com.gateway.merchantmgr.model.GwTernoLmitInfo">
+		<choose>
+			<when test="info.amountOrCount==0">
+				select 
+					ifnull(sum(merSettleAmount),0) as monthAmount,
+					ifnull(sum(case when date_format(now(),'%Y-%m-%d')=date_format(transDate,'%Y-%m-%d') then merSettleAmount else 0 end),0) as dayAmount
+				from 
+					gw_trans_info 
+				where 
+					transType in ('sales','test')
+					and 
+					transDate>=CONCAT(date_format(now(),'%Y-%m'),'-01')
+					and 
+					merNo=#{info.merNo} 
+					and 
+					terNo=#{info.terNo}
+					and 
+					respCode='00'
+					<if test="info.cardType != null and info.cardType != '' ">
+						and cardType=#{info.cardType}
+					</if>
+			</when>
+			<otherwise>
+				select 
+					count(id) as monthAmount,
+					ifnull(sum(case when date_format(now(),'%Y-%m-%d')=date_format(transDate,'%Y-%m-%d') then 1 else 0 end),0) as dayAmount,
+					(select count(id) 
+						from gw_trans_info 
+					where 
+						transType in ('sales','test')
+						and 
+						transDate>=CONCAT(date_format(now(),'%Y-%m'),'-01')
+						and 
+						merNo=#{info.merNo} 
+						and 
+						respCode='00'
+						<if test="info.cardType != null and info.cardType != '' ">
+							and cardType=#{info.cardType}
+						</if>
+					) as monthCount
+				from 
+					gw_trans_info 
+				where 
+					transType in ('sales','test')
+					and 
+					transDate>=CONCAT(date_format(now(),'%Y-%m'),'-01')
+					and 
+					merNo=#{info.merNo} 
+					and 
+					terNo=#{info.terNo}
+					and 
+					respCode='00'
+					<if test="info.cardType != null and info.cardType != '' ">
+						and cardType=#{info.cardType}
+					</if>
+					
+				
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="addTerLimit">
+	    insert into gw_ter_limit_info
+	   (
+	    merNo,
+	    terNo,
+	    amountOrCount,
+	    cardType,
+	    singleTransAmountLimit,
+	    dayTransAmountLimit,
+	    monthTransAmountLimit,
+	    updateDate,
+	    upby,
+	    createDate,
+	    createby,
+	    transCount,
+	    transDate
+	   )
+	   values
+	   (
+	    #{limit.merNo},
+	    #{limit.terNo},
+	     #{limit.amountOrCount},
+	    #{limit.cardType},
+	    #{limit.singleTransAmountLimit},
+	    #{limit.dayTransAmountLimit},
+	    #{limit.monthTransAmountLimit},
+	    SYSDATE(),
+	    #{limit.upby},
+	    SYSDATE(),
+	    #{limit.createby},
+	    #{limit.transCount},
+	    #{limit.transDate}
+	   )
+	</insert>
+	<update id="updateTerLimitForMonthCountLimitByMerNo">
+		update gw_ter_limit_info set monthCountLimit=#{monthCountLimit} where merNo=#{merNo} and cardType=#{cardType}
+	</update>
+	<delete id="deleteTerLimitCountInfoById">
+		delete from gw_ter_limit_info where id=#{id}
+	</delete>
+	<insert id="addTerLimitLog">
+	    insert into gw_ter_limit_info_log
+	   (
+	    merNo,
+	    terNo,
+	    
+	    singleTransAmountLimit,
+	    dayTransAmountLimit,
+	    monthTransAmountLimit,
+	    updateDate,
+	    upby,
+	    transCount,
+	    type,
+	    transDate
+	   )
+	   values
+	   (
+	    #{limit.merNo},
+	    #{limit.terNo},
+	   
+	    #{limit.singleTransAmountLimit},
+	    #{limit.dayTransAmountLimit},
+	    #{limit.monthTransAmountLimit},
+	    SYSDATE(),
+	    #{limit.upby},
+	    #{limit.transCount},
+	    #{limit.type},
+	    #{limit.transDate}
+	   )
+	</insert>
+	
+	<select id="queryTerLimitLog" resultType="com.gateway.merchantmgr.model.GwTernoLmitInfo">
+		SELECT a.* from gw_ter_limit_info_log a 
+		left join gw_ter_limit_info b on a.merNo=b.merNo 
+		and a.terNo = b.terNo 
+		where 
+		b.id=#{id}
+	</select>
+	
+	<select id="queryTerLimit" resultType="int">
+		select COUNT(*) from 
+		gw_ter_limit_info 
+		where 
+		merNo=#{limit.merNo} 
+		and terNo=#{limit.terNo}
+		and cardType=#{limit.cardType}
+	</select>
+	
+	<update id="updateTerNoLimit">
+	    update gw_ter_limit_info set
+	    merNo=#{limit.merNo},
+	    terNo=#{limit.terNo},
+	    amountOrCount=#{limit.amountOrCount},
+	    cardType=#{limit.cardType},
+	    singleTransAmountLimit=#{limit.singleTransAmountLimit},
+	    dayTransAmountLimit=#{limit.dayTransAmountLimit},
+	    monthTransAmountLimit=#{limit.monthTransAmountLimit},
+	    updateDate=SYSDATE(),
+	    upby=#{limit.upby},
+	    status=#{limit.status},
+	    transCount=#{limit.transCount},
+	    transDate=#{limit.transDate}
+	    where id=#{limit.id}
+	</update>
+	
+	<select id="queryTerNoLimitById" resultType="com.gateway.merchantmgr.model.GwTernoLmitInfo">
+	   select * from gw_ter_limit_info where id=#{id}
+	</select>
+	
+	<select id="queryTersnRelAgentById" resultType="com.gateway.merchantmgr.model.TerSnRelAgentInfo">
+	  select * from gw_tersn_rel_agent_info 
+	  where id in 
+	  <foreach collection="ids" open="(" close=")" separator="," item="ids">
+	     #{ids}
+	    </foreach>
+	</select>
+	
+	<update id="deleteTerSnRelRecycle">
+	   delete from gw_tersn_rel_agent_info  where id =#{ter.id}
+	</update>
+	
+	<!--复核  -->
+	<update id="updateMerchantInfoReState">
+	  update gw_merchant_info set 
+	  reState=#{info.reState},
+	  <if test="info.enabled == 1">
+		  activationDate = now(),
+	  </if>
+	  enabled = #{info.enabled}
+	   where id=#{info.id}
+	</update>
+	
+	<!-- 商户结算周期列表 -->
+	<select id="getListMerchantSettleCycle" resultType="com.gateway.merchantmgr.model.MerchantSettleCycle">
+	select * from gw_merchant_settle_cycle_info
+	<include refid="Where_Clause_MerchantSettleCycle_Info"/>
+	</select>
+	<!-- 商户结算周期条数总计 -->
+	<select id="countMerchantSettleCycle" resultType="int">
+	select count(*) from gw_merchant_settle_cycle_info
+	<include refid="Where_Clause_MerchantSettleCycle_Info"/>
+	</select>
+	
+	<insert id="addMerchantSettleCycle">
+	insert into gw_merchant_settle_cycle_info(
+		merNo,
+		settleCount,
+		firstSettleT,
+		commonSettleT,
+		settleDay,
+		settleCurrency,
+		createBy,
+		createDate,
+		remark
+	)values(
+		#{msc.merNo},
+		#{msc.settleCount},
+		#{msc.firstSettleT},
+		#{msc.commonSettleT},
+		#{msc.settleDay},
+		#{msc.settleCurrency},
+		#{msc.createBy},
+		now(),
+		#{msc.remark}
+	
+	)
+	
+	
+	</insert>
+	<select id="queryMerchantSettleCycleByID" resultType="com.gateway.merchantmgr.model.MerchantSettleCycle">
+		select * from gw_merchant_settle_cycle_info where id=#{id}
+	</select>
+	<update id="updateMerchantSettleCycle" >
+		update 
+			gw_merchant_settle_cycle_info
+		set 
+			merNo=#{msc.merNo},
+			settleCount=#{msc.settleCount},
+			firstSettleT=#{msc.firstSettleT},
+			commonSettleT=#{msc.commonSettleT},
+			settleDay=#{msc.settleDay},
+			settleCurrency=#{msc.settleCurrency},
+			modifyBy=#{msc.modifyBy},
+			modifyDate=now(),
+			remark=#{msc.remark}
+		where
+			id=#{msc.id}	
+	</update>
+	
+	<select id="getListMerchantWebsite" resultType="com.gateway.merchantmgr.model.MerchantWebsite">
+		select a.*,b.type as merType,c.brandStatus from 
+		gw_merchant_website_info  a left join gw_merchant_info b on a.merNo =b.merNo
+		left join gw_merchant_terno_info c on a.merNo=c.merNo and a.terNo=c.terNo
+		<include refid="Where_Clause_MerchantWebsite_Info"/>
+		order by id desc 
+	</select>
+	<!-- 统计交易网站总数 -->
+	<select id="countMerchantWebsite" resultType="int">
+		select count(*) from gw_merchant_website_info a
+		<include refid="Where_Clause_MerchantWebsite_Info"/>
+	</select>
+	<insert id="addMerchantWebsite">
+		insert into gw_merchant_website_info(
+			merNo,
+			terNo,
+			merWebSite,
+			merWebProgram,
+			merWebLanguage,
+			brand,
+			product,
+			MCC,
+			status,
+			message,
+			createBy,
+			createDate
+		)values(
+			#{info.merNo},
+			#{info.terNo},
+			#{info.merWebSite},
+			#{info.merWebProgram},
+			#{info.merWebLanguage},
+			#{info.brand},
+			#{info.product},
+			#{info.MCC},
+			0,
+			#{info.message},
+			#{info.createBy},
+			now()
+		)
+	</insert>
+	<update id="updateMerchantWebsiteInfo" parameterType="com.gateway.merchantmgr.model.MerchantWebsite">
+		update gw_merchant_website_info set 
+			<if test="info.merWebSite != null and info.merWebSite != ''">
+				merWebSite=#{info.merWebSite},
+			</if>
+			<if test="info.merWebProgram != null and info.merWebProgram != ''">
+				merWebProgram=#{info.merWebProgram},
+			</if>
+			<if test="info.merWebLanguage != null and info.merWebLanguage != ''">
+				merWebLanguage=#{info.merWebLanguage},
+			</if>
+			<if test="info.brand != null and info.brand != ''">
+				brand=#{info.brand},
+			</if>
+			<if test="info.product != null and info.product != ''">
+				product=#{info.product},
+			</if>
+			<if test="info.MCC != null and info.MCC != ''">
+				MCC=#{info.MCC}
+			</if>
+			where id = #{info.id}
+	</update>
+	
+	<update id="updateMerchantWebsite">
+		update gw_merchant_website_info set
+		<if test="info.merWebSite != null and info.merWebSite != ''">
+				merWebSite=#{info.merWebSite},
+			</if>
+			<if test="info.merWebProgram != null and info.merWebProgram != ''">
+				merWebProgram=#{info.merWebProgram},
+			</if>
+			<if test="info.merWebLanguage != null and info.merWebLanguage != ''">
+				merWebLanguage=#{info.merWebLanguage},
+			</if>
+			<if test="info.brand != null and info.brand != ''">
+				brand=#{info.brand},
+			</if>
+			<if test="info.product != null and info.product != ''">
+				product=#{info.product},
+			</if>
+			<if test="info.MCC != null and info.MCC != ''">
+				MCC=#{info.MCC},
+			</if>
+			status=#{info.status},
+			message=#{info.message},
+			appDate=now(),
+			appBy=#{info.appBy},
+			isRiskCode=#{info.isRiskCode},
+			webSiteId=#{info.webSiteId},
+			merAcquirer=#{info.merAcquirer},
+			merAcquirerCountry=#{info.merAcquirerCountry},
+			merAcquirerCity=#{info.merAcquirerCity},
+			merAcquirerCompany=#{info.merAcquirerCompany},
+			remark=#{info.remark}
+		where 
+			id=#{info.id}
+	</update>
+	
+	<update id="updateMerchantWebsiteByMerNoAndTerNoAndWebSite">
+		update gw_merchant_website_info set
+			brand=#{info.brand}
+		where 
+			 merNo=#{info.merNo} and terNo=#{info.terNo} and merWebSite=#{info.merWebSite}
+	</update>
+	
+	<delete id="deleteWebsite">
+		delete from gw_merchant_website_info where id = #{id}
+	</delete>
+	
+	<select id="queryMerchantWebsiteById" resultType="com.gateway.merchantmgr.model.MerchantWebsite">
+		select * from gw_merchant_website_info where id=#{id}
+	</select>
+	
+	<select id="queryMerchantInfoByMerNoAndTerNo" resultType="int">
+		select count(*) from gw_merchant_terno_info where merNo=#{merNo} and terNo=#{terNo}
+	</select>
+	
+	<select id="queryMerchantWebsite" resultType="int">
+		select count(*) from gw_merchant_website_info where merNo=#{merNo} and terNo=#{terNo} and merWebSite=#{merWebSite}
+	</select>
+	
+	<insert id="insertOperationLog" parameterType="com.gateway.merchantmgr.model.MerchantWebsite">
+	insert into gw_merchant_website_info_log(
+			merNo,
+			terNo,
+			merWebSite,
+			merWebProgram,
+			merWebLanguage,
+			brand,
+			product,
+			MCC,
+			status,
+			message,
+			appDate,
+			appBy,
+			isRiskCode,
+			remark,
+			type,
+			operationDate,
+			operationBy,
+			createDate,
+			createBy
+		)values(
+			#{info.merNo},
+			#{info.terNo},
+			#{info.merWebSite},
+			#{info.merWebProgram},
+			#{info.merWebLanguage},
+			#{info.brand},
+			#{info.product},
+			#{info.MCC},
+			#{info.status},
+			#{info.message},
+			#{info.appDate},
+			#{info.appBy},
+			#{info.isRiskCode},
+			#{info.remark},
+			#{info.type},
+			now(),
+			#{info.operationBy},
+			#{info.createDate},
+			#{info.createBy}
+			
+		)
+	</insert>
+	
+	<sql id="Where_Website_Info_Log">
+		<where>
+			<if test="condition.merNo != null and condition.merNo != ''">
+				and merNo like  CONCAT(CONCAT('%', '${condition.merNo}'),'%')
+			</if>
+			<if test="condition.terNo != null and condition.terNo != ''">
+				and terNo like  CONCAT(CONCAT('%', '${condition.terNo}'),'%')
+			</if>
+			<if test="condition.status != null and condition.status != ''">
+				and status = #{condition.status}
+			</if>
+			<if test="condition.merWebSite != null and condition.merWebSite != ''">
+				and merWebSite like  CONCAT(CONCAT('%', '${condition.merWebSite}'),'%')
+			</if>
+			<if test="condition.MCC != null and condition.MCC != ''">
+				and MCC like  CONCAT(CONCAT('%', '${condition.MCC}'),'%')
+			</if>
+			<if test="condition.merWebLanguage != null and condition.merWebLanguage != ''">
+				and merWebLanguage like  CONCAT(CONCAT('%', '${condition.merWebLanguage}'),'%')
+			</if>
+			<if test="condition.merWebProgram != null and condition.merWebProgram != ''">
+				and merWebProgram like  CONCAT(CONCAT('%', '${condition.merWebProgram}'),'%')
+			</if>
+			<if test="condition.brand != null and condition.brand != ''">
+				and brand like  CONCAT(CONCAT('%', '${condition.brand}'),'%')
+			</if>
+			<if test="condition.product != null and condition.product != ''">
+				and product like  CONCAT(CONCAT('%', '${condition.product}'),'%')
+			</if>
+			<if test="condition.appDateStart != null and condition.appDateStart != ''">
+				and appDate >=  '${condition.appDateStart} 00:00:00'
+			</if>
+		    <if test="condition.appDateEnd != null and condition.appDateEnd != ''">
+		        and appDate &lt;='${condition.appDateEnd} 23:59:59'
+		    </if>
+		    <if test="condition.createDateStart != null and condition.createDateStart != ''">
+				and createDate >=  '${condition.createDateStart} 00:00:00'
+			</if>
+		    <if test="condition.createDateEnd != null and condition.createDateEnd != ''">
+		        and createDate &lt;='${condition.createDateEnd} 23:59:59'
+		    </if>
+		    <if test="condition.operationStart != null and condition.operationStart != ''">
+				and operationDate >=  '${condition.operationStart} 00:00:00'
+			</if>
+		    <if test="condition.operationDateEnd != null and condition.operationDateEnd != ''">
+		        and operationDate &lt;='${condition.operationDateEnd} 23:59:59'
+		    </if>
+		    <if test="condition.type != null and condition.type != ''">
+		    	and type = #{condition.type}
+		    </if>
+		</where>
+	</sql>
+	
+	<select id="queryWebsiteLogList" resultType="com.gateway.merchantmgr.model.MerchantWebsite">
+		select * from gw_merchant_website_info_log 
+			<include refid="Where_Website_Info_Log"/>
+			order by merNo,terNo 
+	</select>
+	
+	<select id="countWebsiteLogList" resultType="int">
+		select count(*) from gw_merchant_website_info_log 
+			<include refid="Where_Website_Info_Log"/>
+	</select>
+	<select id="queryTransSettingInfo" resultType="com.gateway.merchantmgr.model.TransSettingInfo">
+		SELECT
+			m.merNo,
+			m.terNo,
+			m.settleCurrency as settleCurrencyCode,
+			m.transCurrency as transCurrencyCode,
+			t1.bailRate,
+			t.transRate,
+			t2.sigleRate,
+			t3.bondCycle as bailSettleCycle,
+			t3.settleCycle as transSettleCycle,
+			t3.settleType as transSettleCondition,
+			t4.cardType,
+			t5.singleTransAmountLimit as sigleLimitAmount,
+			t5.dayTransAmountLimit as dayLimitAmount,
+			t5.monthTransAmountLimit as monthLimitAmount
+		FROM
+			gw_merchant_terno_info m
+		LEFT JOIN (
+			SELECT
+				merNo,
+				terNo,
+				GROUP_CONCAT(
+					CONCAT(cardType, ':', merRate,'&lt;br/>'),' '
+				) transRate
+			FROM
+				gw_rate_info
+			GROUP BY
+				merNo,
+				terNo
+		) AS t ON m.merNo = t.merno
+		AND m.terNo = t.terNo
+		LEFT JOIN (
+			SELECT
+				merNo,
+				terNo,
+				GROUP_CONCAT(
+					CONCAT(cardType, ':', bondRate,'&lt;br/>'),' '
+				) bailRate
+			FROM
+				gw_rate_info
+			GROUP BY
+				merNo,
+				terNo
+		) AS t1 ON m.merNo = t1.merno
+		AND m.terNo = t1.terNo
+		
+		LEFT JOIN (
+			SELECT
+				merNo,
+				terNo,
+				GROUP_CONCAT(
+					CONCAT(cardType,'&lt;br/>'),' '
+				) cardType
+			FROM
+				gw_rate_info
+			GROUP BY
+				merNo,
+				terNo
+		) AS t4 ON m.merNo = t4.merno
+		AND m.terNo = t4.terNo
+		
+		LEFT JOIN (
+			SELECT
+				merNo,
+				terNo,
+				GROUP_CONCAT(
+					CONCAT(cardType, ':', singlefee,'&lt;br/>'),' '
+				) sigleRate
+			FROM
+				gw_rate_info
+			GROUP BY
+				merNo,
+				terNo
+		) AS t2 ON m.merNo = t2.merno
+		AND m.terNo = t2.terNo
+		LEFT JOIN gw_settle_type_info t3 ON m.merNo = t3.merno
+		AND m.terNo = t3.terNo
+		LEFT JOIN gw_ter_limit_info t5 on m.merNO = t5.merNo and m.terNo = t5.terNo
+		<where>
+			and m.merNo = #{merNo} 
+		</where>
+		
+	</select>
+		
+	<select id="queryRegCodeList" resultType="com.gateway.merchantmgr.model.RegCodeInfo">
+		select *,(select merNo from gw_merchant_info where gw_merchant_info.email=gw_regcode_info.email order by gw_merchant_info.id desc limit 1) as merNo from 
+		gw_regcode_info
+		<include refid="Where_Reg_Clause"/>
+		order by createDate desc
+	</select>
+	
+	<select id="countRegCodeList" resultType="int">
+		select count(*) from gw_regcode_info
+		<include refid="Where_Reg_Clause"/>
+		order by createDate desc
+	</select>
+	
+	<insert id="excuAddRegCode">
+		insert into gw_regcode_info 
+		(
+			email,
+			regCode,
+			status,
+			createBy,
+			createDate
+		)
+		values
+		(
+			#{info.email},
+			#{info.regCode},
+			'0',
+			#{info.createBy},
+			SYSDATE()
+		)
+		
+	</insert>
+	
+	<delete id="deleteRegCodeInfo">
+		delete from gw_regcode_info  where id= #{id}
+	</delete>
+	
+	<select id="searchMerchantPaymentPage" resultType="com.gateway.merchantmgr.model.GwMerchantPaymentPage">
+		select a.id,a.merNo,a.terNo,a.pageId,a.createdPerson,a.createdDate,
+		a.lastUpdatePerson,a.lastUpdateDate,b.pageName,b.pageUrl,b.status 
+		from gw_merchant_payment_page a left join gw_payment_page b 
+		on a.pageId=b.id 
+		<where>
+			<if test="condition.status>0">
+				and b.status=#{condition.status}
+			</if>
+			<if test="condition.merNo != null and condition.merNo != ''">
+				and a.merNo = #{condition.merNo}
+			</if>
+			<if test="condition.terNo != null and condition.terNo !=''">
+			    and a.terNo =#{condition.terNo}
+			</if>
+		</where>
+	</select>
+	
+	<select id="countMerchantPaymentPage" resultType="int">
+		select count(*) from (select a.id,a.merNo,a.terNo,a.pageId,a.createdPerson,a.createdDate,
+		a.lastUpdatePerson,a.lastUpdateDate,b.pageName,b.pageUrl,b.status 
+		from gw_merchant_payment_page a left join gw_payment_page b 
+		on a.pageId=b.id 
+		<where>
+			<if test="condition.status>0">
+				and b.status=#{condition.status}
+			</if>
+			<if test="condition.merNo != null and condition.merNo != ''">
+				and a.merNo = #{condition.merNo}
+			</if>
+			<if test="condition.terNo != null and condition.terNo !=''">
+			    and a.terNo =#{condition.terNo}
+			</if>
+		</where>)t
+	</select>
+	
+	<select id="searchMerchantPaymentPageById" resultType="com.gateway.merchantmgr.model.GwMerchantPaymentPage">
+		select a.id,a.merNo,a.terNo,a.pageId,a.createdPerson,a.createdDate,
+		a.lastUpdatePerson,a.lastUpdateDate,b.pageName,b.pageUrl,b.status 
+		from gw_merchant_payment_page a left join gw_payment_page b 
+		on a.pageId=b.id where a.id=#{vo.id}
+	</select>
+	<insert id="addMerchantPaymentPage">
+		insert into gw_merchant_payment_page(merNo,terNo,pageId,createdPerson,createdDate,
+		lastUpdatePerson,lastUpdateDate) values(#{vo.merNo},#{vo.terNo},#{vo.pageId},
+		#{vo.createdPerson},#{vo.createdDate},#{vo.lastUpdatePerson},#{vo.lastUpdateDate})
+	</insert>
+	<update id="updateMerchantPaymentPage">
+		update gw_merchant_payment_page set pageId=#{vo.pageId},
+		lastUpdatePerson=#{vo.lastUpdatePerson},lastUpdateDate=#{vo.lastUpdateDate}
+		where id=#{vo.id}
+	</update>
+	<delete id="deleteMerchantPaymentPage">
+		delete from gw_merchant_payment_page where id=#{vo.id}
+	</delete>
+	
+	
+	<select id="getMccInfo" resultType="com.gateway.merchantmgr.model.MccInfo">
+		select * from gw_mcc_info 
+		<include refid="Where_Clause_Mcc_Info"/>
+		order by searchCount desc 
+	</select>
+	<update id="updateMccSearchCountBySearchContants">
+		update gw_mcc_info set searchCount=searchCount+1
+		<where>
+			<if test="condition.mccDescribe != null and condition.mccDescribe != ''">
+				and mccDescribe like '%${condition.mccDescribe}%'
+			</if>
+			<if test="condition.mccValue != null and condition.mccValue != ''">
+				and mccValue like '%${condition.mccValue}%'
+			</if>
+			
+		</where>
+	</update>
+	
+	<!-- 条数统计 -->
+	<select id="countMccInfo" resultType="int">
+		select count(*) from gw_mcc_info
+		<include refid="Where_Clause_Mcc_Info"/>
+		 
+	</select>
+	
+	
+	<select id="getBrandInfo" resultType="com.gateway.merchantmgr.model.BrandProductInfo">
+		select * from gw_brand_product 
+		
+		
+		<include refid="Where_Clause_Brand_Info"/>
+		order by searchCount desc 
+	</select>
+	<update id="updateBrandSearchCountBySearchContants">
+		update gw_brand_product set searchCount=searchCount+1
+		<where>
+		     type=2
+			<if test="condition.bpname != null and condition.bpname != ''">
+			and 
+				<foreach collection="condition.bpname" item="bp" open="(" close=")" separator=" or " >
+						 bpname like '%${bp}%'
+				</foreach>
+			</if>
+			<if test="condition.bpValue != null and condition.bpValue != ''">
+				and bpValue like '%${condition.bpValue}%'
+			</if>
+			
+		</where>
+	</update>
+	
+	
+	<!-- 条数统计 -->
+	<select id="countBrandInfo" resultType="int">
+		select count(*) from gw_brand_product
+		
+		
+		 <include refid="Where_Clause_Brand_Info"/>
+	</select>
+	
+	<select id="getProductInfo" resultType="com.gateway.merchantmgr.model.BrandProductInfo">
+		select * from gw_brand_product 
+		
+		
+		<include refid="Where_Clause_Product_Info"/>
+		order by searchCount desc 
+	</select>
+	<update id="updateBrandProductSearchCountBySearchContants">
+		update gw_brand_product set searchCount=searchCount+1
+		<where>
+		     type=1
+			<if test="condition.bpname != null and condition.bpname != ''">
+			and 
+				<foreach collection="condition.bpname" item="bp" open="(" close=")" separator=" or " >
+						 bpname like '%${bp}%'
+				</foreach>
+			</if>
+			<if test="condition.bpValue != null and condition.bpValue != ''">
+				and bpValue like '%${condition.bpValue}%'
+			</if>
+			
+		</where>
+	</update>
+	<!-- 条数统计 -->
+	<select id="countProductInfo" resultType="int">
+		select count(*) from gw_brand_product
+
+		 
+		 	<include refid="Where_Clause_Product_Info"/>
+	</select>
+	
+	<select id="checkmerNoCurrencyInfo" resultType="int">
+		select count(*) from gw_merchant_rel_currency_info where 
+		merNo=#{merNo} 
+		and terNo = #{terNo} 
+		and cardType=#{cardType} 
+		<if test="id !=null and id!= ''">
+			and id!=#{id}
+		</if>
+	</select>
+	
+	<select id="querySourceCurrencyCode" resultType="com.gateway.merchantmgr.model.MerchantTerInfo">
+		SELECT sourceCurrencyCode from gw_bank_currencyCode_rate group by sourceCurrencyCode
+	</select>
+	<select id="searchAgentUserInfo" resultType="com.gateway.merchantmgr.model.AgentUserInfo">
+		select * from gw_agent_user where id=#{vo.id}
+	</select>
+	<sql id="Where_Clause_AgentUser_Info">
+		<where>
+			<if test="condition.agentId != 0 and condition.agentId != null and condition.agentId != ''">
+				and b.id=#{condition.agentId}
+			</if>
+			<if test="condition.loginAccount != null and condition.loginAccount != ''">
+				and a.loginAccount like CONCAT('%', '${condition.loginAccount}' ,'%')
+				<!-- and a.loginAccount=#{condition.loginAccount} -->
+			</if>
+			<if test="condition.userName != null and condition.userName != ''">
+				and a.loginAccount like CONCAT('%', '${condition.userName}' ,'%')
+				<!-- and a.userName=#{condition.userName} -->
+			</if>
+			<if test="condition.agentNo != null and condition.agentNo != ''">
+				and a.agentNo=#{condition.agentNo}
+			</if>
+		</where>
+	</sql>
+	<select id="queryAgentUserInfoList" resultType="com.gateway.merchantmgr.model.AgentUserInfo">
+		select * from gw_agent_user a
+		left join gw_agent_info b on b.agentNo=a.agentNo
+		<include refid="Where_Clause_AgentUser_Info"/>
+		order by a.id desc
+	</select>
+	<update id="updateAgentUserInfo">
+		update gw_agent_user set lastUpdateDate=#{vo.lastUpdateDate},lastUpdatePerson=#{vo.lastUpdatePerson}
+		<if test="vo.loginPass!=null and vo.loginPass!=''">,loginPass=#{vo.loginPass}</if>
+		<if test="vo.userName!=null and vo.userName!=''">,userName=#{vo.userName}</if>
+		<if test="vo.email!=null and vo.email!=''">,email=#{vo.email}</if>
+		<if test="vo.phone!=null and vo.phone!=''">,phone=#{vo.phone}</if>
+		<if test="vo.status!=null and vo.status!=''">,status=#{vo.status}</if>
+		<if test="vo.remark!=null and vo.remark!=''">,remark=#{vo.remark}</if>
+		where id=#{vo.id}
+	</update>
+	<select id="getAgentMerchantTerList" resultType="com.gateway.merchantmgr.model.MerchantTerInfo">
+		select * from gw_merchant_terno_info a
+		left join gw_merchant_info b on b.merNo=a.merNo
+		where b.merNo=#{vo.merNo}
+	</select>
+	<insert id="saveAgentMerchantInfo">
+		insert into gw_agent_merchant(agentNo,merchantNo,terNo,createdPerson,createdDate) values
+		(#{vo.agentNo},#{vo.merchantNo},#{vo.terNo},#{vo.createdPerson},#{vo.createdDate})
+	</insert>
+	<select id="queryAgentMerchantInfo" resultType="com.gateway.merchantmgr.model.GWAgentMerchantInfo">
+		select id,agentNo,merchantNo,terNo,createdPerson,createdDate from gw_agent_merchant
+		where agentNo=#{vo.agentNo}
+	</select>
+	<delete id="deleteAgentUserInfo">
+		delete from gw_agent_user where id=#{vo.id}
+	</delete>
+	<insert id="saveAgentUserInfo">
+		insert into gw_agent_user(agentNo,loginAccount,loginPass,userName,status,email,phone,
+		remark,createdDate,createdPerson)
+		values(#{vo.agentNo},#{vo.loginAccount},#{vo.loginPass},#{vo.userName},#{vo.status},
+		#{vo.email},#{vo.phone},#{vo.remark},#{vo.createdDate},#{vo.createdPerson})
+	</insert>
+	<sql id="Where_Clause_AgentMerchantTer_Info">
+		<if test="condition.merNo!=null and condition.merNo!=''">
+			b.merNo = #{condition.merNo}
+		</if>
+	</sql>
+	<select id="queryAgentMerchantTerInfoList" resultType="com.gateway.merchantmgr.model.MerchantTerInfo">
+		select * from gw_merchant_terno_info a 
+		left join gw_merchant_info b on b.merNo=b.merNo
+		<include refid="Where_Clause_AgentMerchantTer_Info"/>
+		order by a.id desc
+	</select>
+	<select id="queryAgentMerchantTerInfoCount" resultType="java.lang.Integer">
+		select count(*) from gw_merchant_terno_info a 
+		left join gw_merchant_info b on b.merNo=b.merNo
+		<include refid="Where_Clause_AgentMerchantTer_Info"/>
+		order by a.id desc
+	</select>
+	<select id="queryAgentUserInfoByName" resultType="com.gateway.merchantmgr.model.AgentUserInfo">
+		select * from gw_agent_user
+		where agentNo=#{vo.agentNo} and loginAccount=#{vo.loginAccount} and loginPass=#{vo.loginPass}
+	</select>
+	<select id="queryAgentMerchantInfoByName" resultType="com.gateway.merchantmgr.model.GWAgentMerchantInfo">
+		select id,agentNo,merchantNo,terNo,createdPerson,createdDate from gw_agent_merchant
+		where agentNo=#{vo.agentNo} and merchantNo=#{vo.merchantNo} and terNo=#{vo.terNo}
+	</select>
+	<select id="queryAgentMerchantTerByName" resultType="com.gateway.merchantmgr.model.MerchantTerInfo">
+		select * from gw_merchant_terno_info
+		where terNo=#{vo.terNo} and merNo=#{vo.merNo}
+	</select>
+	
+	<sql id="Where_Sys_MerchantWebsite_Info">
+		<where>
+				a.sysOperatedStatus=1
+			<if test="condition.merNo != null and condition.merNo != ''">
+				and a.merNo =#{condition.merNo}
+			</if>
+			<if test="condition.terNo != null and condition.terNo != ''">
+				and a.terNo=#{condition.terNo}
+			</if>
+			<if test="condition.status != null and condition.status != ''">
+				and a.status = #{condition.status}
+			</if>
+			<if test="condition.merWebSite != null and condition.merWebSite != ''">
+				and a.merWebSite like  CONCAT(CONCAT('%', '${condition.merWebSite}'),'%')
+			</if>
+			<if test="condition.MCC != null and condition.MCC != ''">
+				and a.MCC =#{condition.MCC}
+			</if>
+			<if test="condition.merWebLanguage != null and condition.merWebLanguage != ''">
+				and a.merWebLanguage like  CONCAT(CONCAT('%', '${condition.merWebLanguage}'),'%')
+			</if>
+			<if test="condition.merWebProgram != null and condition.merWebProgram != ''">
+				and a.merWebProgram like  CONCAT(CONCAT('%', '${condition.merWebProgram}'),'%')
+			</if>
+			<if test="condition.brand != null and condition.brand != ''">
+				and a.brand like  CONCAT(CONCAT('%', '${condition.brand}'),'%')
+			</if>
+			<if test="condition.product != null and condition.product != ''">
+				and a.product like  CONCAT(CONCAT('%', '${condition.product}'),'%')
+			</if>
+			<if test="condition.appDateStart != null and condition.appDateStart != ''">
+				and <![CDATA[a.appDate >=  CONCAT(#{condition.appDateStart}, ' ' '00:00:00')]]>
+			</if>
+		    <if test="condition.appDateEnd != null and condition.appDateEnd != ''">
+		        and <![CDATA[a.appDate <=CONCAT(#{condition.appDateEnd}, ' ', '23:59:59')]]>
+		    </if>
+		    <if test="condition.createDateStart != null and condition.createDateStart != ''">
+				and <![CDATA[a.createDate >=  CONCAT(#{condition.createDateStart}, ' ', '00:00:00')]]>
+			</if>
+		    <if test="condition.createDateEnd != null and condition.createDateEnd != ''">
+		        and <![CDATA[a.createDate <= CONCAT(#{condition.createDateEnd}, ' ', '23:59:59')]]>
+		    </if>
+		    <if test="condition.operateDateStart !=null and condition.operateDateStart!=''">
+		    	and <![CDATA[a.sysOperatedDate >= CONCAT(#{condition.operateDateStart}, ' ', '00:00:00')]]>
+		    </if>
+		    <if test="condition.operateDateEnd !=null and condition.operateDateEnd!=''">
+		    	and <![CDATA[a.sysOperatedDate <= CONCAT(#{condition.operateDateEnd}, ' ', '23:59:59')]]>
+		    </if>
+		</where>
+	</sql>
+	
+	<select id="querySysMerchantWebsiteCount" resultType="java.lang.Integer">
+		select 
+			count(a.id)
+		from 
+			gw_merchant_website_info  a 
+			left join gw_merchant_info b on a.merNo =b.merNo
+			left join gw_merchant_terno_info c on a.merNo=c.merNo and a.terNo=c.terNo
+		<include refid="Where_Sys_MerchantWebsite_Info"/>
+		order by 
+			a.id 
+		desc 
+	</select>
+	
+	<select id="querySysMerchantWebsiteList" resultType="com.gateway.merchantmgr.model.MerchantWebsite">
+		select 
+			a.*,
+			b.type as merType,
+			c.brandStatus 
+		from 
+			gw_merchant_website_info  a 
+			left join gw_merchant_info b on a.merNo =b.merNo
+			left join gw_merchant_terno_info c on a.merNo=c.merNo and a.terNo=c.terNo
+		<include refid="Where_Sys_MerchantWebsite_Info"/>
+		order by 
+			id 
+		desc 
+	</select>
+	
+	<select id="querySysMerchantWebsitInfoById" resultType="com.gateway.merchantmgr.model.MerchantWebsite">
+		select
+			id,
+			merNo,
+			terNo,
+			merWebProgram,
+			merWebLanguage,
+			brand,
+			product,
+			merWebSite,
+			MCC,
+			status,
+			message,
+			createBy,
+			createDate,
+			appDate,
+			appBy,
+			isRiskCode,
+			remark,
+			sysOperatedStatus,
+			sysOperatedDate
+		from 
+			gw_merchant_website_info 
+		where 
+			id=#{id}
+	</select>
+	
+	<select id="queryExportSysMerchantWebsiteInfo" resultType="com.gateway.merchantmgr.model.MerchantWebsite">
+		select 
+			a.*,
+			b.type as merType,
+			c.brandStatus 
+		from 
+			gw_merchant_website_info  a 
+			left join gw_merchant_info b on a.merNo =b.merNo
+			left join gw_merchant_terno_info c on a.merNo=c.merNo and a.terNo=c.terNo
+			<include refid="Where_Sys_MerchantWebsite_Info"/>
+		order by 
+			a.id 
+		desc 
+	</select>
+	
+	<sql id="Where_Merchant_Dis_Fine">
+		<where>
+			<if test="condition.merNo!=null and condition.merNo!=''">
+				AND
+					merNo=#{condition.merNo}
+			</if>
+			<if test="condition.terNo!=null and condition.terNo!=''">
+				AND
+					terNo=#{condition.terNo}
+			</if>
+			<if test="condition.enabled!=null and condition.enabled!=''">
+				AND
+					enabled=#{condition.enabled}
+			</if>
+		</where>
+	</sql>
+	
+	<select id="queryMerchantDisFineInfoList" resultType="com.gateway.merchantmgr.model.MerchantDisFineInfo">
+		SELECT
+			GROUP_CONCAT(id) AS id,
+			merNo,
+			terNo,
+			enabled,
+			createBy,
+			createDate,
+			modify,
+			modifyDate
+		FROM
+			gw_merchant_dis_fine_info
+		<include refid="Where_Merchant_Dis_Fine"/>
+		GROUP BY
+			merNo,terNo
+	</select>
+	
+	<select id="queryMerchantDidFineInfoCount" resultType="java.lang.Integer">
+		SELECT
+			COUNT(e.ids)
+		FROM
+			(
+				SELECT
+					COUNT(id) AS ids
+				FROM
+					gw_merchant_dis_fine_info
+				<include refid="Where_Merchant_Dis_Fine"/>
+				GROUP BY
+					merNo,terNo
+			)
+		AS
+			e
+	</select>
+	
+	<select id="queryMerhcantDisFineRuleInfoList" resultType="com.gateway.merchantmgr.model.MerchantDisFineRuleInfo">
+		SELECT
+			id,
+			start,
+			end,
+			currency,
+			amount
+		FROM
+			gw_merchant_dis_fine_info
+		WHERE
+			merNo=#{merNo}
+		AND
+			terNo=#{terNo}
+		ORDER BY
+			start
+	</select>
+	
+	<select id="queryMerchantDisFineInfo" resultType="com.gateway.merchantmgr.model.MerchantDisFineInfo">
+		SELECT
+			GROUP_CONCAT(DISTINCT id) AS id,
+			merNo,
+			terNo,
+			currency,
+			enabled,
+			createBy,
+			createDate,
+			modify,
+			modifyDate
+		FROM
+			gw_merchant_dis_fine_info
+		WHERE
+			merNo=#{merNo}
+		AND
+			terNo=#{terNo}
+		GROUP BY
+			merNo,terNo
+	</select>
+	
+	<insert id="saveMerchantDisFineInfo">
+		INSERT INTO
+			gw_merchant_dis_fine_info
+			(
+				merNo,
+				terNo,
+				start,
+				end,
+				currency,
+				amount,
+				enabled,
+				createBy,
+				createDate
+			)
+		VALUES
+			<foreach collection="vo.ruleList" item="rule" separator=",">
+			(
+					#{rule.merNo},
+					#{rule.terNo},
+					#{rule.start},
+					#{rule.end},
+					#{rule.currency},
+					#{rule.amount},
+					#{rule.enabled},
+					#{rule.createBy},
+					NOW()
+			)
+			</foreach>
+	</insert>
+	
+	<delete id="deleteMerchantDisFineInfoByIds">
+		DELETE FROM
+			gw_merchant_dis_fine_info
+		WHERE
+			id IN
+			<foreach collection="list" item="id" separator="," open="(" close=")">
+				#{id}
+			</foreach>
+	</delete>
+	
+	<update id="updateMerchantDisFineInfoById">
+		UPDATE
+			gw_merchant_dis_fine_info
+		SET
+			start=#{vo2.start},
+			end=#{vo2.end},
+			currency=#{vo1.currency},
+			amount=#{vo2.amount},
+			enabled=#{vo1.enabled},
+			modify=#{vo1.modify},
+			modifyDate=NOW()
+		WHERE
+			id=#{id}
+	</update>
+	
+	<delete id="deleteMerchantDisFineInfo">
+		DELETE FROM
+			gw_merchant_dis_fine_info
+		WHERE
+			merNo=#{merNo}
+		AND
+			terNo=#{terNo}
+	</delete>
+	<select id="queryMerchantCurrencySpecialInfoByMerchantCurrencyId" resultType="com.gateway.merchantmgr.model.MerchantCurrencySpecialInfo">
+		select a.*,c.settleCurrency
+		from gw_merchant_ref_currency_special_info a RIGHT join gw_merchant_rel_currency_info b 
+		on a.merchantCurrencyId=b.id
+		left join gw_merchant_terno_info c on b.merNo=c.merNo and b.terNo=c.terNo
+		where 
+			b.id=#{merchantCurrencyId}
+	</select>
+	
+	<insert id="addMerchantCurrencySpecialInfo">
+		insert into 
+		gw_merchant_ref_currency_special_info (
+			merchantCurrencyId,
+		    singleType, 
+		    singleAmount, 
+		    dayCountType, 
+		    dayCount, 
+		    dayAmountType, 
+		    dayAmount, 
+		    monthCountType, 
+		    monthCount, 
+		    monthAmountType, 
+		    monthAmount, 
+		    currencyDayAmountType,
+		    currencyDayAmountIds,
+		    createBy, 
+		    createDate
+		) values(
+			#{merchantCurrencyId},
+		    #{singleType}, 
+		    #{singleAmount}, 
+		    #{dayCountType}, 
+		    #{dayCount}, 
+		    #{dayAmountType}, 
+		    #{dayAmount}, 
+		    #{monthCountType}, 
+		    #{monthCount}, 
+		    #{monthAmountType}, 
+		    #{monthAmount}, 
+		    #{currencyDayAmountType},
+		    #{currencyDayAmountIds},
+		    #{createBy},
+		    now()
+		)
+	</insert>
+	<update id="updateMerchantCurrencySpecialInfo">
+		update
+			gw_merchant_ref_currency_special_info 
+		set 
+			merchantCurrencyId=#{merchantCurrencyId},
+		    singleType=#{singleType}, 
+		    singleAmount=#{singleAmount}, 
+		    dayCountType=#{dayCountType}, 
+		    dayCount=#{dayCount}, 
+		    dayAmountType=#{dayAmountType}, 
+		    dayAmount=#{dayAmount}, 
+		    monthCountType=#{monthCountType}, 
+		    monthCount=#{monthCount}, 
+		    monthAmountType=#{monthAmountType}, 
+		    monthAmount=#{monthAmount},
+		    currencyDayAmountType=#{currencyDayAmountType},
+		    currencyDayAmountIds=#{currencyDayAmountIds},
+		    lastModifyBy=#{lastModifyBy}, 
+		    lastModifyDate=now()
+		where 
+			id=#{id}
+	</update>
+	
+	<sql id="Where_Country_Currency_Info_List">
+		<where>
+			<if test="condition.startDate!=null and condition.startDate!=''">
+				AND
+					a.modifyDate>=CONCAT(#{condition.startDate}, ' ', '00:00:00')
+			</if>
+			<if test="condition.merType!=null and condition.merType!='' and condition.merType!=&quot;-1&quot;">
+				AND
+					(
+						a.merType=#{condition.merType}
+					OR
+						a.merType='-1'
+					)
+			</if>
+			<if test="condition.endDate!=null and condition.endDate!=''">
+				AND
+					<![CDATA[a.modifyDate<=CONCAT(#{condition.endDate}, ' ', '23:59:59')]]>
+			</if>
+			<if test="condition.merNo!=null and condition.merNo!='' and condition.merNo!=&quot;0&quot;">
+				AND
+					(
+						a.merNo=#{condition.merNo}
+					OR
+						a.merNo='0'
+					)
+			</if>
+			<if test="condition.terNo!=null and condition.terNo!='' and condition.terNo!=&quot;0&quot;">
+				AND
+					(
+						a.terNo=#{condition.terNo}
+					OR
+						a.terNo='0'
+					)
+			</if>
+			<if test="condition.currencyId!=null and condition.currencyId!=''">
+				AND
+					a.currencyId=#{condition.currencyId}
+			</if>
+			<if test="condition.cardType!=null and condition.cardType!='' and condition.cardType!=&quot;0&quot;">
+				AND
+					(
+						a.cardType='0'
+					OR
+						a.cardType=#{condition.cardType}
+					)
+			</if>
+			<if test="condition.enabled!=null and condition.enabled!=''">
+				AND
+					a.enabled=#{condition.enabled}
+			</if>
+			<if test="condition.countryCode!=null and condition.countryCode!='' and condition.countryCode!=&quot;0&quot;">
+				AND
+					(
+						a.countryCode='0'
+					OR
+						FIND_IN_SET(#{condition.countryCode}, a.countryCode)
+					)
+			</if>
+			<if test="condition.brand!=null and condition.brand!='' and condition.brand!=&quot;0&quot;">
+				AND
+					(
+						a.brand='0'
+					OR
+						FIND_IN_SET(#{condition.brand}, a.brand)
+					)
+			</if>
+		</where>
+	</sql>
+	
+	<select id="queryCountryCurrencyInfoList" resultType="com.gateway.merchantmgr.model.CountryCurrencyInfo">
+		SELECT
+			a.id,
+			a.merNo,
+			a.terNo,
+			a.brand,
+			a.cardType,
+			a.countryCode,
+			a.currencyId,
+			a.enabled,
+			a.createBy,
+			a.merType,
+			DATE_FORMAT(a.createDate, '%Y-%m-%d %H:%i:%s') AS createDate,
+			a.modifyBy,
+			DATE_FORMAT(a.modifyDate, '%Y-%m-%d %H:%i:%s') AS modifyDate,
+			b.currencyName,
+			IFNULL(a.modifyDate, a.createDate) AS sortDate
+		FROM
+			gw_merchant_country_currency_info a
+			LEFT JOIN gw_currency_info b ON a.currencyId=b.id
+		<include refid="Where_Country_Currency_Info_List"/>
+		ORDER BY
+			sortDate
+		DESC
+	</select>
+	
+	<select id="queryCountryCurrencyInfoCount" resultType="java.lang.Integer">
+		SELECT
+			COUNT(id)
+		FROM
+			gw_merchant_country_currency_info a
+		<include refid="Where_Country_Currency_Info_List"/>
+	</select>
+	
+	<insert id="saveCountryCurrencyInfo" useGeneratedKeys="true" keyProperty="vo.id">
+		INSERT INTO
+			gw_merchant_country_currency_info
+			(
+				merNo,
+				terNo,
+				brand,
+				merType,
+				cardType,
+				countryCode,
+				currencyId,
+				enabled,
+				createBy,
+				createDate
+			)
+		VALUES
+			(
+				#{vo.merNo},
+				#{vo.terNo},
+				#{vo.brand},
+				#{vo.merType},
+				#{vo.cardType},
+				#{vo.countryCode},
+				#{vo.currencyId},
+				#{vo.enabled},
+				#{vo.createBy},
+				NOW()
+			)
+	</insert>
+	
+	<update id="updateCountryCurrencyInfoById">
+		UPDATE
+			gw_merchant_country_currency_info
+		SET
+			merNo=#{vo.merNo},
+			terNo=#{vo.terNo},
+			merType=#{vo.merType},
+			cardType=#{vo.cardType},
+			brand=#{vo.brand},
+			countryCode=#{vo.countryCode},
+			currencyId=#{vo.currencyId},
+			enabled=#{vo.enabled},
+			modifyBy=#{vo.modifyBy},
+			modifyDate=NOW()
+		WHERE
+			id=#{vo.id}
+	</update>
+	
+	<select id="queryCountryCurrencyInfoById" resultType="com.gateway.merchantmgr.model.CountryCurrencyInfo">
+		SELECT
+			a.id,
+			a.merNo,
+			a.terNo,
+			a.cardType,
+			a.merType,
+			IF(a.brand='0', '', a.brand) AS brand,
+			IF(a.countryCode='0', '', a.countryCode) AS countryCode,
+			a.currencyId,
+			a.enabled,
+			a.createBy,
+			a.createDate,
+			a.modifyBy,
+			a.modifyDate,
+			b.currencyName
+		FROM
+			gw_merchant_country_currency_info a
+			LEFT JOIN gw_currency_info b ON a.currencyId=b.id
+		WHERE
+			a.id=#{id}
+	</select>
+	
+	<delete id="deleteCountryCurrencyInfoById">
+		DELETE FROM
+			gw_merchant_country_currency_info
+		WHERE
+			id=#{id}
+	</delete>
+	
+	<sql id="Where_Country_Currency_Log_Info_List">
+		<where>
+			<if test="condition.merType!=null and condition.merType!='' and condition.merType!=&quot;-1&quot;">
+				AND
+					(
+						a.merType LIKE CONCAT('%', #{condition.merType}, '%')
+					OR
+						a.merType LIKE CONCAT('%', '-1', '%')
+					)
+			</if>
+			<if test="condition.startDate!=null and condition.startDate!=''">
+				AND
+					a.modifyDate>=CONCAT(#{condition.startDate}, ' ', '00:00:00')
+			</if>
+			<if test="condition.endDate!=null and condition.endDate!=''">
+				AND
+					<![CDATA[a.modifyDate<=CONCAT(#{condition.endDate}, ' ', '23:59:59')]]>
+			</if>
+			<if test="condition.merNo!=null and condition.merNo!='' and condition.merNo!=&quot;0&quot;">
+				AND
+					(
+						a.merNo LIKE CONCAT('%', #{condition.merNo}, '%')
+					OR
+						a.merNo LIKE CONCAT('%', '0', '%')
+					)
+			</if>
+			<if test="condition.terNo!=null and condition.terNo!='' and condition.terNo!=&quot;0&quot;">
+				AND
+					(
+						a.terNo LIKE CONCAT('%', #{condition.terNo}, '%')
+					OR
+						a.terNo LIKE CONCAT('%', '0', '%')
+					)
+			</if>
+			<if test="condition.cardType!=null and condition.cardType!='' and condition.cardType!=&quot;0&quot;">
+				AND
+					(
+						a.cardType LIKE CONCAT('%', #{condition.cardType}, '%')
+					OR
+						a.cardType LIKE CONCAT('%', '0', '%')
+					)
+			</if>
+			<if test="condition.countryCode!=null and condition.countryCode!='' and condition.countryCode!=&quot;0&quot;">
+				AND
+					(
+						a.countryCode LIKE CONCAT('%', '0', '%')
+					OR
+						<!-- 
+						FIND_IN_SET(#{condition.countryCode}, a.countryCode)
+						 -->
+						a.countryCode LIKE CONCAT('%', #{condition.countryCode}, '%')
+					)
+			</if>
+			<if test="condition.brand!=null and condition.brand!='' and condition.brand!=&quot;0&quot;">
+				AND
+					(
+						a.brand LIKE CONCAT('%', '0', '%')
+					OR
+						<!-- 
+						FIND_IN_SET(#{condition.brand}, a.brand)
+						 -->
+						a.brand LIKE CONCAT('%', #{condition.brand}, '%')
+					)
+			</if>
+			<if test="condition.currencyId!=null and condition.currencyId!='' and condition.currencyId!=&quot;0&quot;">
+				AND
+					a.currencyId LIKE CONCAT('%', #{condition.currencyId}, '%')
+			</if>
+			<if test="condition.operateType!=null and condition.operateType!=''">
+				AND
+					a.operateType LIKE CONCAT('%', #{condition.operateType}, '%')
+			</if>
+		</where>
+	</sql>
+	
+	<select id="queryCountryCurrencyLogInfoList" resultType="com.gateway.merchantmgr.model.CountryCurrencyLogInfo">
+		SELECT
+			a.id,
+			CONCAT
+			(
+				CASE a.merType IS NOT NULL WHEN d.columnvalue IS NOT NULL THEN d.columnvalue WHEN IF(LOCATE('->', a.merType)>0, SUBSTRING(a.merType,1, LOCATE('->', a.merType)-1), a.merType)='-1' THEN '所有' ELSE '' END,
+				CASE a.merType IS NOT NULL WHEN LOCATE('->', a.merType)>0 THEN '->' ELSE '' END,
+				CASE a.merType IS NOT NULL WHEN e.columnvalue IS NOT NULL THEN e.columnvalue WHEN IF(LOCATE('->', a.merType)>0, SUBSTRING(a.merType, LOCATE('->', a.merType)+2, CHAR_LENGTH(a.merType)), -2)='-1' THEN '所有' ELSE '' END
+			) AS merType,
+			CONCAT
+			(
+				CASE a.merNo IS NOT NULL WHEN <![CDATA[LOCATE('->', a.merNo)<=0]]> THEN IF(a.merNo='0', '所有', a.merNo) WHEN SUBSTRING(a.merNo,1, IF(LOCATE('->', a.merNo)>0, LOCATE('->', a.merNo)-1, CHAR_LENGTH(a.merNo)))='0' THEN '所有' ELSE SUBSTRING(a.merNo,1, IF(LOCATE('->', a.merNo)>0, LOCATE('->', a.merNo)-1, CHAR_LENGTH(a.merNo))) END,
+				CASE a.merNo IS NOT NULL WHEN LOCATE('->', a.merNo)>0 THEN '->' ELSE '' END,
+				CASE a.merNo IS NOT NULL WHEN <![CDATA[LOCATE('->', a.merNo)<=0]]> THEN '' WHEN SUBSTRING(a.merNo, LOCATE('->', a.merNo)+2, CHAR_LENGTH(a.merNo))='0' THEN '所有' ELSE SUBSTRING(a.merNo, LOCATE('->', a.merNo)+2, CHAR_LENGTH(a.merNo)) END
+			) AS merNo,
+			CONCAT
+			(
+				CASE a.terNo IS NOT NULL WHEN <![CDATA[LOCATE('->', a.terNo)<=0]]> THEN IF(a.terNo='0', '所有', a.terNo) WHEN SUBSTRING(a.terNo,1, IF(LOCATE('->', a.terNo)>0, LOCATE('->', a.terNo)-1, CHAR_LENGTH(a.terNo)))='0' THEN '所有' ELSE SUBSTRING(a.terNo,1, IF(LOCATE('->', a.terNo)>0, LOCATE('->', a.terNo)-1, CHAR_LENGTH(a.terNo))) END,
+				CASE a.terNo IS NOT NULL WHEN LOCATE('->', a.terNo)>0 THEN '->' ELSE '' END,
+				CASE a.terNo IS NOT NULL WHEN <![CDATA[LOCATE('->', a.terNo)<=0]]> THEN '' WHEN SUBSTRING(a.terNo, LOCATE('->', a.terNo)+2, CHAR_LENGTH(a.terNo))='0' THEN '所有' ELSE SUBSTRING(a.terNo, LOCATE('->', a.terNo)+2, CHAR_LENGTH(a.terNo)) END
+			) AS terNo,
+			CONCAT
+			(
+				CASE a.brand IS NOT NULL WHEN <![CDATA[LOCATE('->', a.brand)<=0]]> THEN IF(a.brand='0', '所有', a.brand) WHEN SUBSTRING(a.brand,1, IF(LOCATE('->', a.brand)>0, LOCATE('->', a.brand)-1, CHAR_LENGTH(a.brand)))='0' THEN '所有' ELSE SUBSTRING(a.brand,1, IF(LOCATE('->', a.brand)>0, LOCATE('->', a.brand)-1, CHAR_LENGTH(a.brand))) END,
+				CASE a.brand IS NOT NULL WHEN LOCATE('->', a.brand)>0 THEN '->' ELSE '' END,
+				CASE a.brand IS NOT NULL WHEN <![CDATA[LOCATE('->', a.brand)<=0]]> THEN '' WHEN SUBSTRING(a.brand, LOCATE('->', a.brand)+2, CHAR_LENGTH(a.brand))='0' THEN '所有' ELSE SUBSTRING(a.brand, LOCATE('->', a.brand)+2, CHAR_LENGTH(a.brand)) END
+			) AS brand,
+			CONCAT
+			(
+				CASE a.countryCode IS NOT NULL WHEN <![CDATA[LOCATE('->', a.countryCode)<=0]]> THEN IF(a.countryCode='0', '所有', a.countryCode) WHEN SUBSTRING(a.countryCode,1, IF(LOCATE('->', a.countryCode)>0, LOCATE('->', a.countryCode)-1, CHAR_LENGTH(a.countryCode)))='0' THEN '所有' ELSE SUBSTRING(a.countryCode,1, IF(LOCATE('->', a.countryCode)>0, LOCATE('->', a.countryCode)-1, CHAR_LENGTH(a.countryCode))) END,
+				CASE a.countryCode IS NOT NULL WHEN LOCATE('->', a.countryCode)>0 THEN '->' ELSE '' END,
+				CASE a.countryCode IS NOT NULL WHEN <![CDATA[LOCATE('->', a.countryCode)<=0]]> THEN '' WHEN SUBSTRING(a.countryCode, LOCATE('->', a.countryCode)+2, CHAR_LENGTH(a.countryCode))='0' THEN '所有' ELSE SUBSTRING(a.countryCode, LOCATE('->', a.countryCode)+2, CHAR_LENGTH(a.countryCode)) END
+			) AS countryCode,
+			a.currencyId,
+			CONCAT
+			(
+				CASE a.cardType IS NOT NULL WHEN <![CDATA[LOCATE('->', a.cardType)<=0]]> THEN IF(a.cardType='0', '所有', a.cardType) WHEN SUBSTRING(a.cardType,1, IF(LOCATE('->', a.cardType)>0, LOCATE('->', a.cardType)-1, CHAR_LENGTH(a.cardType)))='0' THEN '所有' ELSE SUBSTRING(a.cardType,1, IF(LOCATE('->', a.cardType)>0, LOCATE('->', a.cardType)-1, CHAR_LENGTH(a.cardType))) END,
+				CASE a.cardType IS NOT NULL WHEN LOCATE('->', a.cardType)>0 THEN '->' ELSE '' END,
+				CASE a.cardType IS NOT NULL WHEN <![CDATA[LOCATE('->', a.cardType)<=0]]> THEN '' WHEN SUBSTRING(a.cardType, LOCATE('->', a.cardType)+2, CHAR_LENGTH(a.cardType))='0' THEN '所有' ELSE SUBSTRING(a.cardType, LOCATE('->', a.cardType)+2, CHAR_LENGTH(a.cardType)) END
+			) AS cardType,
+			a.modifyBy,
+			a.enabled,
+			DATE_FORMAT(a.modifyDate, '%Y-%m-%d %H:%i:%s') AS modifyDate,
+			a.operateType,
+			(
+				CASE b.currencyName IS NOT NULL WHEN c.currencyName IS NOT NULL THEN CONCAT(b.currencyName, '->', c.currencyName) ELSE b.currencyName END
+			) AS currencyName,
+			CONCAT
+			(
+				CASE a.enabled IS NOT NULL WHEN SUBSTRING(a.enabled,1, IF(LOCATE('->', a.enabled)>0, LOCATE('->', a.enabled)-1, CHAR_LENGTH(a.enabled)))=1 THEN '生效' WHEN SUBSTRING(a.enabled,1, IF(LOCATE('->', a.enabled)>0, LOCATE('->', a.enabled)-1, CHAR_LENGTH(a.enabled)))=0 THEN '不生效' ELSE '' END,
+				CASE a.enabled IS NOT NULL WHEN LOCATE('->', a.enabled)>0 THEN '->' ELSE '' END,
+				CASE a.enabled IS NOT NULL WHEN <![CDATA[LOCATE('->', a.enabled)<=0]]> THEN '' WHEN SUBSTRING(a.enabled, LOCATE('->', a.enabled)+2, CHAR_LENGTH(a.enabled))=1 THEN '生效' WHEN SUBSTRING(a.enabled, LOCATE('->', a.enabled)+2, CHAR_LENGTH(a.enabled))=0 THEN '不生效' ELSE '' END
+			)
+			AS changeEnable
+		FROM
+			gw_merchant_country_currency_info_log a
+			LEFT JOIN gw_currency_info b ON IF(LOCATE('->', a.currencyId)>0, SUBSTRING(a.currencyId,1, LOCATE('->', a.currencyId)-1), a.currencyId)=b.id
+			LEFT JOIN gw_currency_info c ON IF(LOCATE('->', a.currencyId)>0, SUBSTRING(a.currencyId, LOCATE('->', a.currencyId)+2, CHAR_LENGTH(a.currencyId)), 0)=c.id
+			LEFT JOIN gw_base_table_data_info d ON IF(LOCATE('->', a.merType)>0, SUBSTRING(a.merType,1, LOCATE('->', a.merType)-1), a.merType)=d.columnKey AND d.tableName='MERCHANTTYPE'
+			LEFT JOIN gw_base_table_data_info e ON IF(LOCATE('->', a.merType)>0, SUBSTRING(a.merType, LOCATE('->', a.merType)+2, CHAR_LENGTH(a.merType)), -2)=e.columnKey AND e.tableName='MERCHANTTYPE'
+		<include refid="Where_Country_Currency_Log_Info_List"/>
+		ORDER BY
+			a.modifyDate
+		DESC
+	</select>
+	
+	<select id="queryCountryCurrencyLogInfoCount" resultType="java.lang.Integer">
+		SELECT
+			COUNT(id)
+		FROM
+			gw_merchant_country_currency_info_log a
+		<include refid="Where_Country_Currency_Log_Info_List"/>
+	</select>
+	
+	<insert id="saveCountryCurrencyLogInfo" useGeneratedKeys="true" keyProperty="vo.id">
+		INSERT INTO
+			gw_merchant_country_currency_info_log
+			(
+				merNo,
+				terNo,
+				brand,
+				merType,
+				countryCode,
+				currencyId,
+				cardType,
+				enabled,
+				operateType,
+				modifyBy,
+				modifyDate
+			)
+		VALUES
+			(
+				#{vo.merNo},
+				#{vo.terNo},
+				#{vo.brand},
+				#{vo.merType},
+				#{vo.countryCode},
+				#{vo.currencyId},
+				#{vo.cardType},
+				#{vo.enabled},
+				#{vo.operateType},
+				#{vo.modifyBy},
+				NOW()
+			)
+	</insert>
+	
+	<select id="queryMerchantTypeInfoList" resultType="com.gateway.merchantmgr.model.MerchantTypeInfo">
+		SELECT
+			id,
+			columnKey AS type,
+			columnvalue AS typeName
+		FROM
+			gw_base_table_data_info
+		WHERE
+			tableName='MERCHANTTYPE'
+	</select>
+	
+	<select id="queryMerchantTypeInfoCount" resultType="java.lang.Integer">
+		SELECT
+			COUNT(id) AS idCount
+		FROM
+			gw_base_table_data_info
+		WHERE
+			tableName='MERCHANTTYPE'
+	</select>
+	
+	<sql id="Where_Merchant_MerNo_Info_List">
+		<where>
+			<if test="condition.merNo!=null and condition.merNo!=''">
+				AND
+					merNo=#{condition.merNo}
+			</if>
+			<if test="condition.enabled!=null and condition.enabled!=''">
+				AND
+					enabled=#{condition.enabled}
+			</if>
+			<if test="condition.merType!=null and condition.merType!='' and condition.merType!=&quot;-1&quot;">
+				AND
+					type=#{condition.merType}
+			</if>
+		</where>
+	</sql>
+	
+	<select id="queryMerchantMerNoInfoList" resultType="com.gateway.merchantmgr.model.MerchantTerInfo">
+		SELECT
+			GROUP_CONCAT(id) AS id,
+			merNo,
+			GROUP_CONCAT(merchantName) AS merchantName
+		FROM
+			gw_merchant_info
+		<include refid="Where_Merchant_MerNo_Info_List"/>
+		GROUP BY
+			merNo
+		ORDER BY
+			merNo
+	</select>
+	
+	<select id="queryMerchantMerNoInfoCount" resultType="java.lang.Integer">
+		SELECT
+			COUNT(e.idCount)
+		FROM
+			(
+				SELECT
+					COUNT(id) AS idCount
+				FROM
+					gw_merchant_info
+				<include refid="Where_Merchant_MerNo_Info_List"/>
+				GROUP BY
+					merNo
+			)
+		AS
+			e
+	</select>
+	
+	<sql id="Where_Merchant_TerNo_Info_List">
+		<where>
+			<if test="condition.merNo!=null and condition.merNo!='' and condition.merNo!=&quot;0&quot;">
+				AND
+					merNo=#{condition.merNo}
+			</if>
+			<if test="condition.terNo!=null and condition.terNo!=''">
+				AND
+					terNo=#{condition.terNo}
+			</if>
+			<if test="condition.enabled!=null and condition.enabled!=''">
+				AND
+					enabled=#{condition.enabled}
+			</if>
+		</where>
+	</sql>
+	
+	<select id="queryMerchantTerNoInfoList" resultType="com.gateway.merchantmgr.model.MerchantTerInfo">
+		SELECT
+			GROUP_CONCAT(id) AS id,
+			terNo,
+			GROUP_CONCAT(terName) AS terName
+		FROM
+			gw_merchant_terno_info
+		<include refid="Where_Merchant_TerNo_Info_List"/>
+		GROUP BY
+			terNo
+		ORDER BY
+			terNo
+	</select>
+	
+	<select id="queryMerchantTerNoInfoCount" resultType="java.lang.Integer">
+		SELECT
+			COUNT(e.idCount)
+		FROM
+			(
+				SELECT
+					COUNT(id) idCount
+				FROM
+					gw_merchant_terno_info
+				<include refid="Where_Merchant_TerNo_Info_List"/>
+				GROUP BY
+					terNo
+			)
+		AS
+			e
+	</select>
+	
+	<!-- 修改商户备用终端信息 -->
+	<update id="updateSpareTerNo">
+	   	UPDATE gw_merchant_terno_info
+		SET spareTerNo = #{merchantTerInfo.spareTerNo},
+		isChangeToSpareTerNo = #{merchantTerInfo.isChangeToSpareTerNo}
+		WHERE
+			id = #{merchantTerInfo.id}
+	</update>
+	
+	<!-- 查询终端shopify状态 -->
+	<select id="getShopifyById" resultType="com.gateway.merchantmgr.model.MerchantTerInfo" parameterType="string">
+		select a.id as id,a.merNo as merNo,a.terNo as terNo,a.shopifyOnOff as shopifyOnOff  from gw_merchant_terno_info a where id=#{id}
+	</select>
+	
+	<update id="updateShopifyById" >
+		update gw_merchant_terno_info a set a.shopifyOnOff=#{shopifyOnOff} where a.id=#{id}
+	</update>
+	
+</mapper>

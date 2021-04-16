@@ -1,0 +1,529 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="com.gateway.api.mapper.TransApiMgrDao">
+	
+	<sql id="Where_Clause_Trans_info">
+		<where>
+			<if test="conn.transType != null and conn.transType != ''">
+				and ts.transType = #{conn.transType}
+			</if>
+			<if test="conn.merNo != null and conn.merNo != ''">
+				and ts.merNo = #{conn.merNo}
+			</if>
+			<if test="conn.terNo != null and conn.terNo != ''">
+				and ts.terNo = #{conn.terNo}
+			</if>
+			<if test="conn.tradeNo != null and conn.tradeNo != ''">
+				and ts.tradeNo = #{conn.tradeNo}
+			</if>
+			<if test="conn.relNo != null and conn.relNo != ''">
+				and ts.relNo = #{conn.relNo}
+			</if>
+			<if test="conn.transTimeStart != null and conn.transTimeStart != ''">
+				and ts.transDate > #{conn.transTimeStart}
+			</if>
+			<if test="conn.transTimeEnd != null and conn.transTimeEnd != ''">
+				and ts.transDate &lt; #{conn.transTimeEnd}
+			</if>
+			<if test="conn.cardNo != null and conn.cardNo != ''">
+				and ts.cardNo =#{conn.cardNo} 
+			</if>
+			<if test="conn.isSettle == 'settle'">
+				and ts.settleBatchNo is not null 
+			</if>
+			<if test="conn.isSettle == 'unsettle'">
+				and ts.settleBatchNo is null 
+			</if>
+			<if test="conn.isSucceed == 'succeed'">
+				and ts.respCode = '00'
+			</if>
+			<if test="conn.isSucceed == 'unsucceed'">
+				and ts.respCode != '00'
+			</if>
+			<if test="conn.isNormal =='normal'">
+				and ts.tradeNo not in(
+					 select t1.relNo from gw_trans_info t1 where t1.tradeNo != t1.relNo and t1.transType ='void' and t1.respCode = '00'
+					 	<if test="conn.transTimeStart != null and conn.transTimeStart != ''">
+							and t1.transDate > #{conn.transTimeStart}
+						</if>
+						<if test="conn.transTimeEnd != null and conn.transTimeEnd != ''">
+							and t1.transDate &lt; #{conn.transTimeEnd}
+						</if>
+				)
+			</if>
+			and t.settleflag != 0 
+		</where>
+		order by ts.transDate desc
+	</sql>
+	<sql id="Where_Clause_Settle_Info">
+		<where>
+			<if test="conn.merNo != null and conn.merNo != ''">
+				and s.merNo = #{conn.merNo}
+			</if>
+			<if test="conn.batchNo != null and conn.batchNo != ''">
+				and s.batchNo = #{conn.batchNo}
+			</if>
+			<if test="conn.terNo != null and conn.terNo != ''">
+				and s.terNo = #{conn.terNo}
+			</if>
+			<if test="conn.settleDateStart != null and conn.settleDateStart != ''">
+				and s.settleDate >= '${conn.settleDateStart} 00:00:00'
+			</if>
+			<if test="conn.settleDateEnd != null and conn.settleDateEnd != ''">
+				and s.settleDate &lt;= '${conn.settleDateEnd} 23:59:59'
+			</if>
+		</where>
+	</sql>
+	<sql id="Where_Total_Settle_Info">
+		<where>
+			<if test="conn.settleDateStart != null and conn.settleDateStart != ''">
+				and settleDate >= '${conn.settleDateStart} 00:00:00'
+			</if>
+			<if test="conn.settleDateEnd != null and conn.settleDateEnd != ''">
+				and settleDate &lt;= '${conn.settleDateEnd} 23:59:59'
+			</if>
+			<if test="conn.merNo != null and conn.merNo != ''">
+				and merNo = #{conn.merNo}
+			</if>
+			<if test="conn.batchNo != null and conn.batchNo != ''">
+				and batchNo = #{conn.batchNo}
+			</if>
+			<if test="conn.terNo != null and conn.terNo != ''">
+				and terNo = #{conn.terNo}
+			</if>
+		</where>
+	</sql>
+	<sql id="Where_Clause_Total_Trans_Info">
+		<where>
+			<if test="conn.merNo != null and conn.merNo != ''">
+				and merNo = #{conn.merNo}
+			</if>
+			<if test="conn.terNo != null and conn.terNo != ''">
+				and terNo = #{conn.terNo}
+			</if>
+			<if test="conn.transDateStart != null and conn.transDateStart != ''">
+				and transDate >= '${conn.transDateStart} 00:00:00'
+			</if>
+			<if test="conn.transDateEnd != null and conn.transDateEnd != ''">
+				and transDate &lt;= '${conn.transDateEnd } 23:59:59'
+			</if>
+		</where>
+	</sql>
+	<insert id="addMerchantInfo">
+		insert into gw_merchant_info 
+		(
+			phoneNo,
+			merNo,
+			accountName,
+			accountAddress,
+			accountNo,
+			merchantName,
+			regDate,
+			activationDate,
+			sales,
+			enabled,
+			IDCardNo,
+			state,
+			city,
+			address,
+			industry,
+			email,
+			type
+		)
+		values
+		(
+			#{info.phoneNo},
+			#{info.merNo},
+			#{info.accountName},
+			#{info.accountAddress},
+			#{info.accountNo},
+			#{info.merchantName},
+			SYSDATE(),
+			SYSDATE(),
+			'SYS',
+			2,
+			#{info.IDCardNo},
+			#{info.state},
+			#{info.city},
+			#{info.address},
+			#{info.industry},
+			#{info.email},
+			#{info.type}
+		)
+	</insert>
+	<insert id="addMerchantTerInfo">
+		insert into gw_merchant_terno_info
+		(
+			merNo,
+			terNo,
+			createDate,
+			createby,
+			enabled,
+			terName,
+			accountName,
+			accountNo,
+			accountAddress,
+			accountType,
+			bluetoothName
+		)
+		values
+		(
+			#{info.merNo},
+			#{info.terNo},
+			SYSDATE(),
+			'SYS',
+			2,
+			#{info.terName},
+			#{info.accountName},
+			#{info.accountNo},
+			#{info.accountAddress},
+			#{info.accountType},
+			#{info.bluetoothName}
+		)
+	</insert>
+	
+	<select id="queryTerInfoBySnNo" resultType="com.gateway.api.model.TerInfo">
+		select * from gw_merchant_terno_info where serNo = #{snNo} limit 1
+	</select>
+	
+	<select id="queryAgentInfoBySnNo" resultType="String">
+		SELECT
+				CASE
+			WHEN agentNo IS NULL THEN
+				parentAgentNo
+			ELSE
+				agentNo
+			END agentNo
+		FROM
+			gw_tersn_rel_agent_info
+		WHERE SNNo = #{snNo}
+	
+	</select>
+	
+	<insert id="addBusInfo">
+		insert into gw_user_bus_info
+		(
+			IDCardNo,
+			phoneNo,
+			comName,
+			comAdress,
+			busTimeStart,
+			busTimeEnd,
+			maxTransAmount
+		)
+		values
+		(
+			#{info.IDCardNo},
+			#{phoneNo},
+			#{info.comName},
+			#{info.comAdress},
+			#{info.busTimeStart},
+			#{info.busTimeEnd},
+			#{info.maxTransAmount}
+		)
+	</insert>
+	
+	<insert id="addPicInfo">
+		insert into gw_pic_info 
+		(
+			tradeNo,
+			phoneNo,
+			picExtName,
+			picType,
+			picBuffer,
+			uploadDate,
+			uploadBy
+		)
+		value
+		(
+			#{info.tradeNo},
+			#{info.phoneNo},
+			#{info.picExtName},
+			#{info.picType},
+			#{info.picBuffer},
+			SYSDATE(),
+			'SYS'
+		)
+	</insert>
+	
+	<select id="queryCurrencyByDefaultCurrency" resultType="com.gateway.api.model.CurrencyInfo">
+		select * from gw_currency_info where defaultCurrency =1 limit 1
+	</select>
+	
+	<insert id="addCurrencyToTerInfo">
+		insert into gw_merchant_rel_currency_info 
+		(
+			merNo,
+			terNo,
+			cardType,
+			currencyId,
+			enabled,
+			batchNo,
+			createDate,
+			createBy
+		)
+		values
+		(
+			#{info.merNo},
+			#{info.terNo},
+			'0',
+			#{info.currencyId},
+			1,
+			'100000',
+			SYSDATE(),
+			'SYS'
+		)
+	</insert>
+	
+	<select id="queryUserRelMerchantInfoByPhoneNo" resultType="com.gateway.api.model.UserRelMerchantInfo">
+		select * from gw_user_rel_merchant_info where phoneNo = #{phoneNo}
+	</select>
+	
+	<insert id="addUserToMerchnatRelInfo">
+		insert into gw_user_rel_merchant_info 
+		(
+			phoneNo,
+			merNo,
+			createDate,
+			createBy	
+		)
+		values
+		(
+			#{phoneNo},
+			#{merNo},
+			SYSDATE(),
+			'SYS'
+		)
+	</insert>
+	
+	<insert id="addMerchantToAgent">
+		insert into gw_agent_rel_merchant 
+		(
+			merNo,
+			terNo,
+			agentNo,
+			createDate,
+			createBy
+		)
+		values
+		(
+			#{merNo},
+			#{terNo},
+			#{agentNo},
+			SYSDATE(),
+			'SYS'
+		)
+	</insert>
+	
+	<select id="queryAgentNoByMerNo" resultType="String">
+		select agentNo from gw_agent_rel_merchant where merNo = #{merNo} and terNo = #{terNo}
+	</select>
+	
+	<update id="updateUserStatusByPhoneNo">
+		update gw_sys_user_info set enabled = #{status} where phoneNo = #{phoneNo}
+	</update>
+	
+	<select id="queryTransList" resultType="com.gateway.api.model.TransInfo">
+		select ts.*,t.transTypeName,tr.terName from gw_trans_info ts 
+		left join gw_transtype_info t on ts.transType = t.transType
+		left join gw_merchant_terno_info tr on ts.merNO = tr.merNo and ts.terNo = tr.terNo
+		<include refid="Where_Clause_Trans_info"/>
+	
+	</select>
+	<select id="countTransList" resultType="int">
+		select count(*) from gw_trans_info ts 
+		left join gw_transtype_info t on ts.transType = t.transType
+		left join gw_merchant_terno_info tr on ts.merNO = tr.merNo and ts.terNo = tr.terNo
+		<include refid="Where_Clause_Trans_info"/>
+	</select>
+	
+	<select id="querySettleList" resultType="com.gateway.api.model.SettleInfo">
+		SELECT
+			s.*,
+			t.accountAddress,
+			t.accountName,
+			t.accountNo
+		FROM
+			gw_merchant_settle_info s
+		LEFT JOIN gw_merchant_terno_info t ON s.merNo = t.merNo
+		AND s.terNo = t.terNo
+		<include refid="Where_Clause_Settle_Info"/>
+		order by s.settleDate DESC
+	</select>
+	
+	<select id="countSettleList" resultType="int">
+		SELECT
+			count(*)
+		FROM
+			gw_merchant_settle_info s
+		LEFT JOIN gw_merchant_terno_info t ON s.merNo = t.merNo
+		AND s.terNo = t.terNo
+		<include refid="Where_Clause_Settle_Info"/>
+		order by s.settleDate DESC
+	</select>
+	
+	<select id="totalSettleList" resultType="com.gateway.api.model.SettleInfo">
+		SELECT
+			sum(transAmount) transAmount,
+			sum(transCount) transCount,
+			sum(forAmount) forAmount,
+			sum(settleAmount) settleAmount,
+			<if test="conn.totalBy == 'byMonth'">
+				DATE_FORMAT(settleDate,'%Y-%m')  settleDate,
+			</if>
+			<if test="conn.totalBy == 'byYear'">
+				DATE_FORMAT(settleDate,'%Y')  settleDate,
+			</if>
+			merNo,
+			terNo
+		FROM
+			gw_merchant_settle_info
+		<include refid="Where_Total_Settle_Info"/>
+		GROUP BY
+			merNo,
+			terNo,
+			<if test="conn.totalBy == 'byMonth'">
+				DATE_FORMAT(settleDate,'%Y-%m') 
+			</if>
+			<if test="conn.totalBy == 'byYear'">
+				DATE_FORMAT(settleDate,'%Y') 
+			</if>
+		ORDER BY settleDate DESC
+	</select>
+	<select id="countTotalSettleList" resultType="int">
+		SELECT count(*) FROM (
+			SELECT
+				sum(transAmount) transAmount,
+				sum(transCount) transCount,
+				sum(forAmount) forAmount,
+				sum(settleAmount) settleAmount,
+				<if test="conn.totalBy == 'byMonth'">
+					DATE_FORMAT(settleDate,'%Y-%d')  settleDate,
+				</if>
+				<if test="conn.totalBy == 'byYear'">
+					DATE_FORMAT(settleDate,'%Y')  settleDate,
+				</if>
+				merNo,
+				terNo
+			FROM
+				gw_merchant_settle_info
+			<include refid="Where_Total_Settle_Info"/>
+			GROUP BY
+				merNo,
+				terNo,
+				<if test="conn.totalBy == 'byMonth'">
+					DATE_FORMAT(settleDate,'%Y-%d') 
+				</if>
+				<if test="conn.totalBy == 'byYear'">
+					DATE_FORMAT(settleDate,'%Y') 
+				</if>
+			ORDER BY settleDate DESC
+		) as t
+	</select>
+	
+	<select id="totalTransInfoList" resultType="com.gateway.api.model.TotalTransInfo">
+		SELECT
+			SUM(transAmount) transAmount,
+			SUM(merForAmount) forAmount,
+			merNo,
+			terNo,
+			<if test="conn.totalBy == 'byMonth'">
+				DATE_FORMAT(transDate,'%Y-%m') transDate
+			</if>
+			<if test="conn.totalBy == 'byYear'">
+				DATE_FORMAT(transDate,'%Y') transDate
+			</if>
+			
+		FROM
+			gw_settle_trans_info
+		<include refid="Where_Clause_Total_Trans_Info"/>
+		GROUP BY
+			merNo,
+			terNo,
+			<if test="conn.totalBy == 'byMonth'">
+				DATE_FORMAT(transDate,'%Y-%m')
+			</if>
+			<if test="conn.totalBy == 'byYear'">
+				DATE_FORMAT(transDate,'%Y')
+			</if>
+		ORDER BY transDate DESC
+	</select>
+	
+	<select id="countTotalTransInfoList" resultType="int">
+		SELECT
+			count(*)
+		FROM
+			(
+				SELECT
+					SUM(transAmount) transAmount,
+					SUM(merForAmount) forAmount,
+					merNo,
+					terNo,
+					<if test="conn.totalBy == 'byMonth'">
+						DATE_FORMAT(transDate,'%Y-%m') transDate
+					</if>
+					<if test="conn.totalBy == 'byYear'">
+						DATE_FORMAT(transDate,'%Y') transDate
+					</if>
+				FROM
+					gw_settle_trans_info
+				<include refid="Where_Clause_Total_Trans_Info"/>
+				GROUP BY
+					merNo,
+					terNo,
+					<if test="conn.totalBy == 'byMonth'">
+						DATE_FORMAT(transDate,'%Y-%m')
+					</if>
+					<if test="conn.totalBy == 'byYear'">
+						DATE_FORMAT(transDate,'%Y')
+					</if>
+			) AS t
+	</select>
+	
+	<select id="queryTerAmountLimitInfo" resultType="com.gateway.api.model.TerAmountLimitInfo">
+		select * from gw_ter_limit_info
+		<where>
+			<if test="conn.merNo != null and conn.merNo != ''">
+				and merNo = #{conn.merNo}
+			</if>
+			<if test="conn.terNo != null and conn.terNo != ''">
+				and terNo = #{conn.terNo}
+			</if>
+		</where>
+	</select>
+	
+	<select id="queryHasUseLimitAmount" resultType="com.gateway.api.model.HasUseLimitAmountInfo">
+		SELECT
+		SUM(transAmount) transAmount,
+			merNo,
+			terNo,
+			cardType
+		FROM
+			gw_trans_info
+		<where>
+			AND respCode = '00'
+			AND cardType IS NOT NULL
+			<if test="merNo != null and merNo != ''">
+				and merNo = #{merNo}
+			</if>
+			<if test="terNo != null and terNo != ''">
+				and terNo = #{terNo}
+			</if>
+			<if test="startDate != null and startDate != ''">
+				and transDate >= '${startDate} 00:00:00'
+			</if>
+			<if test="endDate != null and endDate != ''">
+				and transDate &lt;= '${endDate} 23:59:59'
+			</if>
+			<if test="queryType != null and queryType != ''">
+				and cardType = #{queryType}
+			</if>
+		</where>
+		GROUP BY
+			merNo,
+			terNo,
+			cardType
+	</select>
+</mapper>
+

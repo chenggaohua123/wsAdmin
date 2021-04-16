@@ -1,0 +1,3190 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="com.gateway.countAnalysis.mapper.CountAnalysisDao">
+	<sql id="Where_Trans_Count">
+		<where>
+			<if test="condition.startDate != null and condition.startDate != '' ">
+				and a.enterTime >= '${condition.startDate} 00:00:00'
+			</if>
+			<if test="condition.endDate != null and condition.endDate != '' ">
+				and a.enterTime &lt;='${condition.endDate} 23:59:59'
+			</if>
+			and a.merNo in(select merNo from gw_merchant_info)
+			and a.terNo in(select terNo from gw_merchant_terno_info)
+			<if test="condition.merNo != null and condition.merNo != '' ">
+				and a.merNo = #{condition.merNo}
+			</if>
+			<if test="condition.cardType != null and condition.cardType != '' ">
+				and b.cardType =#{condition.cardType}
+			</if>
+			<if test="condition.terNo != null and condition.terNo != '' ">
+				and a.terNo = ${condition.terNo}
+			</if>
+			<if test="condition.type != null and condition.type != '' ">
+				and a.merNo in (select merNo from gw_merchant_info where type =#{condition.type})
+			</if>
+		</where>
+	</sql>
+
+	<select id="queryCountAnalysisInfo" resultType="com.gateway.countAnalysis.model.CountAnalysis">
+		SELECT *,
+		 	IFNULL(CONCAT(left((dishonorCount/transSuccessCount ) *100,5),'%'),'0.00%') AS dishonorRate,
+			IFNULL(CONCAT(left(( refundCount/transSuccessCount) *100,5),'%'),'0.00%') AS refundRate
+		FROM(
+					SELECT 	 
+						COUNT(a.tradeNo) AS totalCount,
+						a.merNo,
+						a.terNo AS terNo,
+						SUM(CASE WHEN b.tradeNo IS NOT NULL THEN 1 ELSE 0 END) AS transCount,
+						b.bankCurrency  AS transCurrency,
+						SUM(IFNULL(b.bankTransAmount,0)) AS transAmount,
+						b.merSettleCurrency  AS merSettleCurrency,
+						SUM(IFNULL(b.merSettleAmount,0)) AS merSettleAmount,
+						SUM(CASE b.respCode WHEN '00' THEN 1 ELSE 0 END) AS transSuccessCount,
+						SUM(CASE b.respCode WHEN '00' THEN b.bankTransAmount ELSE 0 END) AS transSuccessAmount,
+						SUM(CASE b.respCode WHEN '00' THEN b.merSettleAmount ELSE 0 END) AS merSettleSuccessAmount,
+						SUM(CASE b.respCode='01' AND b.respMsg NOT LIKE '%high risk%' WHEN TRUE THEN 1 ELSE 0 END) AS transFailureCount,
+						SUM(CASE WHEN b.respMsg LIKE '%high risk%' THEN 1 ELSE 0 END) AS transRiskCount,
+						SUM(CASE  WHEN c.tradeNo IS NOT NULL THEN 1 ELSE 0 END) AS complaintCount,
+						SUM(CASE  b.duplicateFlag WHEN 1 THEN 1 ELSE 0 END) AS duplicateCount,
+						IFNULL(CONCAT(LEFT((SUM(CASE b.respCode WHEN '00' THEN 1 ELSE 0 END)/(SUM(CASE WHEN b.respMsg NOT LIKE '%high risk%' THEN 1 ELSE 0 END)-SUM(CASE WHEN  b.duplicateFlag = 1 AND b.respCode !='00' THEN 1 else 0 END))) *100,5),'%'),'0.00%') AS successRate,
+						<!-- IFNULL(CONCAT(left((SUM(CASE b.transDishonor WHEN '1' THEN 1 ELSE 0 END)/(SUM(CASE WHEN b.respCode = '00' THEN 1 ELSE 0 END))) *100,5),'%'),'0.00%') dishonorRate, -->
+						<!--IFNULL(CONCAT(left((SUM(CASE b.transRefund WHEN '1' THEN 1 ELSE 0 END)/(SUM(CASE WHEN b.respCode = '00' THEN 1 ELSE 0 END))) *100,5),'%'),'0.00%') refundRate, -->
+						IFNULL(CONCAT(LEFT((SUM(CASE  WHEN c.tradeNo IS NOT NULL THEN 1 ELSE 0 END)/(SUM(CASE WHEN b.respCode = '00' THEN 1 ELSE 0 END))) *100,5),'%'),'0.00%') AS complaintRate
+					FROM  gw_Trade_order_record a 
+						LEFT JOIN  gw_trans_info  b	
+							ON a.tradeNo=b.tradeNo 
+								AND b.transType ='sales'  
+						LEFT JOIN  gw_trans_complaint_info  c 
+							ON c.tradeNo = b.tradeNo 
+								AND c.type=2
+						LEFT JOIN gw_merchant_terno_info d 
+							ON a.merNo=d.merNo 
+								AND a.terNo=d.terNo
+					<include refid="Where_Trans_Count"/>
+					GROUP BY a.merNo,a.terNo,b.bankCurrency
+					ORDER BY a.merNo,a.terNo,b.bankCurrency) AS t
+			LEFT JOIN (SELECT 
+								p1.merNo,
+								p1.terNo,
+								p1.bankCurrency,
+								COUNT(*) AS dishonorCount
+								FROM gw_trans_info_log p 
+								LEFT JOIN  gw_trans_info p1 ON p.tradeNewNo=p1.tradeNo
+								WHERE  p.transType='dishonor' 
+									<if test="condition.cardType != null and condition.cardType != '' ">
+										AND p1.cardType =#{condition.cardType}
+									</if>
+									<if test="condition.startDate != null and condition.startDate != '' ">
+										AND p.checkDate >= '${condition.startDate} 00:00:00'
+									</if>
+									<if test="condition.endDate != null and condition.endDate != '' ">
+										AND p.checkDate &lt;='${condition.endDate} 23:59:59'
+									</if>
+									AND p.status=2 
+								GROUP BY p1.merNo,p1.terNo,p1.bankCurrency) AS t1 
+				ON t.merNo=t1.merNo 
+					AND t.terNo=t1.terNo AND t.transCurrency=t1.bankCurrency
+		LEFT JOIN (SELECT 
+								p1.merNo,
+								p1.terNo,
+								p1.bankCurrency,
+								COUNT(*) as refundCount
+						 FROM gw_trans_info_log p 
+						 	LEFT JOIN gw_trans_info p1 
+						 		ON p.tradeNewNo=p1.tradeNo
+						 WHERE 
+								p.transType='refund' 
+								<if test="condition.cardType != null and condition.cardType != '' ">
+										and p1.cardType =#{condition.cardType}
+								</if>
+								<if test="condition.startDate != null and condition.startDate != '' ">
+										and p.checkDate >= '${condition.startDate} 00:00:00'
+								</if>
+								<if test="condition.endDate != null and condition.endDate != '' ">
+									and p.checkDate &lt;='${condition.endDate} 23:59:59'
+								</if>
+								AND p.status=2 
+								GROUP BY p1.merNo,p1.terNo,p1.bankCurrency) AS t2 
+				ON t.merNo=t2.merNo 
+					AND t.terNo=t2.terNo AND t.transCurrency=t2.bankCurrency
+	</select>
+	
+	<select id="countCountAnalysisInfo" resultType="int">
+		select count(*) from ( 	SELECT 	 
+		COUNT(a.tradeNo) AS totalCount
+		FROM 
+		gw_Trade_order_record a LEFT JOIN 
+		gw_trans_info 
+		b   ON a.tradeNo=b.tradeNo and b.transType='sales'  and b.merSettleCurrency is not null
+		LEFT JOIN  gw_trans_complaint_info  c on c.tradeNo = b.tradeNo and c.type=2 
+		<include refid="Where_Trans_Count"/>
+		GROUP BY a.merNo,a.terNo ) t
+	</select>
+	<sql id="Where_Currency_Trans_Count">
+		<where>
+			<if test="condition.currencyId != null and condition.currencyId != '' ">
+				and a.id=#{condition.currencyId}
+			</if>
+			<if test="condition.bankId != null and condition.bankId != '' and condition.bankId != 0 ">
+				and d.id=#{condition.bankId}
+			</if>
+			<if test="condition.enabled != null and condition.enabled != '' ">
+				and a.enabled=#{condition.enabled}
+			</if>
+			<if test="condition.currencyBelongs != null and condition.currencyBelongs != '' ">
+				and a.currencyBelongs=#{condition.currencyBelongs}
+			</if>
+		</where>
+	</sql>
+	<select id="queryCurrencyCountAnalysisInfo" resultType="com.gateway.countAnalysis.model.CountAnalysis">
+		SELECT 	 
+		a.id as currencyId,
+		a.currencyName,
+		d.bankName,
+		a.enabled as currencyEnabled,
+		a.currencyBelongs as currencyBelongs,
+		SUM(case when b.tradeNo is not null then 1 else 0 end) transCount,
+		b.bankCurrency transCurrency,
+		SUM(IFNULL(b.bankTransAmount,0)) transAmount,
+		SUM(CASE b.respCode WHEN '00' THEN 1 ELSE 0 END) transSuccessCount,
+		SUM(CASE b.respCode WHEN '00' THEN b.bankTransAmount ELSE 0 END) transSuccessAmount,
+		SUM(CASE b.respCode='01' and b.respMsg not LIKE '%high risk%' WHEN true THEN 1 ELSE 0 END)transFailureCount,
+		SUM(CASE WHEN b.respMsg LIKE '%high risk%' THEN 1 ELSE 0 END) transRiskCount,
+		SUM(CASE b.transDishonor WHEN '1' THEN 1 ELSE 0 END)dishonorCount,
+		SUM(CASE b.transRefund WHEN '1' THEN 1 ELSE 0 END) refundCount,
+		sum(case  b.duplicateFlag when 1 then 1 else 0 end) duplicateCount,
+		SUM(CASE  when c.tradeNo is not null then 1 else 0 end) complaintCount,
+		IFNULL(CONCAT(left((SUM(CASE b.respCode WHEN '00' THEN 1 ELSE 0 END)/(SUM(CASE WHEN b.respMsg not LIKE '%high risk%' THEN 1 ELSE 0 END)-sum(case  b.duplicateFlag when 1 then 1 else 0 end))) *100,5),'%'),'0.00%') successRate,
+		IFNULL(CONCAT(left((SUM(CASE b.transDishonor WHEN '1' THEN 1 ELSE 0 END)/(SUM(CASE WHEN b.respCode = '00' THEN 1 ELSE 0 END))) *100,5),'%'),'0.00%') dishonorRate,
+		IFNULL(CONCAT(left((SUM(CASE b.transRefund WHEN '1' THEN 1 ELSE 0 END)/(SUM(CASE WHEN b.respCode = '00' THEN 1 ELSE 0 END))) *100,5),'%'),'0.00%') refundRate,
+		IFNULL(CONCAT(left((SUM(CASE  when c.tradeNo is not null then 1 else 0 end)/(SUM(CASE WHEN b.respCode = '00' THEN 1 ELSE 0 END))) *100,5),'%'),'0.00%') complaintRate
+		FROM 
+		gw_currency_info a left join gw_bank_info d on a.bankId=d.id
+		LEFT JOIN gw_trans_info 
+		b ON a.id=b.currencyId AND transType='sales' 
+			<if test="condition.cardType != null and condition.cardType != '' ">
+				and b.cardType =#{condition.cardType}
+			</if>
+			<if test="condition.startDate != null and condition.startDate != '' ">
+				and b.transDate >= '${condition.startDate} 00:00:00'
+			</if>
+			<if test="condition.endDate != null and condition.endDate != '' ">
+				and b.transDate &lt;='${condition.endDate} 23:59:59'
+			</if>
+		<!-- 注释原因：统计优化：注释掉这句的前提是gw_trans_complaint_info中投诉订单没有重复记录，否则会影响统计的精确度 -->
+		<!-- LEFT JOIN (select distinct tradeNo from gw_trans_complaint_info where type=2) as c on c.tradeNo = b.tradeNo  -->
+		<!-- 如果gw_trans_complaint_info type=2的投诉单有重复提交的记录，该统计会不精确 -->
+		LEFT JOIN gw_trans_complaint_info c on c.tradeNo = b.tradeNo and c.type=2
+		<include refid="Where_Currency_Trans_Count"/>
+		GROUP BY a.id
+	</select>
+	
+	<select id="queryCurrnecyTotalCount" resultType="com.gateway.countAnalysis.model.TotalCurrnecySuccessCount">
+		SELECT 	 
+		b.bankCurrency currency,
+		SUM(CASE b.respCode WHEN '00' THEN 1 ELSE 0 END) successCount,
+		SUM(CASE b.respCode WHEN '00' THEN b.bankTransAmount ELSE 0 END) successAmount
+		FROM 
+		gw_currency_info a left join gw_bank_info d on a.bankId=d.id
+		LEFT JOIN gw_trans_info 
+		b ON a.id=b.currencyId AND transType='sales' 
+			<if test="condition.cardType != null and condition.cardType != '' ">
+				and b.cardType =#{condition.cardType}
+			</if>
+			<if test="condition.startDate != null and condition.startDate != '' ">
+				and b.transDate >= '${condition.startDate} 00:00:00'
+			</if>
+			<if test="condition.endDate != null and condition.endDate != '' ">
+				and b.transDate &lt;='${condition.endDate} 23:59:59'
+			</if>
+		<!-- LEFT JOIN (select distinct tradeNo from gw_trans_complaint_info where type=2) as c on c.tradeNo = b.tradeNo --> 
+		<include refid="Where_Currency_Trans_Count"/>
+		GROUP BY b.bankCurrency
+	</select>
+	
+	<select id="countCurrencyCountAnalysisInfo" resultType="int">
+		select count(*) from ( SELECT 	 
+		a.id as currencyId
+		FROM 
+		gw_currency_info a left join gw_bank_info d on a.bankId=d.id
+		LEFT JOIN gw_trans_info 
+		b ON a.id=b.currencyId AND transType='sales' 
+			<if test="condition.cardType != null and condition.cardType != '' ">
+				and b.cardType =#{condition.cardType}
+			</if>
+			<if test="condition.startDate != null and condition.startDate != '' ">
+				and b.transDate >= '${condition.startDate} 00:00:00'
+			</if>
+			<if test="condition.endDate != null and condition.endDate != '' ">
+				and b.transDate &lt;='${condition.endDate} 23:59:59'
+			</if>
+		<!-- LEFT JOIN (select distinct tradeNo from gw_trans_complaint_info where type=2) as c on c.tradeNo = b.tradeNo --> 
+		<include refid="Where_Currency_Trans_Count"/>
+		GROUP BY a.id) t
+	</select>
+	
+	<select id="queryCountTransInfo" resultType="com.gateway.countAnalysis.model.CountAnalysis">
+		SELECT 
+		year(transDate) year,
+		month(transDate) month,
+		<if test="condition.month != null and condition.month != '' ">
+			 day(transDate) day,
+		 </if>
+		count(tradeNo) transCount,
+		merSettleCurrency transCurrency,
+		SUM(merSettleAmount) transAmount,
+		SUM(CASE respCode='00' WHEN true THEN 1 ELSE 0 END) transSuccessCount,
+		SUM(CASE respCode WHEN '00' THEN merSettleAmount ELSE 0 END) transSuccessAmount,
+		SUM(CASE respCode='01' and respMsg not LIKE '%high risk%' WHEN true THEN 1 ELSE 0 END)transFailureCount,
+		SUM(CASE when  respMsg LIKE '%high risk%' then 1 else 0 end  ) as transRiskCount,
+		IFNULL(CONCAT(left((SUM(CASE respCode WHEN '00' THEN 1 ELSE 0 END)/(COUNT(tradeNo)-SUM(CASE WHEN respMsg LIKE '%high risk%' THEN 1 ELSE 0 END))) *100,5),'%'),'0.00%') successRate
+		 from gw_trans_info where transType = 'sales'
+			and year(transDate) = ${condition.year}
+		 <if test="condition.month != null and condition.month != '' ">
+			and month(transDate) = ${condition.month}
+		 </if>
+		 <if test="condition.terNo != null and condition.terNo != '' ">
+			and terNo = ${condition.terNo}
+		 </if>
+		 	and merNo=#{condition.merNo}
+		<if test="condition.terNos != null and condition.terNos != '' ">
+			and terNo in ${condition.terNos}
+		</if>
+		  group by year(transDate),month(transDate)
+		 <if test="condition.month != null and condition.month != '' ">
+			 ,day(transDate)
+		 </if>
+		 order by year(transDate),month(transDate)
+		 <if test="condition.month != null and condition.month != '' ">
+			 ,day(transDate)
+		 </if>
+		 
+	</select>
+	
+	<select id="queryWebSiteList" resultType="com.gateway.countAnalysis.model.CountAnalysis">
+		select 
+			b.payWebSite,
+			b.terNo,
+			b.merNo,
+			count(b.tradeNo) transCount,
+			b.merSettleCurrency transCurrency,
+				SUM(merSettleAmount) transAmount,
+			SUM(CASE b.respCode='00' WHEN true THEN 1 ELSE 0 END) transSuccessCount,
+				SUM(CASE b.respCode WHEN '00' THEN b.merSettleAmount ELSE 0 END) transSuccessAmount,
+		SUM(CASE b.respCode='01' and b.respMsg not LIKE '%high risk%' WHEN true THEN 1 ELSE 0 END)transFailureCount,
+		SUM(CASE WHEN b.respMsg LIKE '%high risk%' THEN 1 ELSE 0 END) transRiskCount,
+		( SELECT count(*) from gw_trans_info t where t.transType='sales' and t.payWebSite=b.payWebSite and t.respMsg not LIKE '%high risk%') transTotal,
+				SUM(CASE b.transDishonor WHEN '1' THEN 1 ELSE 0 END)dishonorCount,
+				SUM(CASE b.transRefund WHEN '1' THEN 1 ELSE 0 END) refundCount,
+				SUM(CASE  when c.tradeNo is not null then 1 else 0 end) complaintCount,
+				SUM(CASE WHEN duplicateFlag=1 AND respCode='01' AND respMsg NOT LIKE '%high risk%'  THEN 1 ELSE 0 END) AS duplicateCount,
+		IFNULL(CONCAT(left((SUM(CASE b.respCode WHEN '00' THEN 1 ELSE 0 END)/SUM(CASE  WHEN  ((b.respMsg not LIKE '%high risk%') and !(respCode = '01' and duplicateFlag = 1))  THEN 1 ELSE 0 END)) *100,5),'%'),'0.00%') successRate,
+				IFNULL(CONCAT(left((SUM(CASE b.transDishonor WHEN '1' THEN 1 ELSE 0 END)/SUM(CASE b.respCode='00' WHEN true THEN 1 ELSE 0 END)) *100,5),'%'),'0.00%') dishonorRate,
+				IFNULL(CONCAT(left((SUM(CASE b.transRefund WHEN '1' THEN 1 ELSE 0 END)/SUM(CASE  b.respCode='00' WHEN true THEN 1 ELSE 0 END)) *100,5),'%'),'0.00%') refundRate,
+				IFNULL(CONCAT(left((SUM(CASE  when c.tradeNo is not null then 1 else 0 end)/SUM(CASE  b.respCode='00' WHEN true THEN 1 ELSE 0 END)) *100,5),'%'),'0.00%') complaintRate
+		  from gw_trans_info b LEFT JOIN  gw_trans_complaint_info   c on c.tradeNo = b.tradeNo and c.type=2
+		 where b.transType='sales' 
+		 
+			<if test="condition.merNo != null and condition.merNo != '' ">
+			 	and b.merNo=#{condition.merNo}
+			</if>
+			
+			<if test="condition.terNo != null and condition.terNo != '' ">
+				and b.terNo = ${condition.terNo}
+			</if>
+			<if test="condition.cardType != null and condition.cardType != '' ">
+				and b.cardType like  CONCAT(CONCAT('%', '${condition.cardType}'),'%')
+			</if>
+			<if test="condition.payWebsite != null and condition.payWebsite != '' ">
+				and b.payWebsite like  CONCAT(CONCAT('%', '${condition.payWebsite}'),'%')
+			</if>
+			<if test="condition.startDate != null and condition.startDate != '' ">
+				and b.transDate >= '${condition.startDate} 00:00:00'
+			</if>
+			<if test="condition.endDate != null and condition.endDate != '' ">
+				and b.transDate &lt;='${condition.endDate} 23:59:59'
+			</if>
+		 GROUP BY b.payWebSite,b.terNo 
+	</select>
+	
+	<select id="countWebSiteList" resultType="int">
+	select count(*) from
+		(select 
+			b.tradeNo
+		 from gw_trans_info b LEFT JOIN  gw_trans_complaint_info   c on c.tradeNo = b.tradeNo and c.type=2
+		 where b.transType='sales' 
+		 
+		 	<if test="condition.merNo != null and condition.merNo != '' ">
+			 	and b.merNo=#{condition.merNo}
+			</if>
+			
+			<if test="condition.terNo != null and condition.terNo != '' ">
+				and b.terNo = ${condition.terNo}
+			</if>
+			<if test="condition.cardType != null and condition.cardType != '' ">
+				and b.cardType like  CONCAT(CONCAT('%', '${condition.cardType}'),'%')
+			</if>
+			<if test="condition.payWebsite != null and condition.payWebsite != '' ">
+				and b.payWebsite like  CONCAT(CONCAT('%', '${condition.payWebsite}'),'%')
+			</if>
+			<if test="condition.startDate != null and condition.startDate != '' ">
+				and b.transDate >= '${condition.startDate} 00:00:00'
+			</if>
+			<if test="condition.endDate != null and condition.endDate != '' ">
+				and b.transDate &lt;='${condition.endDate} 23:59:59'
+			</if>
+		 GROUP BY b.payWebSite ,b.terNo) as t 
+	</select>
+	
+	
+	<select id="queryDishonoeTotalList" resultType="com.gateway.countAnalysis.model.DishonoeTotal">
+		SELECT 
+		t.merNo,
+		count(t.tradeNo=c.tradeNo) dishonoeNum,
+		
+		<!-- type等于2为投诉单 -->
+			sum(case t.tradeNo=c.tradeNo and t.transDishonor=1 when true then 1 else 0 end )complaintToDishonoeNum,
+			IFNULL(CONCAT(left((sum(case t.tradeNo=c.tradeNo and t.transDishonor=1 when true then 1 else 0 end )/count(t.tradeNo=c.tradeNo)) *100,5),'%'),'0.00%') complaintToDishonoeColumn,
+			
+			sum(case t.tradeNo=c.tradeNo and year(t.transDate)=#{condition.year}
+				<if test="condition.month != null and condition.month != '' ">
+					and MONTH(t.transDate)=#{condition.month} 
+			 	</if>
+			 and t.transDishonor=1 when true then 1 else 0 end )complaintToDishonoeNumApril,
+			IFNULL(CONCAT(left((sum(case t.tradeNo=c.tradeNo and year(t.transDate)=#{condition.year}
+				<if test="condition.month != null and condition.month != '' ">
+					and MONTH(t.transDate)=#{condition.month} 
+			 	</if>
+			 and t.transDishonor=1 when true then 1 else 0 end )
+			 /sum(case year(t.transDate)=#{condition.year}
+			 	<if test="condition.month != null and condition.month != '' ">
+					and MONTH(t.transDate)=#{condition.month} 
+			 	</if>
+			and t.tradeNo=c.tradeNo  when true then 1 else 0 end)) *100,5),'%'),'0.00%') complaintToDishonoeColumnApril,
+		<!-- type等于2为投诉单 -->
+		
+		month(t.transDate) month,
+		GROUP_CONCAT(case year(t.transDate)=#{condition.year} 
+		 <if test="condition.month != null and condition.month != '' ">
+			and MONTH(t.transDate)=#{condition.month} 
+		 </if>
+		and t.tradeNo=c.tradeNo when true then CONCAT(t.tradeNo,',') else '' end ) AS tradeNoS,
+		count(t.transDate) totalNum,
+		count(c.id) dishonoeNum,
+		IFNULL(CONCAT(left((count(c.id)/count(t.transDate)) *100,5),'%'),'0.00%') dishonoeColumn,
+		sum(case year(t.transDate)=#{condition.year} 
+		<if test="condition.month != null and condition.month != '' ">
+			and MONTH(t.transDate)=#{condition.month} 
+		 </if>
+		when true then 1 else 0 end) totalNumApril,
+		sum(case year(t.transDate)=#{condition.year} 
+		<if test="condition.month != null and condition.month != '' ">
+			and MONTH(t.transDate)=#{condition.month} 
+		 </if>
+		and t.tradeNo=c.tradeNo  when true then 1 else 0 end) dishonoeNumApril,
+		IFNULL(CONCAT(left((
+		sum(case year(t.transDate)=#{condition.year} 
+		<if test="condition.month != null and condition.month != '' ">
+			and MONTH(t.transDate)=#{condition.month} 
+		 </if>
+		 and t.tradeNo=c.tradeNo when true then 1 else 0 end)
+		/
+		sum(case year(t.transDate)=#{condition.year} 
+		<if test="condition.month != null and condition.month != '' ">
+			and MONTH(t.transDate)=#{condition.month} 
+		 </if>
+		 when true then 1 else 0 end)
+		) *100,5),'%'),'0.00%') dishonoeColumnApril
+		from gw_trans_info t 
+		 left JOIN gw_trans_complaint_info c on t.tradeNo=c.tradeNo and c.type=${condition.type}
+		where t.merNo=#{condition.merNo} and t.transType='sales' and t.respCode='00'
+			<if test="condition.terNos != null and condition.terNos != '' ">
+				and t.terNo in ${condition.terNos}
+			</if>
+			<if test="condition.terNo != null and condition.terNo != '' ">
+				and t.terNo = ${condition.terNo}
+			</if>
+		GROUP BY  
+			month(t.transDate)
+			<if test="condition.terNo != null and condition.terNo != '' ">
+				,t.terNo
+			</if>
+	</select>
+	
+	<select id="queryCountryList" resultType="com.gateway.countAnalysis.model.CountAnalysis">
+		SELECT 
+			concat(a.cardCountry,'(',d.countryNameCN,')') as cardCountry,
+			COUNT(b.tradeNO) transCount,
+			b.merSettleCurrency transCurrency,
+			SUM(b.merSettleAmount) transAmount,
+			SUM(CASE b.respCode='00'  WHEN TRUE THEN 1 ELSE 0 END) transSuccessCount,
+			SUM(CASE b.respCode WHEN '00' THEN b.merSettleAmount ELSE 0 END) transSuccessAmount,
+			SUM(CASE b.respCode='01' AND b.respMsg NOT LIKE '%high risk%' WHEN TRUE THEN 1 ELSE 0 END)transFailureCount,
+			SUM(CASE WHEN b.respMsg LIKE '%high risk%' THEN 1 ELSE 0 END) transRiskCount,
+			SUM(CASE b.transDishonor WHEN '1' THEN 1 ELSE 0 END)dishonorCount,
+			SUM(CASE b.transRefund WHEN '1' THEN 1 ELSE 0 END) refundCount,
+			SUM(CASE  WHEN c.tradeNo IS NOT NULL  THEN 1 ELSE 0 END) complaintCount,
+			SUM(CASE WHEN b.duplicateFlag=1 AND b.respCode='01' AND b.respMsg NOT LIKE '%high risk%'  THEN 1 ELSE 0 END) AS duplicateCount,
+			IFNULL(CONCAT(LEFT((SUM(CASE b.respCode WHEN '00' THEN 1 ELSE 0 END)/(COUNT(b.tradeNo)-SUM(CASE WHEN b.respMsg LIKE '%high risk%' THEN 1 ELSE 0 END)-SUM(CASE WHEN b.duplicateFlag=1 AND b.respCode='01' AND b.respMsg NOT LIKE '%high risk%'  THEN 1 ELSE 0 END))) *100,5),'%'),'0.00%') successRate,
+			IFNULL(CONCAT(LEFT((SUM(CASE b.transDishonor WHEN '1' THEN 1 ELSE 0 END)/(SUM(CASE WHEN b.respCode='00' THEN 1 ELSE 0 END))) *100,5),'%'),'0.00%') dishonorRate,
+			IFNULL(CONCAT(LEFT((SUM(CASE b.transRefund WHEN '1' THEN 1 ELSE 0 END)/(SUM(CASE WHEN  b.respCode='00' THEN 1 ELSE 0 END))) *100,5),'%'),'0.00%') refundRate,
+			IFNULL(CONCAT(LEFT((SUM(CASE  WHEN c.tradeNo IS NOT NULL THEN 1 ELSE 0 END)/SUM(CASE  b.respCode='00' WHEN TRUE THEN 1 ELSE 0 END)) *100,5),'%'),'0.00%') complaintRate
+		from gw_trans_order_info a left join gw_trans_info b on a.tradeNo = b.tradeNo AND b.transType='sales'
+			LEFT JOIN  gw_trans_complaint_info  c on c.tradeNo = b.tradeNo and c.type=2
+			left join gw_country_info d on a.cardCountry=d.countryNameSimple 
+			<include refid="Where_country_clause"/>	
+			 group by cardCountry,b.merSettleCurrency
+			 order by transCount DESC
+	
+	</select>
+	<!--  select id="queryCountryListForPic" resultType="com.gateway.countAnalysis.model.CountAnalysis">
+		SELECT 
+			concat(a.cardCountry,'(',d.countryNameCN,')') as cardCountry,
+			COUNT(b.tradeNO) transCount
+		from gw_trans_order_info a left join gw_trans_info b on a.tradeNo = b.tradeNo AND b.transType='sales'
+			left join gw_country_info d on a.cardCountry=d.countryNameSimple 
+			<include refid="Where_country_clause"/>	
+			 group by cardCountry
+			 order by transCount DESC
+	
+	</select-->
+	<sql id="Where_country_clause">
+		<where>
+			and a.cardCountry is not null
+			and a.cardCountry != '' 
+			<if test="condition.cardCountry != null and condition.cardCountry != ''  ">
+				and a.cardCountry=#{condition.cardCountry}
+			</if>
+			<if test="condition.bankId != null and condition.bankId != '' and condition.bankId != 0 ">
+				and b.currencyId  in (select id from gw_currency_info where bankId =#{condition.bankId})
+			</if>
+		<if test="condition.merNo != null and condition.merNo != '' ">
+					and b.merNo = ${condition.merNo}
+				</if>
+		<if test="condition.terNo != null and condition.terNo != '' ">
+					and b.terNo = ${condition.terNo}
+				</if>
+				<if test="condition.cardType != null and condition.cardType != '' ">
+					and b.cardType like  CONCAT(CONCAT('%', '${condition.cardType}'),'%')
+				</if>
+				<if test="condition.startDate != null and condition.startDate != '' ">
+					and b.transDate >= '${condition.startDate}'
+				</if>
+				<if test="condition.endDate != null and condition.endDate != '' ">
+					and b.transDate &lt;='${condition.endDate}'
+				</if>
+				<if test="condition.type != null and condition.type != '' ">
+					and b.merNo in(select merNo from gw_merchant_info where type =#{condition.type})
+				</if>
+				<if test="condition.isSell != null and condition.isSell != '' ">
+					<if test="condition.userRefMerNo != null and condition.userRefMerNo != '' ">
+						and b.merNo in (${condition.userRefMerNo})
+					</if>
+				</if>
+		</where>
+	</sql>
+	<select id="countCountryList" resultType="int">
+		select count(*) from (SELECT 
+			count(a.id)
+			from gw_trans_order_info a left join gw_trans_info b on a.tradeNo = b.tradeNo AND b.transType='sales'
+			LEFT JOIN  gw_trans_complaint_info  c on c.tradeNo = b.tradeNo and c.type=2
+			<include refid="Where_country_clause"/>	
+			 group by cardCountry) t
+	</select>
+	
+	<select id="queryFailureList" resultType="com.gateway.countAnalysis.model.CountAnalysis">
+	SELECT 
+	merNo,
+	respMsg,
+	(select remark from gw_bank_respmsg_mgr_info where gw_bank_respmsg_mgr_info.respMsg=gw_trans_info.respMsg limit 1) as remark,
+	(select suggest from gw_bank_respmsg_mgr_info where gw_bank_respmsg_mgr_info.respMsg=gw_trans_info.respMsg limit 1) as suggest,
+	COUNT(*)countRespMsg,
+	(
+	COUNT(*)/(select count(*) from gw_trans_info 
+	where 
+	respCode='01' 
+	and respMsg not LIKE '%high risk%' 
+		<if test="condition.merNo!=null and condition.merNo!=''">
+			and merNo=#{condition.merNo}
+		</if>
+		
+		<if test="condition.merWebsite != null and condition.merWebsite != '' ">
+			and payWebSite like '%${condition.merWebsite}%'
+		</if>
+		<if test="condition.startDate != null and condition.startDate != '' ">
+			and transDate >= '${condition.startDate}'
+		</if>
+		<if test="condition.endDate != null and condition.endDate != '' ">
+			and transDate &lt;='${condition.endDate}'
+		</if>
+		<if test="condition.bankId != null and condition.bankId != ''  and condition.bankId != 0 ">
+					and currencyId  in (select id from gw_currency_info where bankId=#{condition.bankId})
+				</if>
+				<if test="condition.currencyId != null and condition.currencyId != ''  ">
+					and currencyId  =#{condition.currencyId}
+				</if>
+				<if test="condition.type != null and condition.type != '' ">
+					and merNo in (select merNo from gw_merchant_info where type=#{condition.type})
+				</if>
+		)
+	) as respMsgRate,
+	GROUP_CONCAT(case when true then CONCAT(tradeNo,',') else '' end ) AS tradeNoS 
+	from gw_trans_info 
+	where 
+	respCode='01' 
+	and respMsg not LIKE '%high risk%' 
+		<if test="condition.merNo!=null and condition.merNo!=''">
+			and merNo=#{condition.merNo}
+		</if>
+		
+		<if test="condition.merWebsite != null and condition.merWebsite != '' ">
+			and payWebSite like '%${condition.merWebsite}%'
+		</if>
+		<if test="condition.startDate != null and condition.startDate != '' ">
+			and transDate >= '${condition.startDate}'
+		</if>
+		<if test="condition.endDate != null and condition.endDate != '' ">
+			and transDate &lt;='${condition.endDate}'
+		</if>
+		<if test="condition.bankId != null and condition.bankId != ''  and condition.bankId != 0 ">
+					and currencyId  in (select id from gw_currency_info where bankId=#{condition.bankId})
+				</if>
+				<if test="condition.currencyId != null and condition.currencyId != ''  ">
+					and currencyId  =#{condition.currencyId}
+				</if>
+				<if test="condition.type != null and condition.type != '' ">
+					and merNo in (select merNo from gw_merchant_info where type=#{condition.type})
+				</if>
+	group by respMsg
+	order by countRespMsg desc 
+	</select>
+	<select id="queryFailureInfoByRespMsg" resultType="string">
+		SELECT 
+		tradeNo
+		from gw_trans_info 
+		where 
+		respCode='01' 
+		and respMsg not LIKE '%high risk%' 
+		and respMsg=#{condition.respMsg}
+			<if test="condition.merNo!=null and condition.merNo!=''">
+				and merNo=#{condition.merNo}
+			</if>
+			<if test="condition.type != null and condition.type != '' ">
+					and merNo in (select merNo from gw_merchant_info where type=#{condition.type})
+				</if>
+			<if test="condition.merWebsite != null and condition.merWebsite != '' ">
+				and payWebSite like '%${condition.merWebsite}%'
+			</if>
+			<if test="condition.startDate != null and condition.startDate != '' ">
+				and transDate >= '${condition.startDate}'
+			</if>
+			<if test="condition.endDate != null and condition.endDate != '' ">
+				and transDate &lt;='${condition.endDate}'
+			</if>
+			<if test="condition.bankId != null and condition.bankId != ''  and condition.bankId != 0 ">
+					and currencyId  in (select id from gw_currency_info where bankId=#{condition.bankId})
+				</if>
+				<if test="condition.currencyId != null and condition.currencyId != ''  ">
+					and currencyId  =#{condition.currencyId}
+				</if>
+		order by transDate desc 
+	</select>
+	
+	
+	<select id="queryTransRecordInfoForExport" resultType="string">
+		select 
+		tradeNo
+		from 
+		gw_Trade_order_record
+		<where>
+			and description=#{condition.description}
+				<if test="condition.merNo!=null and condition.merNo!=''">
+					and merNo=#{condition.merNo}
+				</if>
+				
+				<if test="condition.merWebsite != null and condition.merWebsite != '' ">
+					and merURL like '%${condition.merWebsite}%'
+				</if>
+				<if test="condition.startDate != null and condition.startDate != '' ">
+					and enterTime >= '${condition.startDate} 00:00:00'
+				</if>
+				<if test="condition.endDate != null and condition.endDate != '' ">
+					and enterTime &lt;='${condition.endDate} 23:59:59'
+				</if>
+				<if test="condition.type != null and condition.type != '' ">
+					and merNo in (select merNo from gw_merchant_info where type=#{condition.type})
+				</if>
+		</where>
+		order by count(description) desc 
+	</select>
+	
+	<select id="countFailureList" resultType="int">
+		select count(*) from(
+			SELECT 
+			respMsg
+			from gw_trans_info 
+			where 
+			respCode='01' 
+			and respMsg not LIKE '%high risk%' 
+				<if test="condition.merNo!=null and condition.merNo!=''">
+					and merNo=#{condition.merNo}
+				</if>
+				
+				<if test="condition.merWebsite != null and condition.merWebsite != '' ">
+					and payWebSite like '%${condition.merWebsite}%'
+				</if>
+				<if test="condition.startDate != null and condition.startDate != '' ">
+					and transDate >= '${condition.startDate}'
+				</if>
+				<if test="condition.endDate != null and condition.endDate != '' ">
+					and transDate &lt;='${condition.endDate}'
+				</if>
+				<if test="condition.bankId != null and condition.bankId != ''  and condition.bankId != 0 ">
+					and currencyId  in (select id from gw_currency_info where bankId=#{condition.bankId})
+				</if>
+				<if test="condition.currencyId != null and condition.currencyId != ''  ">
+					and currencyId  =#{condition.currencyId}
+				</if>
+				<if test="condition.type != null and condition.type != '' ">
+					and merNo in (select merNo from gw_merchant_info where type=#{condition.type})
+				</if>
+			group by 
+			
+			respMsg
+		) t
+	</select>
+	
+	<select id="queryRiskList" resultType="com.gateway.countAnalysis.model.CountAnalysis">
+		SELECT 
+			merNo, 
+			COUNT(id) transCount,
+			sum(case respMsg like '%high risk%' when true then 1 else 0 end ) transRiskCount,
+		IFNULL(CONCAT(left((sum(case respMsg like '%high risk%' when true then 1 else 0 end )
+					/COUNT(id)) *100,5),'%'),'0.00%') transRate
+		 from  gw_trans_info 
+		<include refid="Where_risk_count_caulse"/>
+		group by merNo
+		order by merNo
+	</select>
+	<select id="queryRiskPendingList" resultType="com.gateway.countAnalysis.model.CountAnalysis">
+		SELECT 
+			merNo, 
+			COUNT(id) transCount,
+			sum(case respMsg like '%high risk Pending%' when true then 1 else 0 end ) transRiskCount,
+		IFNULL(CONCAT(left((sum(case respMsg like '%high risk Pending%' when true then 1 else 0 end )
+					/COUNT(id)) *100,5),'%'),'0.00%') transRate
+		 from  gw_trans_info 
+		<include refid="Where_risk_count_caulse"/>
+		group by merNo
+		order by merNo
+	</select>
+	<sql id="Where_risk_count_caulse">
+		<where>
+				<if test="condition.startDate != null and condition.startDate != '' ">
+					and transDate >= '${condition.startDate} 00:00:00'
+				</if>
+				<if test="condition.endDate != null and condition.endDate != '' ">
+					and transDate &lt;='${condition.endDate} 23:59:59'
+				</if>
+				and transType='sales'
+				<if test="condition.merNo != null and condition.merNo != '' ">
+					and merNo=#{condition.merNo}
+				</if>
+				
+				<if test="condition.terNo != null and condition.terNo != '' ">
+					and terNo = ${condition.terNo}
+				</if>
+				<if test="condition.cardType != null and condition.cardType != '' ">
+					and cardType = #{condition.cardType}
+				</if>
+		</where>
+	</sql>
+	<select id="countRiskList" resultType="int">
+	select count(*) from (
+		SELECT 
+			merNo
+		 from 
+		  gw_trans_info 
+		<include refid="Where_risk_count_caulse"/>
+		group by merNo
+		order by merNo
+	)t
+	</select>
+		<select id="countRiskPendingList" resultType="int">
+	select count(*) from (
+		SELECT 
+			merNo
+		 from 
+		  gw_trans_info 
+		<include refid="Where_risk_count_caulse"/>
+		group by merNo
+		order by merNo
+	)t
+	</select>
+	
+	<select id="queryRiskTreat" resultType="com.gateway.countAnalysis.model.RiskPaddingRateInfo">
+		SELECT 
+		'0'AS `time`,
+		'总拒付转换率' AS `type`,
+		COUNT(a.tradeNo) AS riskToSuccessCount,
+		SUM(CASE b.transDishonor WHEN 1 THEN 1 ELSE 0 END)riskToSuccessToDisCount,
+		SUM(CASE b.transDishonor WHEN 1 THEN 1 ELSE 0 END)/COUNT(a.tradeNo) riskToDisRate,
+		'0' as tradeNo
+		FROM gw_risk_trans_info a LEFT JOIN gw_trans_info b ON a.tradeNo=b.tradeNO
+		WHERE 
+		a.status='review'
+		AND b.respCode='00'
+		and b.merNo=#{condition.merNo}
+		<if test="condition.terNos != null and condition.terNos != '' ">
+			and b.terNo in ${condition.terNos}
+		</if>
+		UNION
+		SELECT 
+		CONCAT(YEAR(b.transDate),'-',MONTH(b.transDate)
+		<if test="condition.month!=null and condition.month!=''">
+			,'-', day(b.transDate)
+		</if>
+		) AS `time`,
+		'月拒付转换率' AS `type`,
+		COUNT(a.tradeNo) AS riskToSuccessCount,
+		SUM(CASE b.transDishonor WHEN 1 THEN 1 ELSE 0 END)riskToSuccessToDisCount,
+		SUM(CASE b.transDishonor WHEN 1 THEN 1 ELSE 0 END)/COUNT(a.tradeNo) riskToDisRate,
+		group_concat(case b.transDishonor when 1 then b.tradeNo else null end ) as tradeNo
+		FROM gw_risk_trans_info a LEFT JOIN gw_trans_info b ON a.tradeNo=b.tradeNO
+		WHERE 
+		a.status='review'
+		AND b.respCode='00'
+		and b.merNo=#{condition.merNo}
+		<if test="condition.terNos != null and condition.terNos != '' ">
+			and b.terNo in ${condition.terNos}
+		</if>
+		<if test="condition.year!=null and condition.year!=''">
+			and year(b.transDate)=#{condition.year}
+		</if>
+		<if test="condition.month!=null and condition.month!=''">
+			and month(b.transDate)=#{condition.month}
+		</if>
+		GROUP BY YEAR(b.transDate),MONTH(b.transDate)
+		<if test="condition.month!=null and condition.month!=''">
+			, day(b.transDate)
+		</if>
+	</select>
+	<select id="countRiskTreat" resultType="int">
+		select count(*) from (
+			SELECT 
+		'0'AS `time`,
+		'总拒付转换率' AS `type`,
+		COUNT(a.tradeNo) AS riskToSuccessCount,
+		SUM(CASE b.transDishonor WHEN 1 THEN 1 ELSE 0 END)riskToSuccessToDisCount,
+		SUM(CASE b.transDishonor WHEN 1 THEN 1 ELSE 0 END)/COUNT(a.tradeNo) riskToDisRate
+		FROM gw_risk_trans_info a LEFT JOIN gw_trans_info b ON a.tradeNo=b.tradeNO
+		WHERE 
+		a.status='review'
+		AND b.respCode='00'
+		and b.merNo=#{condition.merNo}
+		<if test="condition.terNos != null and condition.terNos != '' ">
+			and b.terNo in ${condition.terNos}
+		</if>
+		UNION
+		SELECT 
+		CONCAT(YEAR(b.transDate),'-',MONTH(b.transDate)
+		<if test="condition.month!=null and condition.month!=''">
+			,'-', day(b.transDate)
+		</if>
+		) AS `time`,
+		'月拒付转换率' AS `type`,
+		COUNT(a.tradeNo) AS riskToSuccessCount,
+		SUM(CASE b.transDishonor WHEN 1 THEN 1 ELSE 0 END)riskToSuccessToDisCount,
+		SUM(CASE b.transDishonor WHEN 1 THEN 1 ELSE 0 END)/COUNT(a.tradeNo) riskToDisRate
+		FROM gw_risk_trans_info a LEFT JOIN gw_trans_info b ON a.tradeNo=b.tradeNO
+		WHERE 
+		a.status='review'
+		AND b.respCode='00'
+		and b.merNo=#{condition.merNo}
+		<if test="condition.terNos != null and condition.terNos != '' ">
+			and b.terNo in ${condition.terNos}
+		</if>
+		<if test="condition.year!=null and condition.year!=''">
+			and year(b.transDate)=#{condition.year}
+		</if>
+		<if test="condition.month!=null and condition.month!=''">
+			and month(b.transDate)=#{condition.month}
+		</if>
+		GROUP BY YEAR(b.transDate),MONTH(b.transDate)
+		<if test="condition.month!=null and condition.month!=''">
+			, day(b.transDate)
+		</if>
+		)as t
+	</select>
+	
+	<select id="queryDisCountList" resultType="com.gateway.countAnalysis.model.DisCount">
+		SELECT
+			'0' AS `time`,
+			'总拒付率' AS `type`,
+			COUNT(a.tradeNo) AS transSuccessCount,
+			SUM(CASE WHEN b.tradeNo IS NOT NULL THEN 1 ELSE 0 END)disCount,
+			SUM(CASE WHEN b.tradeNo IS NOT NULL THEN 1 ELSE 0 END)/COUNT(a.tradeNo)disRate,
+			'0' as tradeNo
+			FROM 
+			gw_trans_info a LEFT JOIN (SELECT tradeNo,complaintDate FROM gw_trans_complaint_info WHERE TYPE=1) AS b ON a.tradeNo=b.tradeNo 
+			WHERE a.respCode='00'
+				and a.merNo=#{condition.merNo}
+				<if test="condition.terNos != null and condition.terNos != '' ">
+					and a.terNo in ${condition.terNos}
+				</if>
+				<if test="condition.terNo != null and condition.terNo != '' ">
+					and a.terNo = ${condition.terNo}
+				</if>
+		UNION 
+			SELECT 
+			CONCAT(t.year,'-',t.month) AS `time`,
+			'月拒付率' AS `type`,
+			t.transScuccessCount,
+			k.disCount,k.disCount/t.transScuccessCount AS disRate,
+			k.tradeNO 
+			FROM 
+			(SELECT COUNT(tradeNo) AS transScuccessCount,YEAR(transDate) `year`,MONTH(transDate) `month` 
+			FROM gw_trans_info 
+			WHERE respCode='00'
+			and merNo=#{condition.merNo}
+				<if test="condition.terNos != null and condition.terNos != '' ">
+					and terNo in ${condition.terNos}
+				</if>
+				<if test="condition.terNo != null and condition.terNo != '' ">
+					and terNo = ${condition.terNo}
+				</if>
+				<if test="condition.year != null and condition.year != '' ">
+					and YEAR(transDate) = ${condition.year}
+				</if>
+				<if test="condition.month != null and condition.month != '' ">
+					and MONTH(transDate) = ${condition.month}
+				</if>
+			GROUP BY YEAR(transDate),MONTH(transDate)) AS t
+			LEFT JOIN 
+			(SELECT COUNT(a.tradeNo) disCount,YEAR(complaintDate) `year`,MONTH(complaintDate) `month`,
+			GROUP_CONCAT(a.tradeNo)  as tradeNo
+			FROM gw_trans_complaint_info a LEFT JOIN gw_trans_info b ON a.tradeNo=b.tradeNo 
+			WHERE TYPE=1 AND respCode='00'
+			and b.merNo=#{condition.merNo}
+				<if test="condition.terNos != null and condition.terNos != '' ">
+					and b.terNo in ${condition.terNos}
+				</if>
+				<if test="condition.terNo != null and condition.terNo != '' ">
+					and b.terNo = ${condition.terNo}
+				</if> 
+				<if test="condition.year != null and condition.year != '' ">
+					and YEAR(complaintDate) = ${condition.year}
+				</if>
+				<if test="condition.month != null and condition.month != '' ">
+					and MONTH(complaintDate) = ${condition.month}
+				</if>
+			GROUP BY YEAR(complaintDate),MONTH(complaintDate)) AS k
+			ON t.year=k.year AND t.month=k.month					
+	</select>
+	<select id="countDisCountList" resultType="int">
+		select count(*) from (
+			SELECT
+			'总计' AS `time`,
+			'总拒付率' AS `type`,
+			COUNT(a.tradeNo) AS transSuccessCount,
+			SUM(CASE WHEN b.tradeNo IS NOT NULL THEN 1 ELSE 0 END)disCount,
+			SUM(CASE WHEN b.tradeNo IS NOT NULL THEN 1 ELSE 0 END)/COUNT(a.tradeNo)disRate,
+			'' as tradeNo
+			FROM 
+			gw_trans_info a LEFT JOIN (SELECT tradeNo,complaintDate FROM gw_trans_complaint_info WHERE TYPE=1) AS b ON a.tradeNo=b.tradeNo 
+			WHERE a.respCode='00'
+				and a.merNo=#{condition.merNo}
+				<if test="condition.terNos != null and condition.terNos != '' ">
+					and a.terNo in ${condition.terNos}
+				</if>
+				<if test="condition.terNo != null and condition.terNo != '' ">
+					and a.terNo = ${condition.terNo}
+				</if>
+		UNION 
+			SELECT 
+			CONCAT(t.year,'-',t.month) AS `time`,
+			'月拒付率' AS `type`,
+			t.transScuccessCount,
+			k.disCount,k.disCount/t.transScuccessCount AS disRate,
+			k.tradeNO 
+			FROM 
+			(SELECT COUNT(tradeNo) AS transScuccessCount,YEAR(transDate) `year`,MONTH(transDate) `month` 
+			FROM gw_trans_info 
+			WHERE respCode='00'
+			and merNo=#{condition.merNo}
+				<if test="condition.terNos != null and condition.terNos != '' ">
+					and terNo in ${condition.terNos}
+				</if>
+				<if test="condition.terNo != null and condition.terNo != '' ">
+					and terNo = ${condition.terNo}
+				</if>
+				<if test="condition.year != null and condition.year != '' ">
+					and YEAR(transDate) = ${condition.year}
+				</if>
+				<if test="condition.month != null and condition.month != '' ">
+					and MONTH(transDate) = ${condition.month}
+				</if>
+			GROUP BY YEAR(transDate),MONTH(transDate)) AS t
+			LEFT JOIN 
+			(SELECT COUNT(a.tradeNo) disCount,YEAR(complaintDate) `year`,MONTH(complaintDate) `month`,
+			GROUP_CONCAT(a.tradeNo)  as tradeNo
+			FROM gw_trans_complaint_info a LEFT JOIN gw_trans_info b ON a.tradeNo=b.tradeNo 
+			WHERE TYPE=1 AND respCode='00'
+			and b.merNo=#{condition.merNo}
+				<if test="condition.terNos != null and condition.terNos != '' ">
+					and b.terNo in ${condition.terNos}
+				</if>
+				<if test="condition.terNo != null and condition.terNo != '' ">
+					and b.terNo = ${condition.terNo}
+				</if> 
+				<if test="condition.year != null and condition.year != '' ">
+					and YEAR(complaintDate) = ${condition.year}
+				</if>
+				<if test="condition.month != null and condition.month != '' ">
+					and MONTH(complaintDate) = ${condition.month}
+				</if>
+			GROUP BY YEAR(complaintDate),MONTH(complaintDate)) AS k
+			ON t.year=k.year AND t.month=k.month
+		) as m
+	</select>
+	<select id="queryDisPer" resultType="com.gateway.countAnalysis.model.DisPercent">
+		SELECT 
+			b.cValue AS reason,
+			COUNT(a.tradeNo) disCount 
+		FROM 
+			gw_trans_complaint_info a LEFT JOIN gw_trans_complaint_type_info b ON a.complaintType=b.id
+			LEFT JOIN gw_trans_info c ON a.tradeNo=c.tradeNo  
+		WHERE a.type=1 AND c.respCode='00'
+		and c.merNo=#{condition.merNo}
+				<if test="condition.terNos != null and condition.terNos != '' ">
+					and c.terNo in ${condition.terNos}
+				</if>
+				<if test="condition.terNo != null and condition.terNo != '' ">
+					and c.terNo = ${condition.terNo}
+				</if> 
+				<if test="condition.year != null and condition.year != '' ">
+					and YEAR(complaintDate) = ${condition.year}
+				</if>
+				<if test="condition.month != null and condition.month != '' ">
+					and MONTH(complaintDate) = ${condition.month}
+				</if>
+		GROUP BY b.cValue
+	</select>
+	<select id="queryCompRate" resultType="com.gateway.countAnalysis.model.CompRateInfo" >
+		SELECT t2.time,ifnull(t2.successCount,0)successCount,ifnull(t1.comCount,0)comCount,ifnull(t1.disCount,0)disCount
+		FROM
+		(
+		SELECT DATE_FORMAT(a.complaintDate,'%Y%m') AS `time`,
+		COUNT(a.tradeNo)AS comCount,
+		SUM(CASE WHEN b.transDishonor THEN 1 ELSE 0 END)AS disCount
+		FROM gw_trans_complaint_info a LEFT JOIN gw_trans_info b ON a.tradeNo=b.tradeNo
+		WHERE TYPE=#{condition.type}
+		<if test="condition.merNo != null and condition.merNo != '' ">
+			and b.merNo=#{condition.merNo}
+		</if>
+		<if test="condition.countYear != null and condition.countYear != '' ">
+			and year(a.complaintDate)=#{condition.countYear}
+		</if>
+		<if test="condition.countMonth != null and condition.countMonth != '' ">
+			and month(a.complaintDate)=#{condition.countMonth}	
+		</if>
+		GROUP BY DATE_FORMAT(a.complaintDate,'%Y%m')
+		) t1
+		RIGHT JOIN 
+		(SELECT 
+		DATE_FORMAT(transDate,'%Y%m') AS `time`,
+		COUNT(tradeNo) AS successCount
+		FROM gw_trans_info
+		WHERE 
+		transType='sales'
+		AND 
+		respCode='00'
+		<if test="condition.merNo != null and condition.merNo != '' ">
+			and merNo=#{condition.merNo}
+		</if>
+		<if test="condition.countYear != null and condition.countYear != '' ">
+			and year(transDate)=#{condition.countYear}
+		</if>
+		<if test="condition.countMonth != null and condition.countMonth != '' ">
+			and month(transDate)=#{condition.countMonth}	
+		</if>
+		GROUP BY DATE_FORMAT(transDate,'%Y%m'))t2
+		ON t1.time=t2.time
+		UNION
+		SELECT t3.time,t3.successCount,t4.comCount,t4.disCount
+		FROM
+		(SELECT 
+		0 AS `time`,
+		COUNT(tradeNo) AS successCount
+		FROM gw_trans_info
+		WHERE 
+		transType='sales'
+		AND 
+		respCode='00'
+		<if test="condition.merNo != null and condition.merNo != '' ">
+			and merNo=#{condition.merNo}
+		</if>
+		) t3
+		LEFT JOIN 
+		(SELECT 
+		0 AS `time`,
+		COUNT(a.tradeNo)AS comCount,
+		SUM(CASE WHEN b.transDishonor THEN 1 ELSE 0 END)AS disCount
+		FROM gw_trans_complaint_info a LEFT JOIN gw_trans_info b ON a.tradeNo=b.tradeNo
+		WHERE TYPE=#{condition.type}
+		<if test="condition.merNo != null and condition.merNo != '' ">
+			and b.merNo=#{condition.merNo}
+		</if>
+		) t4 ON t3.time=t4.time
+		ORDER BY TIME
+	</select>
+	<select id="countComRate" resultType="int">
+		select count(*) from (
+			SELECT t2.time,t2.successCount,t1.comCount,t1.disCount
+		FROM
+		(
+		SELECT DATE_FORMAT(a.complaintDate,'%Y%m') AS `time`,
+		COUNT(a.tradeNo)AS comCount,
+		SUM(CASE WHEN b.transDishonor THEN 1 ELSE 0 END)AS disCount
+		FROM gw_trans_complaint_info a LEFT JOIN gw_trans_info b ON a.tradeNo=b.tradeNo
+		WHERE TYPE=#{condition.type}
+		<if test="condition.merNo != null and condition.merNo != '' ">
+			and b.merNo=#{condition.merNo}
+		</if>
+		<if test="condition.countYear != null and condition.countYear != '' ">
+			and year(a.complaintDate)=#{condition.countYear}
+		</if>
+		<if test="condition.countMonth != null and condition.countMonth != '' ">
+			and month(a.complaintDate)=#{condition.countMonth}	
+		</if>
+		GROUP BY DATE_FORMAT(a.complaintDate,'%Y%m')
+		) t1
+		RIGHT JOIN 
+		(SELECT 
+		DATE_FORMAT(transDate,'%Y%m') AS `time`,
+		COUNT(tradeNo) AS successCount
+		FROM gw_trans_info
+		WHERE 
+		transType='sales'
+		AND 
+		respCode='00'
+		<if test="condition.merNo != null and condition.merNo != '' ">
+			and merNo=#{condition.merNo}
+		</if>
+		<if test="condition.countYear != null and condition.countYear != '' ">
+			and year(transDate)=#{condition.countYear}
+		</if>
+		<if test="condition.countMonth != null and condition.countMonth != '' ">
+			and month(transDate)=#{condition.countMonth}	
+		</if>
+		GROUP BY DATE_FORMAT(transDate,'%Y%m'))t2
+		ON t1.time=t2.time
+		UNION
+		SELECT t3.time,t3.successCount,t4.comCount,t4.disCount
+		FROM
+		(SELECT 
+		0 AS `time`,
+		COUNT(tradeNo) AS successCount
+		FROM gw_trans_info
+		WHERE 
+		transType='sales'
+		AND 
+		respCode='00'
+		<if test="condition.merNo != null and condition.merNo != '' ">
+			and merNo=#{condition.merNo}
+		</if>
+		) t3
+		LEFT JOIN 
+		(SELECT 
+		0 AS `time`,
+		COUNT(a.tradeNo)AS comCount,
+		SUM(CASE WHEN b.transDishonor THEN 1 ELSE 0 END)AS disCount
+		FROM gw_trans_complaint_info a LEFT JOIN gw_trans_info b ON a.tradeNo=b.tradeNo
+		WHERE TYPE=#{condition.type}
+		<if test="condition.merNo != null and condition.merNo != '' ">
+			and b.merNo=#{condition.merNo}
+		</if>
+		) t4 ON t3.time=t4.time
+		ORDER BY TIME
+		)as t
+	</select>
+	<select id="queryCompPer" resultType="com.gateway.countAnalysis.model.CompPercent">
+		SELECT 
+		b.cValue AS reason,
+		COUNT(a.tradeNo) comCount,
+		SUM(CASE WHEN c.transDishonor=1 THEN 1 ELSE 0 END) comToDisCount,
+		SUM(CASE WHEN c.transDishonor=1 THEN 1 ELSE 0 END)/COUNT(a.tradeNo) comToDisRate
+		FROM 
+		gw_trans_complaint_info a LEFT JOIN gw_trans_complaint_type_info b ON a.complaintType=b.id
+		LEFT JOIN gw_trans_info c ON a.tradeNo=c.tradeNo  
+		WHERE a.type=#{condition.type} AND c.respCode='00' 
+				<if test="condition.merNo != null and condition.merNo != '' ">
+					and c.merNo = ${condition.merNo}
+				</if> 
+				<if test="condition.year != null and condition.year != '' ">
+					and YEAR(complaintDate) = ${condition.year}
+				</if>
+				<if test="condition.month != null and condition.month != '' ">
+					and MONTH(complaintDate) = ${condition.month}
+				</if>
+		GROUP BY b.cValue
+	</select>
+	<select id="queryCompCounttradeNos" resultType="string">
+		select a.tradeNo from gw_trans_complaint_info a left join gw_trans_info b on a.tradeNo=b.tradeNo
+		where 
+		a.type=#{condition.type}
+		and b.respCode='00'
+		<if test="condition.merNo != null and condition.merNo != '' ">
+			and b.merNo = ${condition.merNo}
+		</if> 
+		<if test="condition.year != null and condition.year != '' ">
+			and YEAR(complaintDate) = ${condition.year}
+		</if>
+		<if test="condition.month != null and condition.month != '' ">
+			and MONTH(complaintDate) = ${condition.month}
+		</if>
+	</select>
+	<select id="queryShowRiskPerInfo" resultType="com.gateway.countAnalysis.model.RiskPercent">
+	select reason,COUNT(reason) AS riskCount from 
+		(SELECT
+		ifnull((case b.ruleId when -1 then b.riskMsg else c.ruleName end),'未知') as reason
+		FROM 
+		gw_trans_info a LEFT JOIN gw_risk_trans_info b ON a.tradeNo=b.tradeNo
+		LEFT JOIN rule_info  c ON b.ruleId=c.ruleId
+		WHERE 
+		a.transType='sales'
+		and
+		a.respMsg LIKE '%high risk%'
+		and a.merNo=#{condition.merNo}
+		<if test="condition.cardType !=null and condition.cardType!='' ">
+			and a.cardType=#{cardType}
+		</if>
+		<if test="condition.startDate != null and condition.startDate != '' ">
+			and a.transDate >= '${condition.startDate} 00:00:00'
+		</if>
+		<if test="condition.endDate != null and condition.endDate != '' ">
+			and a.transDate &lt;='${condition.endDate} 23:59:59'
+		</if>
+		) as t
+		GROUP BY reason
+	</select>
+	<select id="queryShowRiskPendingPerInfo" resultType="com.gateway.countAnalysis.model.RiskPercent">
+	select reason,COUNT(reason) AS riskCount from 
+		(SELECT
+		ifnull((case b.ruleId when -1 then b.riskMsg else c.ruleName end),'未知') as reason
+		FROM 
+		gw_trans_info a LEFT JOIN gw_risk_trans_info b ON a.tradeNo=b.tradeNo
+		LEFT JOIN rule_info  c ON b.ruleId=c.ruleId
+		WHERE 
+		a.transType='sales'
+		and
+		a.respMsg LIKE '%high risk pending%'
+		and a.merNo=#{condition.merNo}
+		<if test="condition.cardType !=null and condition.cardType!='' ">
+			and a.cardType=#{cardType}
+		</if>
+		<if test="condition.startDate != null and condition.startDate != '' ">
+			and a.transDate >= '${condition.startDate} 00:00:00'
+		</if>
+		<if test="condition.endDate != null and condition.endDate != '' ">
+			and a.transDate &lt;='${condition.endDate} 23:59:59'
+		</if>
+		) as t
+		GROUP BY reason
+	</select>
+	<select id="queryDownRiskInfo" resultType="string">
+		SELECT
+		tradeNo
+		FROM 
+		gw_trans_info
+		WHERE respMsg LIKE '%high risk%'
+		and merNo=#{condition.merNo}
+		and transType='sales'
+		<if test="condition.cardType !=null and condition.cardType!='' ">
+			and cardType=#{cardType}
+		</if>
+		<if test="condition.startDate != null and condition.startDate != '' ">
+			and transDate >= '${condition.startDate} 00:00:00'
+		</if>
+		<if test="condition.endDate != null and condition.endDate != '' ">
+			and transDate &lt;='${condition.endDate} 23:59:59'
+		</if>
+	</select>
+	
+	<select id="queryDownRiskPendingInfo" resultType="string">
+		SELECT
+		tradeNo
+		FROM 
+		gw_trans_info
+		WHERE respMsg LIKE '%high risk pending%'
+		and merNo=#{condition.merNo}
+		and transType='sales'
+		<if test="condition.cardType !=null and condition.cardType!='' ">
+			and cardType=#{cardType}
+		</if>
+		<if test="condition.startDate != null and condition.startDate != '' ">
+			and transDate >= '${condition.startDate} 00:00:00'
+		</if>
+		<if test="condition.endDate != null and condition.endDate != '' ">
+			and transDate &lt;='${condition.endDate} 23:59:59'
+		</if>
+	</select>
+	
+	<sql id="Where_Clause_Trans_Record">
+		<where>
+				<if test="condition.merNo!=null and condition.merNo!=''">
+					and merNo=#{condition.merNo}
+				</if>
+				
+				<if test="condition.merWebsite != null and condition.merWebsite != '' ">
+					and merURL like '%${condition.merWebsite}%'
+				</if>
+				<if test="condition.startDate != null and condition.startDate != '' ">
+					and enterTime >= '${condition.startDate} 00:00:00'
+				</if>
+				<if test="condition.endDate != null and condition.endDate != '' ">
+					and enterTime &lt;='${condition.endDate} 23:59:59'
+				</if>
+				<if test="condition.type != null and condition.type != '' ">
+					and merNo in (select merNo from gw_merchant_info where type=#{condition.type})
+				</if>
+		</where>
+	</sql>
+	<select id="queryTransRecord" resultType="com.gateway.countAnalysis.model.TransRecord">
+		select 
+		description,
+		count(description) count,
+		count(description)/(select count(*) from gw_Trade_order_record
+			<include refid="Where_Clause_Trans_Record"/>
+		) decRate
+		from 
+		gw_Trade_order_record
+		<include refid="Where_Clause_Trans_Record"/>
+		group by description
+		order by count(description) desc 
+		
+	</select>
+	<select id="countTransRecord" resultType="int">
+	select count(*) from 
+		(select 
+		description,
+		count(description) count,
+		count(description)/(select count(*) from gw_Trade_order_record
+			<include refid="Where_Clause_Trans_Record"/>
+		) decRate
+		from 
+		gw_Trade_order_record
+		<include refid="Where_Clause_Trans_Record"/>
+		group by description
+		order by count(description) desc )as t
+		
+	</select>
+	<sql id="Where_Currency_Dis_rate_count">
+		<where>
+		<if test="condition.currencyId != null and condition.currencyId != '' ">
+				and b.id=#{condition.currencyId}
+			</if>
+			<if test="condition.bankId != null and condition.bankId != '' and condition.bankId !=0 ">
+				and a.id=#{condition.bankId}
+			</if>
+			<if test="condition.enabled != null and condition.enabled != '' ">
+				and b.enabled=#{condition.enabled}
+			</if>
+		</where>
+	</sql>
+	<select id="currencyDisRate" resultType="com.gateway.countAnalysis.model.CurrencyDisCount">
+		select 
+			currencyId,
+			countYear,
+			countMonth,
+			bankName,
+			currencyName,
+			enabled,
+			tdsj,
+			cardType,
+			sum(disCount) as disCount,
+			sum(fakeCount) as fakeCount,
+			merchantNo,
+			acquirer,
+			sum(successCount) as successCount,
+			max(lastSuccessCount) as lastSuccessCount,
+			max(lastLastSuccessCount) as lastLastSuccessCount,
+			currencyBelongs,
+			remark
+		from (
+			SELECT
+			b.id as currencyId,
+			YEAR(c.transDate) countYear,
+			MONTH(c.transDate) countMonth,
+			a.bankName,
+			b.currencyName,
+			b.enabled,
+			c.cardType,
+			(SELECT GROUP_CONCAT(configValue) FROM gw_currency_config_info cc WHERE cc.configName='tdsj' AND cc.currencyId=b.id GROUP BY cc.currencyId) AS tdsj,
+			0 as  disCount,
+			0 AS fakeCount,
+			b.merchantNo,
+			b.acquirer,
+			b.remark,
+			COUNT(c.tradeNo) AS successCount
+			<!--  if test="condition.countYear != null and condition.countYear != '' ">
+				<if test="condition.countMonth != null and condition.countMonth != '' "-->
+					,(select count(*) from gw_trans_info m where m.transType='sales' and m.respCode='00'
+					and m.currencyId=c.currencyId
+					and YEAR(DATE_ADD(m.transDate,INTERVAL 1 MONTH))=YEAR(c.transDate)
+					and month(DATE_ADD(m.transDate,INTERVAL 1 MONTH))=month(c.transDate)
+					<if test="condition.cardType != null and condition.cardType != '' ">
+						and m.cardType=#{condition.cardType}
+					</if>
+					) as lastSuccessCount,
+					(select count(*) from gw_trans_info m1 where m1.transType='sales' and m1.respCode='00'
+					and m1.currencyId=c.currencyId
+					and YEAR(DATE_ADD(m1.transDate,INTERVAL 2 MONTH))=YEAR(c.transDate)
+					and month(DATE_ADD(m1.transDate,INTERVAL 2 MONTH))=month(c.transDate)
+					<if test="condition.cardType != null and condition.cardType != '' ">
+						and m1.cardType=#{condition.cardType}
+					</if>
+					) as lastLastSuccessCount
+				<!--/if>
+			</if-->
+			,
+			b.currencyBelongs
+			FROM 
+			gw_bank_info a LEFT JOIN gw_currency_info b ON a.id=b.bankId 
+				<if test="condition.currencyId != null and condition.currencyId != '' ">
+				and b.id=#{condition.currencyId}
+			</if>
+			<if test="condition.bankId != null and condition.bankId != '' and condition.bankId !=0 ">
+				and a.id=#{condition.bankId}
+			</if>
+			<if test="condition.enabled != null and condition.enabled != '' ">
+				and b.enabled=#{condition.enabled}
+			</if>
+			LEFT JOIN gw_trans_info c ON b.id=c.currencyId
+			AND 
+			c.respCode='00'
+			AND
+			c.transType='sales' 
+			<if test="condition.cardType != null and condition.cardType != '' ">
+				and c.cardType=#{condition.cardType}
+			</if>
+			<if test="condition.countYear != null and condition.countYear != '' ">
+				and year(c.transDate)=#{condition.countYear}
+			</if>
+			<if test="condition.countMonth != null and condition.countMonth != '' ">
+				and month(c.transDate)=#{condition.countMonth}
+			</if>
+		
+			GROUP BY b.id,YEAR(c.transDate),MONTH(c.transDate)
+			
+			<if test="condition.countType != 1">
+				UNION ALL 
+				SELECT
+				b.id as currencyId,
+				'0' countYear,
+				'0' countMonth,
+				a.bankName,
+				b.currencyName,
+				b.enabled,
+				c.cardType,
+				(SELECT GROUP_CONCAT(configValue) FROM gw_currency_config_info cc WHERE cc.configName='tdsj' AND cc.currencyId=b.id GROUP BY cc.currencyId) AS tdsj,
+				(SELECT COUNT(tc.tradeNo) FROM gw_trans_complaint_info tc LEFT JOIN gw_trans_info ti ON tc.tradeNo=ti.tradeNo  WHERE tc.type=1 AND ti.currencyId=b.id AND isSp=0
+				<if test="condition.cardType != null and condition.cardType != '' ">
+								and ti.cardType=#{condition.cardType}
+				</if>
+				#AND YEAR(DATE_ADD(tc.CPDDate,INTERVAL -1 MONTH))=YEAR(c.transDate) AND MONTH(DATE_ADD(tc.CPDDate,INTERVAL -1 MONTH))=MONTH(c.transDate)
+				)AS disCount,
+				(SELECT COUNT(tc.tradeNo) FROM gw_trans_complaint_info tc LEFT JOIN gw_trans_info ti ON tc.tradeNo=ti.tradeNo  WHERE tc.type=3 AND ti.currencyId=b.id
+				<if test="condition.cardType != null and condition.cardType != '' ">
+								and ti.cardType=#{condition.cardType}
+				</if>
+				and tc.tradeNo in (
+				SELECT tc.tradeNo FROM gw_trans_complaint_info tc LEFT JOIN gw_trans_info ti ON tc.tradeNo=ti.tradeNo  WHERE tc.type=1 AND ti.currencyId=b.id AND isSp=0
+				<if test="condition.cardType != null and condition.cardType != '' ">
+								and ti.cardType=#{condition.cardType}
+				</if>
+				)
+				#AND YEAR(tc.complaintDate)=YEAR(c.transDate) AND MONTH(tc.complaintDate)=MONTH(c.transDate)
+				)AS fakeCount,
+				b.merchantNo,
+				b.acquirer,
+				b.remark,
+				COUNT(c.tradeNo) AS successCount
+					<!--if test="condition.countYear != null and condition.countYear != '' ">
+						<if test="condition.countMonth != null and condition.countMonth != '' "-->
+							,'0' as  lastSuccessCount,
+							'0' as lastLastSuccessCount
+						<!--/if>
+					</if-->
+					,
+					b.currencyBelongs
+				FROM 
+				gw_bank_info a LEFT JOIN gw_currency_info b ON a.id=b.bankId
+				<if test="condition.currencyId != null and condition.currencyId != '' ">
+						and b.id=#{condition.currencyId}
+					</if>
+					<if test="condition.bankId != null and condition.bankId != '' and condition.bankId !=0 ">
+						and a.id=#{condition.bankId}
+					</if>
+					<if test="condition.enabled != null and condition.enabled != '' ">
+						and b.enabled=#{condition.enabled}
+					</if> 
+				LEFT JOIN gw_trans_info c ON b.id=c.currencyId
+				AND 
+				c.respCode='00'
+				AND
+				c.transType='sales' 
+				<if test="condition.cardType != null and condition.cardType != '' ">
+						and c.cardType=#{condition.cardType}
+					</if>
+					
+				GROUP BY b.id
+			</if>
+			
+		union  all
+		SELECT
+		b.id AS currencyId,
+		YEAR(DATE_ADD(d.CPDDate,INTERVAL 0 MONTH)) countYear,
+		MONTH(DATE_ADD(d.CPDDate,INTERVAL 0 MONTH)) countMonth,
+		a.bankName,
+		b.currencyName,
+		b.enabled,
+		c.cardType,
+		(SELECT GROUP_CONCAT(configValue) FROM gw_currency_config_info cc WHERE cc.configName='tdsj' AND cc.currencyId=b.id GROUP BY cc.currencyId) AS tdsj,
+		count(d.tradeNo) AS disCount,
+		(SELECT COUNT(tc.tradeNo) FROM gw_trans_complaint_info tc LEFT JOIN gw_trans_info ti ON tc.tradeNo=ti.tradeNo  WHERE  tc.type=3 AND ti.currencyId=b.id
+		<if test="condition.cardType != null and condition.cardType != '' ">
+						and ti.cardType=#{condition.cardType}
+		</if>
+		AND YEAR(tc.complaintDate)=YEAR(DATE_ADD(d.CPDDate,INTERVAL 0 MONTH)) AND MONTH(tc.complaintDate)=MONTH(DATE_ADD(d.CPDDate,INTERVAL 0 MONTH))
+		and tc.tradeNo in (
+		SELECT tc.tradeNo FROM gw_trans_complaint_info tc LEFT JOIN gw_trans_info ti ON tc.tradeNo=ti.tradeNo  WHERE tc.type=1 AND ti.currencyId=b.id AND isSp=0
+		<if test="condition.cardType != null and condition.cardType != '' ">
+						and ti.cardType=#{condition.cardType}
+		</if>
+		AND YEAR(DATE_ADD(tc.CPDDate,INTERVAL 0 MONTH))=YEAR(DATE_ADD(d.CPDDate,INTERVAL 0 MONTH)) AND MONTH(DATE_ADD(tc.CPDDate,INTERVAL 0 MONTH))=MONTH(DATE_ADD(d.CPDDate,INTERVAL 0 MONTH))
+		
+		)
+		)AS fakeCount,
+		b.merchantNo,
+		b.acquirer,
+		b.remark,
+		'0' AS successCount
+			<!--if test="condition.countYear != null and condition.countYear != '' ">
+				<if test="condition.countMonth != null and condition.countMonth != '' "-->
+			,(select count(*) from gw_trans_info m where m.transType='sales' and m.respCode='00'
+					and m.currencyId=c.currencyId
+					and YEAR(DATE_ADD(m.transDate,INTERVAL 1 MONTH))=YEAR(d.CPDDate)
+					and month(DATE_ADD(m.transDate,INTERVAL 1 MONTH))=month(d.CPDDate)
+					<if test="condition.cardType != null and condition.cardType != '' ">
+						and m.cardType=#{condition.cardType}
+					</if>
+					) as lastSuccessCount,
+					(select count(*) from gw_trans_info m1 where m1.transType='sales' and m1.respCode='00'
+					and m1.currencyId=c.currencyId
+					and YEAR(DATE_ADD(m1.transDate,INTERVAL 2 MONTH))=YEAR(d.CPDDate)
+					and month(DATE_ADD(m1.transDate,INTERVAL 2 MONTH))=month(d.CPDDate)
+					<if test="condition.cardType != null and condition.cardType != '' ">
+						and m1.cardType=#{condition.cardType}
+					</if>
+					) as lastLastSuccessCount,
+			b.currencyBelongs
+		FROM 
+		gw_trans_complaint_info  d  
+		LEFT JOIN gw_trans_info c 
+		ON c.tradeNo=d.tradeNo
+		AND 
+		c.respCode='00'
+		AND
+		c.transType='sales' 
+		<if test="condition.cardType != null and condition.cardType != '' ">
+				and c.cardType=#{condition.cardType}
+		</if>
+		LEFT JOIN gw_currency_info b ON b.id=c.currencyId
+		LEFT JOIN 
+		gw_bank_info a ON a.id=b.bankId 
+		
+		WHERE 
+		d.TYPE=1 AND d.isSp=0
+		AND b.id IS NOT NULL 
+		<if test="condition.currencyId != null and condition.currencyId != '' ">
+				and b.id=#{condition.currencyId}
+		</if>
+		<if test="condition.bankId != null and condition.bankId != '' and condition.bankId !=0 ">
+			and a.id=#{condition.bankId}
+		</if>
+		<if test="condition.enabled != null and condition.enabled != '' ">
+				and b.enabled=#{condition.enabled}
+		</if> 
+		<if test="condition.countYear != null and condition.countYear != '' ">
+			and year(DATE_ADD(d.CPDDate,INTERVAL 0 MONTH))=#{condition.countYear}
+		</if>
+		<if test="condition.countMonth != null and condition.countMonth != '' ">
+			and month(DATE_ADD(d.CPDDate,INTERVAL 0 MONTH))=#{condition.countMonth}
+		</if>
+		GROUP BY b.id,YEAR(DATE_ADD(d.CPDDate,INTERVAL 0 MONTH)),MONTH(DATE_ADD(d.CPDDate,INTERVAL 0 MONTH))
+				
+		) as t
+		where
+		countYear is not null 
+		and enabled is not null 
+		<if test="condition.countType !=null and condition.countType != '' and  condition.countType == 0 ">
+				and	countYear=0
+		</if>
+		<if test="condition.countType !=null and condition.countType != '' and  condition.countType == 1 ">
+				and   countYear != 0
+		</if>
+		group by currencyName,countYear,countMonth
+				
+	</select>
+	<select id="countCurrencyDisRate" resultType="int">
+		SELECT COUNT(*) FROM (
+			select * from (
+			SELECT
+			b.id as currencyId,
+			YEAR(c.transDate) countYear,
+			MONTH(c.transDate) countMonth,
+			a.bankName,
+			b.currencyName,
+			b.enabled,
+			c.cardType,
+			0 AS disCount,
+			0 AS fakeCount,
+			b.merchantNo,
+			b.acquirer,
+			
+			COUNT(c.tradeNo) AS successCount
+			<!--  if test="condition.countYear != null and condition.countYear != '' ">
+				<if test="condition.countMonth != null and condition.countMonth != '' "-->
+					,0 as lastSuccessCount,
+					0 as lastLastSuccessCount
+				<!--/if>
+			</if-->
+			,
+			b.currencyBelongs
+			FROM 
+			gw_bank_info a LEFT JOIN gw_currency_info b ON a.id=b.bankId 
+				<if test="condition.currencyId != null and condition.currencyId != '' ">
+				and b.id=#{condition.currencyId}
+			</if>
+			<if test="condition.bankId != null and condition.bankId != '' and condition.bankId !=0 ">
+				and a.id=#{condition.bankId}
+			</if>
+			<if test="condition.enabled != null and condition.enabled != '' ">
+				and b.enabled=#{condition.enabled}
+			</if>
+			LEFT JOIN gw_trans_info c ON b.id=c.currencyId
+			AND 
+			c.respCode='00'
+			AND
+			c.transType='sales' 
+			<if test="condition.cardType != null and condition.cardType != '' ">
+				and c.cardType=#{condition.cardType}
+			</if>
+			<if test="condition.countYear != null and condition.countYear != '' ">
+				and year(c.transDate)=#{condition.countYear}
+			</if>
+			<if test="condition.countMonth != null and condition.countMonth != '' ">
+				and month(c.transDate)=#{condition.countMonth}
+			</if>
+		
+			GROUP BY b.id,YEAR(c.transDate),MONTH(c.transDate)
+			
+			<if test="condition.countType != 1">
+				UNION ALL 
+				SELECT
+				b.id as currencyId,
+				'0' countYear,
+				'0' countMonth,
+				a.bankName,
+				b.currencyName,
+				b.enabled,
+				c.cardType,
+				0 AS disCount,
+				0 AS fakeCount,
+				b.merchantNo,
+				b.acquirer,
+				COUNT(c.tradeNo) AS successCount
+					<!--if test="condition.countYear != null and condition.countYear != '' ">
+						<if test="condition.countMonth != null and condition.countMonth != '' "-->
+							,'0' as  lastSuccessCount,
+							'0' as lastLastSuccessCount
+						<!--/if>
+					</if-->
+					,
+					b.currencyBelongs
+				FROM 
+				gw_bank_info a LEFT JOIN gw_currency_info b ON a.id=b.bankId
+				<if test="condition.currencyId != null and condition.currencyId != '' ">
+						and b.id=#{condition.currencyId}
+					</if>
+					<if test="condition.bankId != null and condition.bankId != '' and condition.bankId !=0 ">
+						and a.id=#{condition.bankId}
+					</if>
+					<if test="condition.enabled != null and condition.enabled != '' ">
+						and b.enabled=#{condition.enabled}
+					</if> 
+				LEFT JOIN gw_trans_info c ON b.id=c.currencyId
+				AND 
+				c.respCode='00'
+				AND
+				c.transType='sales' 
+				<if test="condition.cardType != null and condition.cardType != '' ">
+						and c.cardType=#{condition.cardType}
+					</if>
+					
+				GROUP BY b.id
+			</if>
+			
+		union  all
+		SELECT
+		b.id AS currencyId,
+		YEAR(DATE_ADD(d.CPDDate,INTERVAL 0 MONTH)) countYear,
+		MONTH(DATE_ADD(d.CPDDate,INTERVAL 0 MONTH)) countMonth,
+		a.bankName,
+		b.currencyName,
+		b.enabled,
+		c.cardType,
+		0 AS disCount,
+		0 AS fakeCount,
+		b.merchantNo,
+		b.acquirer,
+		
+		'0' AS successCount
+			<!--if test="condition.countYear != null and condition.countYear != '' ">
+				<if test="condition.countMonth != null and condition.countMonth != '' "-->
+					,0 as lastSuccessCount,
+					0 as lastLastSuccessCount
+				<!--/if>
+			</if-->
+			,
+			b.currencyBelongs
+		FROM 
+		gw_trans_complaint_info  d  
+		LEFT JOIN gw_trans_info c 
+		ON c.tradeNo=d.tradeNo
+		AND 
+		c.respCode='00'
+		AND
+		c.transType='sales' 
+		<if test="condition.cardType != null and condition.cardType != '' ">
+				and c.cardType=#{condition.cardType}
+		</if>
+		LEFT JOIN gw_currency_info b ON b.id=c.currencyId
+		LEFT JOIN 
+		gw_bank_info a ON a.id=b.bankId 
+		
+		WHERE 
+		d.TYPE=1 AND d.isSp=0
+		AND b.id IS NOT NULL 
+		<if test="condition.currencyId != null and condition.currencyId != '' ">
+				and b.id=#{condition.currencyId}
+		</if>
+		<if test="condition.bankId != null and condition.bankId != '' and condition.bankId !=0 ">
+			and a.id=#{condition.bankId}
+		</if>
+		<if test="condition.enabled != null and condition.enabled != '' ">
+				and b.enabled=#{condition.enabled}
+		</if> 
+		<if test="condition.countYear != null and condition.countYear != '' ">
+			and year(DATE_ADD(d.CPDDate,INTERVAL 0 MONTH))=#{condition.countYear}
+		</if>
+		<if test="condition.countMonth != null and condition.countMonth != '' ">
+			and month(DATE_ADD(d.CPDDate,INTERVAL 0 MONTH))=#{condition.countMonth}
+		</if>
+		GROUP BY b.id,YEAR(DATE_ADD(d.CPDDate,INTERVAL 0 MONTH)),MONTH(DATE_ADD(d.CPDDate,INTERVAL 0 MONTH))
+				
+		) as t
+		
+		where
+		countYear is not null 
+		and enabled is not null 
+		<if test="condition.countType !=null and condition.countType != '' and  condition.countType == 0 ">
+				and	countYear=0
+		</if>
+		<if test="condition.countType !=null and condition.countType != '' and  condition.countType == 1 ">
+				and   countYear != 0
+		</if>
+ 		group by currencyId ,countYear ,countMonth
+ 		)
+ 		 AS c
+				
+	</select>
+	
+	<select id="queryCurrencyDisDesc" resultType="com.gateway.countAnalysis.model.DisDesc">
+		select 
+		c.cValue as disReason,
+		c.id as disReasonId,
+		count(a.tradeNo) as disCount 
+		from gw_trans_complaint_info a left join gw_trans_info b  on a.tradeNo=b.tradeNo 
+		
+		left join gw_trans_complaint_type_info c on a.complaintType=c.id 
+		where 
+		a.type=1
+		<if test="condition.isSp != null and condition.isSp != '' ">
+			and a.isSp=#{condition.isSp}
+		</if>
+		<if test="condition.isMerchantSee != null and condition.isMerchantSee != '' ">
+			and a.isMerchantSee=#{condition.isMerchantSee}
+		</if>
+		#and 
+		#a.isSp=0
+		<if test="condition.currencyId != null and condition.currencyId != '' ">
+			and b.currencyId=#{condition.currencyId}
+			<if test="condition.countYear != null and condition.countYear != '' ">
+				and YEAR(DATE_ADD(a.CPDDate,INTERVAL 0 MONTH))=#{condition.countYear}
+				and MONTH(DATE_ADD(a.CPDDate,INTERVAL 0 MONTH))=#{condition.countMonth}
+			</if>
+		</if>
+		<if test="condition.merNo != null and condition.merNo != '' ">
+			and b.merNo=#{condition.merNo}
+			<if test="condition.countYear != null and condition.countYear != '' ">
+				and YEAR(DATE_ADD(a.complaintDate,INTERVAL 0 MONTH))=#{condition.countYear}
+				and MONTH(DATE_ADD(a.complaintDate,INTERVAL 0 MONTH))=#{condition.countMonth}
+			</if>
+		</if>
+		<if test="condition.terNo != null and condition.terNo != '' ">
+			and b.terNo=#{condition.terNo}
+		</if>
+		<if test="condition.cardType != null and condition.cardType != '' ">
+			and b.cardType=#{condition.cardType}
+		</if>
+		
+		group by c.id 
+		having disReasonId is not null 
+		order by disCount desc 
+	</select>
+	
+		<select id="queryComplaintInfoList" resultType="com.gateway.complaint.model.Complaint">
+		select 
+			c.*,
+			i.cValue complaintTypeValue,
+			t.orderNo,
+			t.payWebSite,
+			t.merBusCurrency,
+			t.merTransAmount,
+			t.merNo,
+			t.email,
+			t.checkNo,
+			t.last,
+			t.ipAddress,
+			t.transDishonor,
+			t.transFrozen,
+			t.transRefund,
+			t.riskScore,
+			(select count(*) from gw_trans_complaint_info tci where tci.type=3 and tci.tradeNo=c.id) isFake
+		from gw_trans_complaint_info c 
+		left join gw_trans_complaint_type_info i on i.id=c.complaintType
+		left join gw_trans_info t on t.tradeNo=c.tradeNo
+		LEFT JOIN gw_currency_info d ON t.currencyId = d.id
+		where
+		
+		c.type=1
+		#and c.isSp=0
+		<if test="condition.currencyId != null and condition.currencyId != '' ">
+			and t.currencyId=#{condition.currencyId}
+			<if test="condition.countYear != null and condition.countYear != '' ">
+				and YEAR(DATE_ADD(c.CPDDate,INTERVAL 0 MONTH))=#{condition.countYear}
+				and MONTH(DATE_ADD(c.CPDDate,INTERVAL 0 MONTH))=#{condition.countMonth}
+			</if>
+		</if>
+		<if test="condition.merNo != null and condition.merNo != '' ">
+			and t.merNo=#{condition.merNo}
+			<if test="condition.countYear != null and condition.countYear != '' ">
+				and YEAR(DATE_ADD(c.complaintDate,INTERVAL 0 MONTH))=#{condition.countYear}
+				and MONTH(DATE_ADD(c.complaintDate,INTERVAL 0 MONTH))=#{condition.countMonth}
+			</if>
+		</if>
+		<if test="condition.terNo != null and condition.terNo != '' ">
+			and t.terNo=#{condition.terNo}
+		</if>
+		<if test="condition.cardType != null and condition.cardType != '' ">
+			and t.cardType=#{condition.cardType}
+		</if>
+	
+		<if test="condition.disReasonId != null and condition.disReasonId != '' ">
+			and i.id=#{condition.disReasonId}
+		</if>
+		order by c.id desc 
+	</select>
+	
+	
+	<sql id="Where_Merchant_dis_Caluse">
+		<if test="condition.merNo != null and condition.merNo != '' ">
+			and a.merNo=#{condition.merNo}
+		</if>
+		<if test="condition.terNo != null and condition.terNo != '' ">
+			and a.terNo=#{condition.terNo}
+		</if>
+		<if test="condition.cardType != null and condition.cardType != '' ">
+			and a.cardType=#{condition.cardType}
+		</if>
+			<if test="condition.startDate != null and condition.startDate != '' ">
+				and a.transDate >= '${condition.startDate} 00:00:00'
+			</if>
+			<if test="condition.endDate != null and condition.endDate != '' ">
+				and a.transDate &lt;='${condition.endDate} 23:59:59'
+			</if>
+	</sql>
+	<select id="merchantDisRate" resultType="com.gateway.countAnalysis.model.CurrencyDisCount">
+	SELECT 
+merNo,terNo,countYear,countMonth,
+cardType,
+SUM(disCount) AS disCount,
+SUM(fakeCount) AS fakeCount,
+SUM(successCount) AS successCount,
+currency,
+sum(disAmount) as disAmount,
+sum(successAmount) as successAmount,
+sum(fakeAmount) as fakeAmount,
+sum(totalFakeCount) as totalFakeCount,
+sum(totalFakeAmount) as totalFakeAmount
+FROM (
+	SELECT
+		c.merNo AS merNo,
+		c.terNo AS terNo,
+		YEAR(c.transDate) countYear,
+		MONTH(c.transDate) countMonth,
+		c.cardType,
+		0 AS disCount,
+		0 AS fakeCount,
+		COUNT(c.tradeNo) AS successCount,
+		sum(c.bankTransAmount) as successAmount,
+		c.bankCurrency as currency,
+		0 as fakeAmount,
+		0 as disAmount,
+		0 as totalFakeCount,
+		0 as totalFakeAmount
+		FROM 
+		gw_trans_info c 
+		WHERE 
+		c.respCode='00'
+		AND
+		c.transType='sales' 
+		<if test="condition.merNo != null and condition.merNo != '' ">
+				and c.merNo=#{condition.merNo}
+		</if>
+		<if test="condition.terNo != null and condition.terNo != '' ">
+				and c.terNo=#{condition.terNo}
+		</if>
+		<if test="condition.enabled != null and condition.enabled != '' ">
+			and c.merNo in (select merNo from gw_merchant_info where enabled=#{condition.enabled})
+		</if>
+		<if test="condition.cardType != null and condition.cardType != '' ">
+			and c.cardType=#{condition.cardType}
+		</if>
+		<if test="condition.countYear != null and condition.countYear != '' ">
+			and year(c.transDate)=#{condition.countYear}
+		</if>
+		<if test="condition.countMonth != null and condition.countMonth != '' ">
+			and month(c.transDate)=#{condition.countMonth}
+		</if>
+		GROUP BY c.merNo,c.terNo,YEAR(c.transDate),MONTH(c.transDate)
+		UNION  ALL
+		SELECT
+		c.merNo AS merNo,
+		c.terNo AS terNo,
+		YEAR(DATE_ADD(d.complaintDate,INTERVAL 0 MONTH)) countYear,
+		MONTH(DATE_ADD(d.complaintDate,INTERVAL 0 MONTH)) countMonth,
+		c.cardType,
+		SUM(CASE WHEN d.type=1 THEN 1 ELSE 0 END) AS disCount,
+		sum(
+		CASE WHEN gtc.tradeNo IS NOT NULL THEN 1 ELSE 0 END
+		) AS fakeCount,
+		'0' AS successCount,
+		0 as successAmount,
+		c.bankCurrency as currency,
+		sum(
+		CASE WHEN gtc.tradeNo IS NOT NULL THEN c.bankTransAmount ELSE 0 END
+		) as fakeAmount,
+		SUM(CASE WHEN d.type=1 THEN c.bankTransAmount ELSE 0 END) as disAmount,
+		0 as totalFakeCount,
+		0 as totalFakeAmount
+		FROM 
+		gw_trans_complaint_info  d  
+		LEFT JOIN gw_trans_info c 
+		ON c.tradeNo=d.tradeNo
+		LEFT JOIN  gw_trans_complaint_info gtc ON gtc.tradeNo=d.tradeNo  AND gtc.type=3
+		WHERE d.TYPE= 1
+		<if test="condition.merNo != null and condition.merNo != '' ">
+				and c.merNo=#{condition.merNo}
+		</if>
+		<if test="condition.terNo != null and condition.terNo != '' ">
+				and c.terNo=#{condition.terNo}
+		</if>
+		<if test="condition.enabled != null and condition.enabled != '' ">
+			and c.merNo in (select merNo from gw_merchant_info where enabled=#{condition.enabled})
+		</if>
+		<if test="condition.cardType != null and condition.cardType != '' ">
+			and c.cardType=#{condition.cardType}
+		</if>
+		<if test="condition.isSp != null and condition.isSp != '' ">
+			and d.isSp=#{condition.isSp}
+		</if>
+		<if test="condition.isMerchantSee != null and condition.isMerchantSee != '' ">
+			and d.isMerchantSee=#{condition.isMerchantSee}
+		</if>
+		<if test="condition.countYear != null and condition.countYear != '' ">
+			and year(DATE_ADD(d.complaintDate,INTERVAL 0 MONTH))=#{condition.countYear}
+		</if>
+		<if test="condition.countMonth != null and condition.countMonth != '' ">
+			and month(DATE_ADD(d.complaintDate,INTERVAL 0 MONTH))=#{condition.countMonth}
+		</if>
+		GROUP BY c.merNo,c.terNo,YEAR(DATE_ADD(d.complaintDate,INTERVAL 0 MONTH)),MONTH(DATE_ADD(d.complaintDate,INTERVAL 0 MONTH))
+				
+		UNION  ALL
+		SELECT
+		c.merNo AS merNo,
+		c.terNo AS terNo,
+		YEAR(DATE_ADD(d.complaintDate,INTERVAL 0 MONTH)) countYear,
+		MONTH(DATE_ADD(d.complaintDate,INTERVAL 0 MONTH)) countMonth,
+		c.cardType,
+		0 AS disCount,
+		0 AS fakeCount,
+		'0' AS successCount,
+		0 as successAmount,
+		c.bankCurrency as currency,
+		0 as fakeAmount,
+		0 as disAmount,
+		count(d.tradeNo) as totalFakeCount,
+		sum(c.bankTransAmount) as totalFakeAmount
+		FROM 
+		gw_trans_complaint_info  d  
+		LEFT JOIN gw_trans_info c 
+		ON c.tradeNo=d.tradeNo
+		WHERE d.TYPE= 3
+		<if test="condition.merNo != null and condition.merNo != '' ">
+				and c.merNo=#{condition.merNo}
+		</if>
+		<if test="condition.terNo != null and condition.terNo != '' ">
+				and c.terNo=#{condition.terNo}
+		</if>
+		<if test="condition.enabled != null and condition.enabled != '' ">
+			and c.merNo in (select merNo from gw_merchant_info where enabled=#{condition.enabled})
+		</if>
+		<if test="condition.cardType != null and condition.cardType != '' ">
+			and c.cardType=#{condition.cardType}
+		</if>
+		<if test="condition.isSp != null and condition.isSp != '' ">
+			and d.isSp=#{condition.isSp}
+		</if>
+		<if test="condition.isMerchantSee != null and condition.isMerchantSee != '' ">
+			and d.isMerchantSee=#{condition.isMerchantSee}
+		</if>
+		<if test="condition.countYear != null and condition.countYear != '' ">
+			and year(DATE_ADD(d.complaintDate,INTERVAL 0 MONTH))=#{condition.countYear}
+		</if>
+		<if test="condition.countMonth != null and condition.countMonth != '' ">
+			and month(DATE_ADD(d.complaintDate,INTERVAL 0 MONTH))=#{condition.countMonth}
+		</if>
+		GROUP BY c.merNo,c.terNo,YEAR(DATE_ADD(d.complaintDate,INTERVAL 0 MONTH)),MONTH(DATE_ADD(d.complaintDate,INTERVAL 0 MONTH))
+				
+		) AS t
+		WHERE
+		countYear IS NOT NULL 
+		GROUP BY merNo,terNo,countYear,countMonth
+		
+	<if test="condition.countType != 1">
+	UNION ALL 
+SELECT 
+merNo,terNo,countYear,countMonth,
+cardType,
+SUM(disCount) AS disCount,
+SUM(fakeCount) AS fakeCount,
+SUM(successCount) AS successCount,
+currency,
+sum(disAmount) as disAmount,
+sum(successAmount) as successAmount,
+sum(fakeAmount) as fakeAmount,
+sum(totalFakeCount) as totalFakeCount,
+sum(totalFakeAmount) as totalFakeAmount
+FROM (	
+		SELECT
+		c.merNo AS merNo,
+		c.terNo AS terNo,
+		'0' countYear,
+		'0' countMonth,
+		c.cardType,
+		0 AS disCount,
+		0 AS fakeCount,
+		COUNT(c.tradeNo) AS successCount,
+		sum(c.bankTransAmount) as successAmount,
+		c.bankCurrency as currency,
+		0 as fakeAmount,
+		0 as disAmount,
+		0 as totalFakeCount,
+		0 as totalFakeAmount
+		FROM 
+		gw_trans_info c
+		WHERE 
+		c.respCode='00'
+		AND
+		c.transType='sales' 
+		<if test="condition.merNo != null and condition.merNo != '' ">
+				and c.merNo=#{condition.merNo}
+		</if>
+		<if test="condition.terNo != null and condition.terNo != '' ">
+				and c.terNo=#{condition.terNo}
+		</if>
+		<if test="condition.enabled != null and condition.enabled != '' ">
+			and c.merNo in (select merNo from gw_merchant_info where enabled=#{condition.enabled})
+		</if>
+		<if test="condition.cardType != null and condition.cardType != '' ">
+			and c.cardType=#{condition.cardType}
+		</if>		
+		GROUP BY c.merNo,c.terNo
+	UNION ALL
+		SELECT
+		c.merNo AS merNo,
+		c.terNo AS terNo,
+		0 countYear,
+		0 countMonth,
+		c.cardType,
+		SUM(CASE WHEN d.type=1 THEN 1 ELSE 0 END) AS disCount,
+		sum(
+		CASE WHEN gtc.tradeNo IS NOT NULL THEN 1 ELSE 0 END
+		) AS fakeCount,
+		'0' AS successCount,
+		0 as successAmount,
+		c.bankCurrency as currency,
+		sum(
+		CASE WHEN gtc.tradeNo IS NOT NULL THEN c.bankTransAmount ELSE 0 END
+		) as fakeAmount,
+		SUM(CASE WHEN d.type=1 THEN c.bankTransAmount ELSE 0 END) as disAmount,
+		0 as totalFakeCount,
+		0 as totalFakeAmount
+		FROM 
+		gw_trans_complaint_info  d  
+		LEFT JOIN gw_trans_info c 
+		ON c.tradeNo=d.tradeNo
+		LEFT JOIN  gw_trans_complaint_info gtc ON gtc.tradeNo=d.tradeNo  AND gtc.type=3
+		WHERE d.TYPE=1
+		<if test="condition.merNo != null and condition.merNo != '' ">
+				and c.merNo=#{condition.merNo}
+		</if>
+		<if test="condition.terNo != null and condition.terNo != '' ">
+				and c.terNo=#{condition.terNo}
+		</if>
+		<if test="condition.enabled != null and condition.enabled != '' ">
+			and c.merNo in (select merNo from gw_merchant_info where enabled=#{condition.enabled})
+		</if>
+		<if test="condition.cardType != null and condition.cardType != '' ">
+			and c.cardType=#{condition.cardType}
+		</if>
+		<if test="condition.isSp != null and condition.isSp != '' ">
+			and d.isSp=#{condition.isSp}
+		</if>
+		<if test="condition.isMerchantSee != null and condition.isMerchantSee != '' ">
+			and d.isMerchantSee=#{condition.isMerchantSee}
+		</if>
+		GROUP BY c.merNo,c.terNo
+		
+		
+		UNION ALL
+		SELECT
+		c.merNo AS merNo,
+		c.terNo AS terNo,
+		0 countYear,
+		0 countMonth,
+		c.cardType,
+		0 AS disCount,
+		0 AS fakeCount,
+		'0' AS successCount,
+		0 as successAmount,
+		c.bankCurrency as currency,
+		0 as fakeAmount,
+		0 as disAmount,
+		count(d.tradeNo) as totalFakeCount,
+		sum(c.bankTransAmount) as totalFakeAmount
+		FROM 
+		gw_trans_complaint_info  d  
+		LEFT JOIN gw_trans_info c 
+		ON c.tradeNo=d.tradeNo
+		WHERE d.TYPE=3
+		<if test="condition.merNo != null and condition.merNo != '' ">
+				and c.merNo=#{condition.merNo}
+		</if>
+		<if test="condition.terNo != null and condition.terNo != '' ">
+				and c.terNo=#{condition.terNo}
+		</if>
+		<if test="condition.enabled != null and condition.enabled != '' ">
+			and c.merNo in (select merNo from gw_merchant_info where enabled=#{condition.enabled})
+		</if>
+		<if test="condition.cardType != null and condition.cardType != '' ">
+			and c.cardType=#{condition.cardType}
+		</if>
+		<if test="condition.isSp != null and condition.isSp != '' ">
+			and d.isSp=#{condition.isSp}
+		</if>
+		<if test="condition.isMerchantSee != null and condition.isMerchantSee != '' ">
+			and d.isMerchantSee=#{condition.isMerchantSee}
+		</if>
+		GROUP BY c.merNo,c.terNo	
+		)AS t1 
+		WHERE
+		countYear IS NOT NULL 
+		GROUP BY merNo,terNo,countYear,countMonth
+			
+	</if>
+ 	</select>
+	
+	<select id="countmerchantDisRate" resultType="int">
+		select count(*) from (
+				SELECT 
+merNo,terNo,countYear,countMonth,
+cardType,
+SUM(disCount) AS disCount,
+SUM(fakeCount) AS fakeCount,
+SUM(successCount) AS successCount
+FROM (
+	SELECT
+		c.merNo AS merNo,
+		c.terNo AS terNo,
+		YEAR(c.transDate) countYear,
+		MONTH(c.transDate) countMonth,
+		c.cardType,
+		0 AS disCount,
+		0 AS fakeCount,
+		COUNT(c.tradeNo) AS successCount
+		FROM 
+		gw_trans_info c 
+		WHERE 
+		c.respCode='00'
+		AND
+		c.transType='sales' 
+		<if test="condition.merNo != null and condition.merNo != '' ">
+				and c.merNo=#{condition.merNo}
+		</if>
+		<if test="condition.terNo != null and condition.terNo != '' ">
+				and c.terNo=#{condition.terNo}
+		</if>
+		<if test="condition.enabled != null and condition.enabled != '' ">
+			and c.merNo in (select merNo from gw_merchant_info where enabled=#{condition.enabled})
+		</if>
+		<if test="condition.cardType != null and condition.cardType != '' ">
+			and c.cardType=#{condition.cardType}
+		</if>
+		<if test="condition.countYear != null and condition.countYear != '' ">
+			and year(c.transDate)=#{condition.countYear}
+		</if>
+		<if test="condition.countMonth != null and condition.countMonth != '' ">
+			and month(c.transDate)=#{condition.countMonth}
+		</if>
+		GROUP BY c.merNo,c.terNo,YEAR(c.transDate),MONTH(c.transDate)
+		UNION  ALL
+		SELECT
+		c.merNo AS merNo,
+		c.terNo AS terNo,
+		YEAR(DATE_ADD(d.complaintDate,INTERVAL 0 MONTH)) countYear,
+		MONTH(DATE_ADD(d.complaintDate,INTERVAL 0 MONTH)) countMonth,
+		c.cardType,
+		SUM(CASE WHEN d.type=1 THEN 1 ELSE 0 END) AS disCount,
+		SUM(CASE WHEN d.type=3 THEN 1 ELSE 0 END) AS fakeCount,
+		'0' AS successCount
+		FROM 
+		gw_trans_complaint_info  d  
+		LEFT JOIN gw_trans_info c 
+		ON c.tradeNo=d.tradeNo
+		WHERE TYPE =1
+		<if test="condition.merNo != null and condition.merNo != '' ">
+				and c.merNo=#{condition.merNo}
+		</if>
+		<if test="condition.terNo != null and condition.terNo != '' ">
+				and c.terNo=#{condition.terNo}
+		</if>
+		<if test="condition.enabled != null and condition.enabled != '' ">
+			and c.merNo in (select merNo from gw_merchant_info where enabled=#{condition.enabled})
+		</if>
+		<if test="condition.cardType != null and condition.cardType != '' ">
+			and c.cardType=#{condition.cardType}
+		</if>
+		<if test="condition.isSp != null and condition.isSp != '' ">
+			and d.isSp=#{condition.isSp}
+		</if>
+		<if test="condition.isMerchantSee != null and condition.isMerchantSee != '' ">
+			and d.isMerchantSee=#{condition.isMerchantSee}
+		</if>
+		<if test="condition.countYear != null and condition.countYear != '' ">
+			and year(DATE_ADD(d.complaintDate,INTERVAL 0 MONTH))=#{condition.countYear}
+		</if>
+		<if test="condition.countMonth != null and condition.countMonth != '' ">
+			and month(DATE_ADD(d.complaintDate,INTERVAL 0 MONTH))=#{condition.countMonth}
+		</if>
+		GROUP BY c.merNo,c.terNo,YEAR(DATE_ADD(d.complaintDate,INTERVAL 0 MONTH)),MONTH(DATE_ADD(d.complaintDate,INTERVAL 0 MONTH))
+				
+		) AS t
+		WHERE
+		countYear IS NOT NULL 
+		GROUP BY merNo,terNo,countYear,countMonth
+		
+		
+	<if test="condition.countType != 1">
+	UNION ALL 
+SELECT 
+merNo,terNo,countYear,countMonth,
+cardType,
+SUM(disCount) AS disCount,
+SUM(fakeCount) AS fakeCount,
+SUM(successCount) AS successCount
+FROM (	
+		SELECT
+		c.merNo AS merNo,
+		c.terNo AS terNo,
+		'0' countYear,
+		'0' countMonth,
+		c.cardType,
+		0 AS disCount,
+		0 AS fakeCount,
+		COUNT(c.tradeNo) AS successCount
+		FROM 
+		gw_trans_info c
+		WHERE 
+		c.respCode='00'
+		AND
+		c.transType='sales' 
+		<if test="condition.merNo != null and condition.merNo != '' ">
+				and c.merNo=#{condition.merNo}
+		</if>
+		<if test="condition.terNo != null and condition.terNo != '' ">
+				and c.terNo=#{condition.terNo}
+		</if>
+		<if test="condition.enabled != null and condition.enabled != '' ">
+			and c.merNo in (select merNo from gw_merchant_info where enabled=#{condition.enabled})
+		</if>
+		<if test="condition.cardType != null and condition.cardType != '' ">
+			and c.cardType=#{condition.cardType}
+		</if>		
+		GROUP BY c.merNo,c.terNo
+	UNION ALL
+		SELECT
+		c.merNo AS merNo,
+		c.terNo AS terNo,
+		0 countYear,
+		0 countMonth,
+		c.cardType,
+		SUM(CASE WHEN d.type=1 THEN 1 ELSE 0 END) AS disCount,
+		SUM(CASE WHEN d.type=3 THEN 1 ELSE 0 END) AS fakeCount,
+		'0' AS successCount
+		FROM 
+		gw_trans_complaint_info  d  
+		LEFT JOIN gw_trans_info c 
+		ON c.tradeNo=d.tradeNo
+		WHERE TYPE =1
+		<if test="condition.merNo != null and condition.merNo != '' ">
+				and c.merNo=#{condition.merNo}
+		</if>
+		<if test="condition.terNo != null and condition.terNo != '' ">
+				and c.terNo=#{condition.terNo}
+		</if>
+		<if test="condition.enabled != null and condition.enabled != '' ">
+			and c.merNo in (select merNo from gw_merchant_info where enabled=#{condition.enabled})
+		</if>
+		<if test="condition.cardType != null and condition.cardType != '' ">
+			and c.cardType=#{condition.cardType}
+		</if>
+		<if test="condition.isSp != null and condition.isSp != '' ">
+			and d.isSp=#{condition.isSp}
+		</if>
+		<if test="condition.isMerchantSee != null and condition.isMerchantSee != '' ">
+			and d.isMerchantSee=#{condition.isMerchantSee}
+		</if>
+		GROUP BY c.merNo,c.terNo
+		)AS t1 
+		WHERE
+		countYear IS NOT NULL 
+		GROUP BY merNo,terNo,countYear,countMonth	
+	</if>
+	)as t
+	</select>
+	<!-- 商户交易同比 -->
+	<select id="queryMerchantTransCountRate" resultType="com.gateway.countAnalysis.model.MerchantTransCountRateInfo">
+		select * from (
+		<foreach collection="cr.condition.cyclelist" item="cycle" separator=" union all " >
+			SELECT 
+			'${cycle.cycle}' as id,
+			CONCAT('${cycle.startDate}','~','${cycle.endDate}') AS cycle,
+			SUM(CASE WHEN respCode='00' and transType='sales' THEN 1 ELSE 0 END ) AS successCount,
+			a.merNo,
+			b.enabled,
+			b.type,
+			b.sales,
+			b.activationDate,
+			${cycle.dayCount} AS cycleDayCount,
+			SUM(CASE WHEN respCode='00' AND transType='sales' THEN 1 ELSE 0 END )/SUM(CASE WHEN transType='sales' AND respMsg NOT LIKE '%high risk%' and (duplicateFlag!=1 or respCode='00') THEN 1 ELSE 0 END) AS successRate,
+			a.merSettleCurrency,
+			SUM(CASE WHEN respCode='00'AND transType='sales' THEN a.merSettleAmount ELSE 0 END ) AS successAmount,
+			SUM(CASE WHEN transType='refund' THEN  1 ELSE 0 END) AS refundCount,
+			SUM(CASE WHEN transType='dishonor' THEN 1 ELSE 0 END ) AS disCount,
+			sum(case when c.status=1 then 1 else 0 end) as shipCount,
+			sum(case when c.operationStatus then 1 else 0 end ) as signCount,
+			max(a.transDate) as lastTransDate,
+			count(distinct DATE_FORMAT((case when respCode='00' and transType='sales' then a.transDate else null end),'%Y-%m-%d')) as transTime
+			FROM gw_trans_info a LEFT JOIN gw_merchant_info b ON a.merNo=b.merNo
+			left join gw_GoodsPress c on a.tradeNo=c.tradeNo
+			WHERE 
+			a.transType IN ('sales','refund','dishonor')
+			AND 
+			a.transDate>='${cycle.startDate}'
+			AND 
+			a.transDate &lt;='${cycle.endDate}'
+			<if test="cr.condition.merNo != null and cr.condition.merNo != '' ">
+				and a.merNo=#{cr.condition.merNo}
+			</if>
+			<if test="cr.condition.type != null and cr.condition.type != '' ">
+				and a.merNo in (select merNo from gw_merchant_info where type =#{cr.condition.type})
+			</if>
+			GROUP BY 
+			a.merNo,a.merSettleCurrency
+		</foreach>
+		) as t 
+		order by merSettleCurrency,merNo ,cycle desc 
+	</select>
+	<select id="countMerchantTransCountRate" resultType="int">
+		select count(*) from (
+		<foreach collection="condition.cyclelist" item="cycle" separator=" union all " >
+			SELECT 
+			CONCAT('${cycle.startDate}','~','${cycle.endDate}') AS cycle,
+			SUM(CASE WHEN respCode='00' THEN 1 ELSE 0 END ) AS successCount,
+			a.merNo,
+			b.enabled,
+			b.type,
+			b.activationDate,
+			${cycle.dayCount} AS cycleDayCount,
+			SUM(CASE WHEN respCode='00' AND transType='sales' THEN 1 ELSE 0 END )/SUM(CASE WHEN transType='sales' AND respMsg NOT LIKE '%high risk%' THEN 1 ELSE 0 END) AS successRate,
+			a.merSettleCurrency,
+			SUM(CASE WHEN respCode='00'AND transType='sales' THEN a.merSettleAmount ELSE 0 END ) AS successAmount,
+			SUM(CASE WHEN transType='refund' THEN  1 ELSE 0 END) AS refundCount,
+			SUM(CASE WHEN transType='dishonor' THEN 1 ELSE 0 END ) AS disCount
+			FROM gw_trans_info a LEFT JOIN gw_merchant_info b ON a.merNo=b.merNo
+			
+			WHERE 
+			a.transType IN ('sales','refund','dishonor')
+			AND 
+			a.transDate>='${cycle.startDate}'
+			AND 
+			a.transDate &lt;='${cycle.endDate}'
+			<if test="condition.merNo != null and condition.merNo != '' ">
+				and a.merNo=#{condition.merNo}
+			</if>
+			<if test="condition.type != null and condition.type != '' ">
+				and a.merNo in (select merNo from gw_merchant_info where type =#{condition.type})
+			</if>
+			GROUP BY 
+			a.merNo,a.merSettleCurrency
+		</foreach>
+		) as t 
+		order by merNo 
+	</select>
+	
+	<sql id="Where_country_info_clause">
+	<where>
+		<if test="condition.countryNameSimple != null and condition.countryNameSimple != '' ">
+			and countryNameSimple=#{condition.countryNameSimple}
+		</if>
+		<if test="condition.countryNameEN != null and condition.countryNameEN != '' ">
+			and countryNameEN=#{condition.countryNameEN}
+		</if>
+		<if test="condition.countryNameCN != null and condition.countryNameCN != '' ">
+			and countryNameCN=#{condition.countryNameCN}
+		</if>
+		</where>
+	</sql>
+	<select id="countCountryInfos" resultType="int">
+		select count(*) from gw_country_info
+		<include refid="Where_country_info_clause"/>
+	</select>
+	<select id="queryCountryInfos" resultType="com.gateway.countAnalysis.model.CountryInfo">
+	select * from gw_country_info
+	<include refid="Where_country_info_clause"/>
+	order by CNorder
+	</select>
+	
+	<select id="queryBrandCountInfo" resultType="com.gateway.countAnalysis.model.BrandCountInfo">
+		SELECT 
+			d.brand AS brands,
+			COUNT(*)  AS transCount,
+			SUM(CASE WHEN respCode='00' THEN 1 ELSE 0 END ) AS successCount,
+			SUM(CASE WHEN respMsg LIKE '%high risk%' AND respCode ='01' THEN 1 ELSE 0 END) AS riskCount,
+			SUM(CASE WHEN respCode='01' AND respMsg NOT LIKE '%high risk%' THEN 1 ELSE 0 END ) AS failCount,
+			SUM(CASE WHEN duplicateFlag=1 AND respCode='01' AND respMsg NOT LIKE '%high risk%'  THEN 1 ELSE 0 END) AS dupCount,
+			SUM(CASE WHEN transDishonor= 1 THEN 1 ELSE 0 END) AS disCount,
+			SUM(CASE WHEN transRefund=1 THEN 1 ELSE 0 END ) AS refundCount,
+			SUM(CASE WHEN b.tradeNo IS NOT NULL THEN 1 ELSE 0 END) AS comCount,
+			SUM(CASE WHEN c.tradeNo IS NOT NULL THEN 1 ELSE 0 END) AS fakeCount,
+			SUM(CASE WHEN respCode='00' THEN a.bankTransAmount ELSE 0 END ) AS successAmount,
+			SUM(a.bankTransAmount) AS transAmount,
+			a.bankCurrency AS currency
+		FROM 
+			gw_trans_info a 
+		LEFT JOIN  gw_trans_complaint_info b ON a.tradeNo=b.tradeNo AND b.type=2
+		LEFT JOIN  gw_trans_complaint_info c ON a.tradeNo=c.tradeNo AND c.type=3
+		LEFT JOIN gw_merchant_website_info d ON a.payWebsite=d.merWebsite
+		<where>
+		<if test="condition.transDateStart != null and condition.transDateStart != '' ">
+			AND a.transDate>=#{condition.transDateStart}
+		</if>
+		<if test="condition.transDateEnd != null and condition.transDateEnd != '' ">
+			AND a.transDate&lt;='${condition.transDateEnd} 23:59:59'
+		</if>
+		AND transType='sales'
+		AND d.brand IS NOT NULL 
+		<if test="condition.merNo != null and condition.merNo != '' ">
+			AND a.merNo=#{condition.merNo}
+		</if>
+		<if test="condition.brand != null and condition.brand != '' ">
+			AND d.brand LIKE '%${condition.brand}%'
+		</if>
+		<if test="condition.cardCountry != null and condition.cardCountry != '' ">
+			AND a.ipCountry=#{condition.cardCountry}
+		</if>
+		<if test="condition.type != null and condition.type != '' ">
+			AND a.merNo IN (SELECT merNo FROM gw_merchant_info WHERE type =#{condition.type})
+		</if>
+		</where>
+		GROUP BY d.brand,a.bankCurrency
+	</select>
+	<select id="queryTransRecordDesc" resultType="com.gateway.countAnalysis.model.DisDesc">
+		select 
+		respCode as disReasonId,
+		respMsg as disReason,
+		count(*) as disCount
+		from 
+		gw_Trade_order_record
+		<where>
+			and description=#{condition.description}
+				<if test="condition.merNo!=null and condition.merNo!=''">
+					and merNo=#{condition.merNo}
+				</if>
+				
+				<if test="condition.merWebsite != null and condition.merWebsite != '' ">
+					and merURL like '%${condition.merWebsite}%'
+				</if>
+				<if test="condition.startDate != null and condition.startDate != '' ">
+					and enterTime >= '${condition.startDate} 00:00:00'
+				</if>
+				<if test="condition.endDate != null and condition.endDate != '' ">
+					and enterTime &lt;='${condition.endDate} 23:59:59'
+				</if>
+				<if test="condition.type != null and condition.type != '' ">
+					and merNo in (select merNo from gw_merchant_info where type=#{condition.type})
+				</if>
+				<if test="condition.description != null and condition.description != '' ">
+					and description=#{condition.description}
+				</if>
+		</where>
+		group by respMsg
+		order by count(*)  desc
+	</select>
+	<select id="countTransRerunCount" resultType="int">
+		select count(*) from (
+			SELECT 
+			c.id AS currencyId,
+			c.currencyName,
+			COUNT(*) AS transCount,
+			SUM(CASE WHEN a.respCode='00' THEN 1 ELSE 0  END) AS successCount,
+			SUM(CASE WHEN b.transDishonor THEN 1 ELSE 0 END )AS disCount 
+			FROM 
+			gw_trans_rerun_info a LEFT JOIN gw_trans_info b ON a.tradeNo=b.tradeNo
+			LEFT JOIN gw_currency_info c ON a.newCurrencyId=c.id
+			<include refid="Where_Trans_Rerun_info"/>
+			GROUP BY c.id
+		)as t
+	</select>
+	<sql id="Where_Trans_Rerun_info">
+		<where>
+			<if test="condition.currencyId != null and condition.currencyId != '' ">
+				and a.newCurrencyId=#{condition.currencyId}
+			</if>
+			<if test="condition.startDate != null and condition.startDate != '' ">
+				and a.createDate>=#{condition.startDate}
+			</if>
+			<if test="condition.endDate != null and condition.endDate != '' ">
+				and a.createDate&lt;='${condition.endDate} 23:59:59'
+			</if>
+			<if test="condition.bankId != null and condition.bankId != '' and condition.bankId != 0 ">
+				and a.newCurrencyId in (select id from gw_currency_info where bankId=#{condition.bankId})
+			</if>
+		</where>
+	</sql>
+	<select id="queryTransRerunCount" resultType="com.gateway.countAnalysis.model.TransReRunCount">
+			SELECT 
+			c.id AS currencyId,
+			c.currencyName,
+			COUNT(*) AS transCount,
+			SUM(CASE WHEN a.respCode='00' THEN 1 ELSE 0  END) AS successCount,
+			SUM(CASE WHEN b.transDishonor THEN 1 ELSE 0 END )AS disCount 
+			FROM 
+			gw_trans_rerun_info a LEFT JOIN gw_trans_info b ON a.tradeNo=b.tradeNo
+			LEFT JOIN gw_currency_info c ON a.newCurrencyId=c.id
+			<include refid="Where_Trans_Rerun_info"/>
+			GROUP BY c.id
+	</select>
+	
+	<sql id="Where_Caluse_Trans_Analysis_Info">
+		<where>
+		<if test="condition.startTransDate!=null and condition.startTransDate!=''">
+			AND
+				g.enterTime>=CONCAT(#{condition.startTransDate}, ' ', '00:00:00')
+		</if>
+		<if test="condition.endTransDate!=null and condition.endTransDate!=''">
+			AND
+				<![CDATA[g.enterTime<=CONCAT(#{condition.endTransDate}, ' ', '23:59:59')]]>
+		</if>
+		<if test="condition.merNo!=null and condition.merNo!=''">
+			AND
+				g.merNo=#{condition.merNo}
+		</if>
+		<if test="condition.terNo!=null and condition.terNo!=''">
+			AND
+				g.terNo=#{condition.terNo}
+		</if>
+		<if test="condition.bankId!=null and condition.bankId!='' and condition.bankId!='0' and condition.bankId!=0">
+			AND
+				b.currencyId IN  (SELECT id FROM gw_currency_info WHERE bankId=#{condition.bankId} )
+		</if>
+		<if test="condition.currencyId!=null and condition.currencyId!='' and condition.currencyId!='0' and condition.currencyId!=0">
+			AND
+				b.currencyId=#{condition.currencyId}
+		</if>
+		<if test="condition.payWebSite!=null and condition.payWebSite!=''">
+			AND
+				b.payWebSite=#{condition.payWebSite}
+		</if>
+		<if test="condition.webInfo!=null and condition.webInfo!=''">
+			AND
+				b.webInfo=#{condition.webInfo}
+		</if>
+		
+		<if test="condition.type!=null and condition.type!=''">
+			AND
+				g.merNo IN (SELECT merNo FROM gw_merchant_info WHERE type =#{condition.type})
+		</if>
+		<if test="condition.resourceType!=null and condition.resourceType!=''">
+			AND
+				a.resourceType=#{condition.resourceType}
+		</if>
+		</where>
+	</sql>
+	
+	<select id="queryTransAnalysisInfoList" resultType="com.gateway.countAnalysis.model.TransCountInfo">
+		SELECT
+			COUNT(a.tradeNo) AS totalCount,
+			g.merNo,
+			g.terNo,
+			a.resourceType, 
+			SUM(CASE WHEN b.tradeNo IS NOT NULL THEN 1 ELSE 0 END) transCount,
+			b.mersettleCurrency transCurrency,
+			SUM(IFNULL(b.bankTransAmount,0)) transAmount, 
+			SUM(IFNULL(b.merSettleAmount,0)) merSettleAmount,
+			SUM(CASE b.respCode WHEN '00' THEN 1 ELSE 0 END) transSuccessCount, 
+			SUM(CASE b.respCode WHEN '00' THEN b.bankTransAmount ELSE 0 END) transSuccessAmount, 
+			SUM(CASE b.respCode WHEN '00' THEN b.merSettleAmount ELSE 0 END) merSettleSuccessAmount, 
+			SUM(CASE b.respCode='01' AND b.respMsg NOT LIKE '%high risk%' WHEN TRUE THEN 1 ELSE 0 END)transFailureCount, 
+			SUM(CASE WHEN b.respMsg LIKE '%high risk%' THEN 1 ELSE 0 END) transRiskCount, 
+			SUM(CASE b.duplicateFlag WHEN 1 THEN 1 ELSE 0 END) duplicateCount, 
+			IFNULL(CONCAT(LEFT((SUM(CASE b.respCode WHEN '00' THEN 1 ELSE 0 END)/(SUM(CASE WHEN b.respMsg NOT LIKE '%high risk%' THEN 1 ELSE 0 END)-SUM(CASE WHEN b.duplicateFlag = 1 AND b.respCode !='00' THEN 1 ELSE 0 END))) *100,5),'%'),'0.00%') successRate
+			FROM
+				gw_trans_support_info a
+				LEFT JOIN gw_Trade_order_record g ON g.tradeNo=a.tradeNo 
+ 				LEFT JOIN gw_trans_info b ON g.tradeNo=b.tradeNo
+			<include refid="Where_Caluse_Trans_Analysis_Info"/>
+			GROUP BY
+				a.resourceType,g.merNo,g.terNo
+	</select>
+	
+	<select id="queryTransAnalysisCount" resultType="java.lang.Integer">
+		SELECT
+			COUNT(t.transCount)
+		FROM
+			(
+				SELECT
+					COUNT(a.id) AS transCount
+				FROM
+					gw_trans_support_info a
+					LEFT JOIN gw_Trade_order_record g ON g.tradeNo=a.tradeNo 
+	 				LEFT JOIN gw_trans_info b ON g.tradeNo=b.tradeNo
+					<include refid="Where_Caluse_Trans_Analysis_Info"/>
+				GROUP BY
+					a.resourceType,g.merNo,g.terNo 
+			)
+		AS
+			t
+	</select>
+	
+	<select id="queryExportTransAnalysisInfoList" resultType="com.gateway.countAnalysis.model.ExportTransCountInfo">
+		SELECT
+			COUNT(a.tradeNo) AS totalCount,
+			g.merNo,
+			g.terNo,
+			a.resourceType, 
+			SUM(CASE WHEN b.tradeNo IS NOT NULL THEN 1 ELSE 0 END) transCount,
+			b.mersettleCurrency transCurrency, 
+			SUM(IFNULL(b.bankTransAmount,0)) transAmount, 
+			SUM(IFNULL(b.merSettleAmount,0)) merSettleAmount,
+			SUM(CASE b.respCode WHEN '00' THEN 1 ELSE 0 END) transSuccessCount, 
+			SUM(CASE b.respCode WHEN '00' THEN b.bankTransAmount ELSE 0 END) transSuccessAmount, 
+			SUM(CASE b.respCode WHEN '00' THEN b.merSettleAmount ELSE 0 END) merSettleSuccessAmount, 
+			SUM(CASE b.respCode='01' AND b.respMsg NOT LIKE '%high risk%' WHEN TRUE THEN 1 ELSE 0 END) transFailureCount, 
+			SUM(CASE WHEN b.respMsg LIKE '%high risk%' THEN 1 ELSE 0 END) transRiskCount, 
+			SUM(CASE b.duplicateFlag WHEN 1 THEN 1 ELSE 0 END) duplicateCount, 
+			IFNULL(CONCAT(LEFT((SUM(CASE b.respCode WHEN '00' THEN 1 ELSE 0 END)/(SUM(CASE WHEN b.respMsg NOT LIKE '%high risk%' THEN 1 ELSE 0 END)-SUM(CASE WHEN b.duplicateFlag = 1 AND b.respCode !='00' THEN 1 ELSE 0 END))) *100,5),'%'),'0.00%') successRate
+			FROM
+				gw_trans_support_info a
+				LEFT JOIN gw_Trade_order_record g ON g.tradeNo=a.tradeNo 
+ 				LEFT JOIN gw_trans_info b ON g.tradeNo=b.tradeNo
+			<include refid="Where_Caluse_Trans_Analysis_Info"/>
+			GROUP BY
+				a.resourceType,g.merNo,g.terNo
+	</select>
+	
+	<sql id="Where_Faild_Trans_Analysis_Info">
+		<where>
+			<if test="condition.startDate != null and condition.startDate != '' ">
+				AND
+					g.enterTime >= '${condition.startDate} 00:00:00'
+			</if>
+			<if test="condition.endDate != null and condition.endDate != '' ">
+				AND
+					g.enterTime &lt;='${condition.endDate} 23:59:59'
+			</if>
+			<if test="condition.type!=null and condition.type!=''">
+			AND
+				g.merNo in (SELECT merNo FROM gw_merchant_info WHERE type=#{condition.type})
+			</if>
+			<if test="condition.terNo!=null and condition.terNo!=''">
+				AND
+					g.terNo=#{condition.terNo}
+			</if>
+			<if test="condition.merNo!=null and condition.merNo!=''">
+				AND
+					g.merNo=#{condition.merNo}
+			</if>
+			<if test="condition.resourceType!=null and condition.resourceType!=''">
+				AND
+					a.resourceType=#{condition.resourceType}
+			</if>
+			<if test="condition.bankId!=null and condition.bankId!='' and condition.bankId!='0' and condition.bankId!=0">
+				AND
+					b.currencyId IN (SELECT id FROM gw_currency_info WHERE bankId=#{condition.bankId})
+			</if>
+			<if test="condition.currencyId!=null and condition.currencyId!='' and condition.currencyId!='0' and condition.currencyId!=0">
+				AND
+					b.currencyId=#{condition.currencyId}
+			</if>
+			<if test="condition.payWebSite!=null and condition.payWebSite!=''">
+				AND
+					b.payWebSite=#{condition.payWebSite}
+			</if>
+		</where>
+	</sql>
+	
+	<select id="queryFaildTransAnalysisInfoList" resultType="com.gateway.countAnalysis.model.FaildTransAnalysisInfo">
+		SELECT 
+			b.respCode,
+			b.respMsg,
+			COUNT(a.id) as disCount
+		FROM
+			gw_trans_support_info a
+			LEFT JOIN gw_Trade_order_record g ON g.tradeNo=a.tradeNo 
+ 			LEFT JOIN gw_trans_info b ON g.tradeNo=b.tradeNo
+		<include refid="Where_Faild_Trans_Analysis_Info"/>
+		GROUP BY
+			b.respMsg
+	</select>
+	
+	<select id="queryExportFaildTransAnalysisInfoList" resultType="com.gateway.countAnalysis.model.ExportFaildTransAnalysisInfo">
+		SELECT 
+			b.respCode,
+			b.respMsg,
+			COUNT(a.id) as disCount
+		FROM
+			gw_trans_support_info a
+			LEFT JOIN gw_Trade_order_record g ON g.tradeNo=a.tradeNo 
+ 			LEFT JOIN gw_trans_info b ON g.tradeNo=b.tradeNo
+		<where>
+			<if test="condition.startDate!=null and condition.startDate!=''">
+			AND
+				g.enterTime >= '${condition.startDate} 00:00:00'
+			</if>
+			<if test="condition.endDate!=null and condition.endDate!=''">
+			AND
+				g.enterTime &lt;='${condition.endDate} 23:59:59'
+			</if>
+			<if test="condition.type!=null and condition.type!=''">
+			AND
+				g.merNo in (SELECT merNo FROM gw_merchant_info WHERE type=#{condition.type})
+			</if>
+			<if test="condition.merNo!=null and condition.merNo!=''">
+			AND
+				g.merNo=#{condition.merNo}
+			</if>
+			<if test="condition.terNo!=null and condition.terNo!=''">
+			AND
+				g.terNo=#{condition.terNo}
+			</if>
+			<if test="condition.resourceType!=null and condition.resourceType!=''">
+			AND
+				a.resourceType=#{condition.resourceType}
+			</if>
+			<if test="condition.bankId!=null and condition.bankId!='' and condition.bankId!='0' and condition.bankId!=0">
+				AND
+					b.currencyId IN (SELECT id FROM gw_currency_info WHERE bankId=#{condition.bankId})
+			</if>
+			<if test="condition.currencyId!=null and condition.currencyId!='' and condition.currencyId!='0' and condition.currencyId!=0">
+				AND
+					b.currencyId=#{condition.currencyId}
+			</if>
+			<if test="condition.payWebSite!=null and condition.payWebSite!=''">
+				AND
+					b.payWebSite=#{condition.payWebSite}
+			</if>
+		</where>
+		GROUP BY
+			b.respMsg
+		ORDER BY 
+			COUNT(a.id)
+		DESC
+	</select>
+	
+	<sql id="Where_Clause_Trans_Record_Info">
+		<where>
+			<if test="condition.startTransDate!=null and condition.startTransDate!=''">
+			AND
+				g.enterTime >= '${condition.startTransDate} 00:00:00'
+			</if>
+			<if test="condition.endTransDate!=null and condition.endTransDate!=''">
+			AND
+				g.enterTime &lt;='${condition.endTransDate} 23:59:59'
+			</if>
+			<if test="condition.type!=null and condition.type!=''">
+			AND
+				g.merNo in (SELECT merNo FROM gw_merchant_info WHERE type=#{condition.type})
+			</if>
+			<if test="condition.merNo!=null and condition.merNo!=''">
+			AND
+				g.merNo=#{condition.merNo}
+			</if>
+			<if test="condition.terNo!=null and condition.terNo!=''">
+			AND
+				g.terNo=#{condition.terNo}
+			</if>
+			<if test="condition.resourceType!=null and condition.resourceType!=''">
+			AND
+				a.resourceType=#{condition.resourceType}
+			</if>
+			<if test="condition.bankId!=null and condition.bankId!='' and condition.bankId!='0' and condition.bankId!=0">
+				AND
+					b.currencyId IN (SELECT id FORM gw_currency_info WHERE bankId=#{condition.bankId})
+			</if>
+			<if test="condition.currencyId!=null and condition.currencyId!='' and condition.currencyId!='0' and condition.currencyId!=0">
+				AND
+					b.currencyId=#{condition.currencyId}
+			</if>
+			<if test="condition.payWebSite!=null and condition.payWebSite!=''">
+				AND
+					b.payWebSite=#{condition.payWebSite}
+			</if>
+		</where>
+	</sql>
+	
+	
+	<select id="queryTransInfoList" resultType="com.gateway.transmgr.model.TransRecordInfo">
+		 SELECT
+		 	*
+		 FROM
+		 	gw_Trade_order_record
+		 WHERE
+		 	tradeNo
+		 IN
+		 	(
+				SELECT
+					a.tradeNo
+				FROM
+					gw_trans_support_info a
+					LEFT JOIN gw_Trade_order_record g ON g.tradeNo=a.tradeNo 
+ 					LEFT JOIN gw_trans_info b ON g.tradeNo=b.tradeNo
+					<include refid="Where_Clause_Trans_Record_Info"/>
+				ORDER BY
+					a.id
+				DESC
+		 	)
+	</select>
+	
+	<sql id="Where_Cause_Europe_Trans_Info">
+		WHERE
+			agentNo IS NOT NULL
+			<if test="condition.startDate!=null and condition.startDate!=''">
+				AND
+					<![CDATA[transDate>=CONCAT(#{condition.startDate}, ' ', '00:00:00')]]>
+			</if>
+			<if test="condition.endDate!=null and condition.endDate!=''">
+				AND
+					<![CDATA[transDate<=CONCAT(#{condition.endDate}, ' ', '23:59:59')]]>
+			</if>
+			<if test="condition.riskFilter==null or condition.riskFilter==''">
+				AND
+					respMsg NOT LIKE '%high risk%'
+			</if>
+			<if test="condition.merNo!=null and condition.merNo!=''">
+				AND
+					merNo=#{condition.merNo}
+			</if>
+			<if test="condition.terNo!=null and condition.terNo!=''">
+				AND
+					terNo=#{condition.terNo}
+			</if>
+			<if test="condition.tradeNo!=null and condition.tradeNo!=''">
+				AND
+					tradeNo=#{condition.tradeNo}
+			</if>
+	</sql>
+	
+	<select id="queryEuropeTransInfoList" resultType="com.gateway.countAnalysis.model.EuropeTransInfo">
+		SELECT
+			id,
+			tradeNo,
+			agentNo,
+			merNo,
+			terNo,
+			merTransAmount,
+			merBusCurrency,
+			cardType,
+			respCode,
+			checkNo,
+			last,
+			respMsg,
+			orderNo,
+			transDate
+		FROM
+			gw_trans_info
+			<include refid="Where_Cause_Europe_Trans_Info"/>
+		ORDER BY
+			id
+		DESC
+	</select>
+	
+	<select id="queryEuropeTransInfoListCount" resultType="java.lang.Integer">
+		SELECT
+			COUNT(id)
+		FROM
+			gw_trans_info
+			<include refid="Where_Cause_Europe_Trans_Info"/>
+	</select>
+	
+	<sql id="Where_Cause_Europe_Trans_Export_Info">
+		WHERE
+			t.agentNo IS NOT NULL
+			<if test="condition.startDate!=null and condition.startDate!=''">
+				AND
+					<![CDATA[t.transDate>=CONCAT(#{condition.startDate}, ' ', '00:00:00')]]>
+			</if>
+			<if test="condition.endDate!=null and condition.endDate!=''">
+				AND
+					<![CDATA[t.transDate<=CONCAT(#{condition.endDate}, ' ', '23:59:59')]]>
+			</if>
+			<if test="condition.riskFilter==null or condition.riskFilter==''">
+				AND
+					t.respMsg NOT LIKE '%high risk%'
+			</if>
+			<if test="condition.merNo!=null and condition.merNo!=''">
+				AND
+					t.merNo=#{condition.merNo}
+			</if>
+			<if test="condition.terNo!=null and condition.terNo!=''">
+				AND
+					t.terNo=#{condition.terNo}
+			</if>
+			<if test="condition.tradeNo!=null and condition.tradeNo!=''">
+				AND
+					t.tradeNo=#{condition.tradeNo}
+			</if>
+	</sql>
+	
+	<select id="queryExportEuropeTransInfoList" resultType="com.gateway.countAnalysis.model.ExportEuropeInfo">
+		<!-- 
+		SELECT
+			id,
+			tradeNo,
+			agentNo,
+			merNo,
+			terNo,
+			transDate
+		FROM
+			gw_trans_info
+			<include refid="Where_Cause_Europe_Trans_Info"/>
+		ORDER BY
+			transDate
+		 -->
+		SELECT
+			t.id,
+			t.tradeNo,
+			t.relNo,
+			t.merBusCurrency,
+			t.merTransAmount,
+			t.bankCurrency,
+			t.bankTransAmount,
+			t.merSettleCurrency,
+			t.merSettleAmount,
+			t.merNo,
+			t.terNo,
+			t.cardType,
+			t.cardName,
+			t.bankName,
+			t.agentNo,
+			t.parentAgentNo,
+			t.transDate,
+			t.settleBatchNo,
+			t.settleDate,
+			t.batchNo,
+			t.posNo,
+			t.currencyId,
+			t.singleFee,
+			t.merForAmount,
+			t.transType,
+			t.respCode,
+			t.checkToNo,
+			t.bankRefNo,
+			t.bankPosNo,
+			t.bankBatchNo,
+			t.autoCode,
+			t.bankTransDate,
+			t.bankTransTime,
+			t.checkedBatchNo,
+			t.transAmount,
+			t.IPAddress,
+			t.checkNo,
+			t.middle,
+			t.last,
+			t.email,
+			t.respMsg,
+			t.bondAmount,
+			t.ischecked,
+			t.rvfId,
+			t.isRefund,
+			t.isDishonor,
+			t.isFrozen,
+			t.isThaw,
+			t.orderNo,
+			t.access,
+			t.bondBatchNo,
+			t.payWebsite as payWebsite,
+			t.transStatus,
+			t.transDishonor,
+			t.transFrozen,
+			t.transThaw,
+			t.transRefund,
+			t.webInfo,
+			t.riskScore,
+			t.ipCountry,
+			c.currencyName,
+			c.acquirer,
+			b.bankName as acquiringBank,
+			m.merchantName,
+			h.cardCountry,
+			h.cardState,
+			h.cardAddress,
+			h.grphoneNumber,
+			h.grPerName,
+			h.grState,
+			h.grEmail,
+			h.grCountry,
+			h.grZipCode,
+			h.grAddress ,
+			k.trackNo,
+			k.iogistics,
+			(CASE WHEN  SUM(CASE d.transType WHEN 'refund' THEN d.transMoney ELSE 0 END)>0 THEN 1 ELSE 0 END) refundStatus,
+			FORMAT(SUM(CASE d.transType WHEN 'refund' THEN d.transMoney ELSE 0 END),2) AS refundAmount,
+			(CASE WHEN  SUM(CASE d.transType WHEN 'dishonor' THEN d.transMoney ELSE 0 END)>0 THEN 1 ELSE 0 END) dishonorStatus,
+			FORMAT(SUM(CASE d.transType WHEN 'dishonor' THEN d.transMoney ELSE 0 END),2) AS dishonorAmount,
+			(CASE WHEN  SUM(CASE d.transType WHEN 'frozen' THEN d.transMoney WHEN 'thaw' THEN d.transMoney*(-1) ELSE  0 END)>0 THEN 1 ELSE 0 END) frozenStatus,
+			FORMAT(SUM(CASE d.transType WHEN 'frozen' THEN d.transMoney WHEN 'thaw' THEN d.transMoney*(-1) ELSE  0 END),2) AS frozenAmount,
+			(SELECT GROUP_CONCAT(CONCAT(f.goodsName,',',f.quantity,',',f.goodsPrice)) AS goodsInfo
+				FROM gw_trans_goods_info f WHERE f.tradeNo=t.tradeNo) goodsInfo
+		FROM
+			gw_trans_info t  
+			LEFT JOIN gw_trans_info_log d ON t.tradeNo=d.tradeNo AND d.status=2
+			LEFT JOIN gw_currency_info c ON t.currencyId = c.id
+			LEFT JOIN gw_bank_info b ON c.bankId = b.id
+			LEFT JOIN gw_merchant_info m ON m.merNo=t.merNo
+			LEFT JOIN gw_trans_order_info h ON h.tradeNo=t.tradeNo
+			LEFT JOIN gw_GoodsPress k ON k.tradeNo=t.tradeNo
+			<include refid="Where_Cause_Europe_Trans_Export_Info"/>
+			GROUP BY
+				t.id
+			ORDER BY 
+				t.id
+	</select>
+	
+	<select id="queryEuropeChannelInfo" resultType="java.lang.String">
+		SELECT
+			agentNo
+		FROM
+			gw_trans_info
+		WHERE
+			tradeNo=#{condition.tradeNo}
+	</select>
+	
+	
+	<sql id="where_trans_hour_count">
+		<where>
+			and transType='sales'
+			and bankCurrency in ('CNY','USD')
+			<if test="condition.currency != null and condition.currency != '' ">
+				and bankCurrency=#{condition.currency}
+			</if>
+			<if test="condition.merNo != null and condition.merNo != '' ">
+				and merNo=#{condition.merNo}
+			</if>
+			<if test="condition.merNos != null and condition.merNos != '' ">
+				and merNo in (${condition.merNos})
+			</if>
+			<if test="condition.terNo != null and condition.terNo != '' ">
+				and terNo=#{condition.terNo}
+			</if>
+			<if test="condition.startDate != null and condition.startDate != '' ">
+				and transDate >= '${condition.startDate} 00:00:00'
+			</if>
+			<if test="condition.endDate != null and condition.endDate != '' ">
+				and transDate &lt;='${condition.endDate} 23:59:59'
+			</if>
+			<if test="condition.type != null and condition.type != '' ">
+				and merNo in (select merNo from gw_merchant_info where type =#{condition.type})
+			</if>
+		</where>
+	</sql>
+	<select id="queryTransHourCount" resultType="com.gateway.countAnalysis.model.TransHourCount">
+	select CONCAT(a.hour,':00:00 - ',a.hour,':59:59') as time,
+		b.*,
+		a.currency
+	 from gw_hour_temp a left join (
+		SELECT 
+			 HOUR(transDate) as `hour`,
+			SUM(CASE WHEN respCode NOT LIKE '%high risk%' THEN 1 ELSE 0 END )AS finishCount,
+			bankCurrency AS TransCurrency,
+			SUM(bankTransAmount) AS totalAmount,
+			SUM(CASE WHEN respCode='00' THEN 1 ELSE 0 END)AS successCount,
+			SUM(CASE WHEN respCode='00' THEN bankTransAmount ELSE 0 END)AS successAmount,
+			SUM(CASE WHEN duplicateFlag=1 and respCode='01' THEN 1 ELSE 0 END) AS dupCount,
+			SUM(CASE WHEN respCode='01' AND respMsg NOT LIKE '%high risk%' THEN 1 ELSE 0 END)AS failCount,
+			SUM(CASE WHEN respMsg LIKE '%high risk%' THEN 1 ELSE 0 END)AS riskCount
+		FROM 
+			gw_trans_info
+		<include refid="where_trans_hour_count"/>			
+		GROUP BY 
+			HOUR(transDate),bankCurrency 
+
+		) as b on a.hour=b.hour and a.currency=b.TransCurrency
+		<where>
+		<if test="condition.currency != null and condition.currency != '' ">
+				and a.currency=#{condition.currency}
+		</if>
+		</where>
+	</select>
+	<select id="queryTransDisPercent" resultType="com.gateway.countAnalysis.model.TransOrDisPercent">
+		SELECT 
+			transDate, 
+			SUM(successCount) AS successCount,
+			SUM(disCount) AS totalDisCount,
+			SUM(CASE WHEN diff_month=0 THEN disCount ELSE 0 END) AS month_0,
+			SUM(CASE WHEN diff_month=-1 THEN disCount ELSE 0 END) AS month_1,
+			SUM(CASE WHEN diff_month=-2 THEN disCount ELSE 0 END) AS month_2,
+			SUM(CASE WHEN diff_month=-3 THEN disCount ELSE 0 END) AS month_3,
+			SUM(CASE WHEN diff_month=-4 THEN disCount ELSE 0 END) AS month_4,
+			SUM(CASE WHEN diff_month=-5 THEN disCount ELSE 0 END) AS month_5,
+			SUM(CASE WHEN diff_month=-6 THEN disCount ELSE 0 END) AS month_6,
+			SUM(CASE WHEN diff_month=-7 THEN disCount ELSE 0 END) AS month_7,
+			SUM(CASE WHEN diff_month=-8 THEN disCount ELSE 0 END) AS month_8,
+			SUM(CASE WHEN diff_month=-9 THEN disCount ELSE 0 END) AS month_9,
+			SUM(CASE WHEN diff_month=-10 THEN disCount ELSE 0 END) AS month_10,
+			SUM(CASE WHEN diff_month=-11 THEN disCount ELSE 0 END) AS month_11,
+			SUM(CASE WHEN diff_month=-12 THEN disCount ELSE 0 END) AS month_12, 
+			SUM(CASE WHEN diff_month&lt;-12 OR diff_month>0 OR diff_month IS NULL THEN disCount ELSE 0 END) AS month_other
+		FROM 
+		(
+			SELECT 
+				CONCAT(YEAR(a.transDate),RIGHT(CONCAT('0',MONTH(a.transDate)),2)) AS transDate,
+				COUNT(a.tradeNo) AS successCount,
+				CONCAT(YEAR(CPDDate),RIGHT(CONCAT('0',MONTH(CPDDate)),2))CPDDate,
+				(YEAR(transDate)-YEAR(CPDDate))*12 + (MONTH(transDate)-MONTH(CPDDate) ) AS diff_month,
+				SUM(CASE WHEN b.tradeNo IS NOT NULL THEN 1 ELSE 0 END)AS disCount
+			FROM 
+				gw_trans_info a LEFT JOIN gw_trans_complaint_info b ON a.tradeNo=b.tradeNo AND b.isSp=0 AND b.type=1
+			WHERE 
+				a.transType='sales' AND a.respCode='00'
+				<if test="condition.dateStart != null and condition.dateStart != '' ">
+					and a.transDate>=concat(#{condition.dateStart},' 00:00:00')
+				</if>
+				<if test="condition.dateEnd != null and condition.dateEnd != '' ">
+					and a.transDate&lt;=concat(#{condition.dateEnd},' 23:59:59.999')
+				</if>
+				<if test="condition.merNo != null and condition.merNo != '' ">
+					and a.merNo=#{condition.merNo}
+				</if>
+				<if test="condition.terNo != null and condition.terNo != '' ">
+					and a.terNo=#{condition.terNo}
+				</if>
+				<if test="condition.cardType != null and condition.cardType != '' ">
+					and a.cardType=#{condition.cardType}
+				</if>
+			GROUP BY 
+				YEAR(a.transDate),MONTH(a.transDate),YEAR(CPDDate),MONTH(CPDDate)
+		) AS t 
+		GROUP BY transDate
+
+	</select>
+	<select id="countTransOrDisPercent" resultType="int">
+		select count(*) from (
+			SELECT 
+			transDate, 
+			SUM(successCount) AS successCount,
+			SUM(disCount) AS totalDisCount,
+			SUM(CASE WHEN diff_month=0 THEN disCount ELSE 0 END) AS month_0,
+			SUM(CASE WHEN diff_month=-1 THEN disCount ELSE 0 END) AS month_1,
+			SUM(CASE WHEN diff_month=-2 THEN disCount ELSE 0 END) AS month_2,
+			SUM(CASE WHEN diff_month=-3 THEN disCount ELSE 0 END) AS month_3,
+			SUM(CASE WHEN diff_month=-4 THEN disCount ELSE 0 END) AS month_4,
+			SUM(CASE WHEN diff_month=-5 THEN disCount ELSE 0 END) AS month_5,
+			SUM(CASE WHEN diff_month=-6 THEN disCount ELSE 0 END) AS month_6,
+			SUM(CASE WHEN diff_month=-7 THEN disCount ELSE 0 END) AS month_7,
+			SUM(CASE WHEN diff_month=-8 THEN disCount ELSE 0 END) AS month_8,
+			SUM(CASE WHEN diff_month=-9 THEN disCount ELSE 0 END) AS month_9,
+			SUM(CASE WHEN diff_month=-10 THEN disCount ELSE 0 END) AS month_10,
+			SUM(CASE WHEN diff_month=-11 THEN disCount ELSE 0 END) AS month_11,
+			SUM(CASE WHEN diff_month=-12 THEN disCount ELSE 0 END) AS month_12, 
+			SUM(CASE WHEN diff_month&lt;-12 OR diff_month>0 OR diff_month IS NULL THEN disCount ELSE 0 END) AS month_other
+		FROM 
+		(
+			SELECT 
+				CONCAT(YEAR(a.transDate),RIGHT(CONCAT('0',MONTH(a.transDate)),2)) AS transDate,
+				COUNT(a.tradeNo) AS successCount,
+				CONCAT(YEAR(CPDDate),RIGHT(CONCAT('0',MONTH(CPDDate)),2))CPDDate,
+				(YEAR(transDate)-YEAR(CPDDate))*12 + (MONTH(transDate)-MONTH(CPDDate) ) AS diff_month,
+				SUM(CASE WHEN b.tradeNo IS NOT NULL THEN 1 ELSE 0 END)AS disCount
+			FROM 
+				gw_trans_info a LEFT JOIN gw_trans_complaint_info b ON a.tradeNo=b.tradeNo AND b.isSp=0 AND b.type=1
+			WHERE 
+				a.transType='sales' AND a.respCode='00'
+				<if test="condition.dateStart != null and condition.dateStart != '' ">
+					and a.transDate>=concat(#{condition.dateStart},' 00:00:00')
+				</if>
+				<if test="condition.dateEnd != null and condition.dateEnd != '' ">
+					and a.transDate&lt;=concat(#{condition.dateEnd},' 23:59:59.999')
+				</if>
+				<if test="condition.merNo != null and condition.merNo != '' ">
+					and a.merNo=#{condition.merNo}
+				</if>
+				<if test="condition.terNo != null and condition.terNo != '' ">
+					and a.terNo=#{condition.terNo}
+				</if>
+				<if test="condition.cardType != null and condition.cardType != '' ">
+					and a.cardType=#{condition.cardType}
+				</if>
+			GROUP BY 
+				YEAR(a.transDate),MONTH(a.transDate),YEAR(CPDDate),MONTH(CPDDate)
+		) AS t 
+		GROUP BY transDate
+		)as t
+	</select>
+</mapper>

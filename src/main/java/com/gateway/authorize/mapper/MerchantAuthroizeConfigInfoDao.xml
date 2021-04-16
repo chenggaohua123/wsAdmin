@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="com.gateway.authorize.mapper.MerchantAuthroizeConfigInfoDao">
+	
+	<sql id="Where_Clause_Merchant_Authroize_Config_Info">
+		<where>
+		<if test="condition!=null and condition !=''">
+			<if test="condition.merNo != null and condition.merNo !=''">
+				and merNo = #{condition.merNo}
+			</if>
+			<if test="condition.terNo != null and condition.terNo !=''">
+				and terNo = #{condition.terNo}
+			</if>
+			<if test="condition.enable != null and condition.enable !=''">
+				and enable = #{condition.enable}
+			</if>
+		</if>	
+		</where>
+	</sql>
+	
+	<select id="getMerchantAuthroizeConfigInfoList" resultType="com.gateway.authorize.model.MerchantAuthroizeConfigInfo">
+		SELECT *
+		FROM gw_merchant_authorize_config_info
+		<include refid="Where_Clause_Merchant_Authroize_Config_Info"/>
+		ORDER BY createDate DESC
+	</select>
+	
+	<select id="countMerchantAuthroizeConfigInfoList" resultType="int">
+		SELECT 
+			count(*)
+		FROM gw_merchant_authorize_config_info
+		<include refid="Where_Clause_Merchant_Authroize_Config_Info"/>
+	</select>
+	
+	<!-- 新增 -->
+	<insert id="addMerchantAuthroizeConfigInfo">
+		  INSERT  INTO gw_merchant_authorize_config_info
+            (merNo,
+             terNo,
+             day,
+             enable,
+             createBy,
+             createDate,
+             updateBy,
+             updateDate)
+		VALUES (#{merchantAuthroizeConfigInfo.merNo},
+		#{merchantAuthroizeConfigInfo.terNo},
+		#{merchantAuthroizeConfigInfo.day},
+		#{merchantAuthroizeConfigInfo.enable},
+		#{merchantAuthroizeConfigInfo.createBy},
+		SYSDATE(),
+		        #{merchantAuthroizeConfigInfo.updateBy},
+		SYSDATE())
+	</insert>
+	
+	<!-- 查询 -->
+	<select id="queryMerchantAuthroizeConfigInfoById" resultType="com.gateway.authorize.model.MerchantAuthroizeConfigInfo">
+		SELECT 
+			*
+		FROM gw_merchant_authorize_config_info a
+		WHERE a.id=#{id}
+		LIMIT 1
+	</select>
+	
+	<!-- 修改 -->
+	<update id="updateMerchantAuthroizeConfigInfo">
+	   UPDATE gw_merchant_authorize_config_info 
+	   SET 
+		   day=#{merchantAuthroizeConfigInfo.day}, 
+		   enable=#{merchantAuthroizeConfigInfo.enable}, 
+		   updateBy=#{merchantAuthroizeConfigInfo.updateBy},
+		   updateDate=SYSDATE()
+	   WHERE 
+	   		id=#{merchantAuthroizeConfigInfo.id} 
+	   		AND
+	   		merNo=#{merchantAuthroizeConfigInfo.merNo} 
+	   		AND
+	   		terNo=#{merchantAuthroizeConfigInfo.terNo} 
+	</update>
+	
+	<!--  删除 -->
+	<delete id="deleteMerchantAuthroizeConfigInfo">
+	  DELETE FROM gw_merchant_authorize_config_info WHERE id=#{id}
+	</delete>
+	
+</mapper>

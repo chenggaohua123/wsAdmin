@@ -1,0 +1,355 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="com.gateway.goodstracem.mapper.DeliveryMDao">
+	<sql id="Where_Iogistics_Clause">
+		<where>
+			<if test="condition.iogistics != null and condition.iogistics != ''">
+				and iogistics = #{condition.iogistics}
+			</if>
+			
+			<if test="condition.name != null and condition.name != ''">
+				and name = #{condition.name}
+			</if>
+		</where>
+	</sql>
+
+	<sql id="Where_Delivery_info">
+		<where>
+		 	and a.respCode='00'
+		 	and a.transType='sales'
+			and a.currencyId=82
+			<if test="condition.merNo != null and condition.merNo !='' ">
+				and a.merNo = #{condition.merNo}
+			</if>
+			<if test="condition.orderNo != null and condition.orderNo !='' ">
+				and a.orderNo = #{condition.orderNo}
+			</if>
+			<if test="condition.tradeNo != null and condition.tradeNo !='' ">
+				and a.tradeNo = #{condition.tradeNo}
+			</if>
+			<if test="condition.merwebsite != null and condition.merwebsite !='' ">
+				and a.payWebSite = #{condition.merwebsite}
+			</if>
+			<if test="condition.trackNo != null and condition.trackNo !='' ">
+				and f.trackNo = #{condition.trackNo}
+			</if>
+			
+			<if test="condition.status != null and condition.status !='' ">
+				<choose>
+					<when test="condition.status !=1">
+					and f.status is null
+					</when>
+					<otherwise>
+					and f.status =#{condition.status}
+					</otherwise>
+				</choose>
+			</if>
+			<if test="condition.operationStatus != null and condition.operationStatus !='' ">
+				<choose>
+				<when test="condition.operationStatus == 0">
+					and (f.operationStatus = 0 or f.operationStatus is null)
+				</when>
+				<otherwise>
+					and f.operationStatus = #{condition.operationStatus}
+				</otherwise>
+				</choose>
+			</if>
+			<if test="condition.transDateStart != null and condition.transDateStart != ''">
+				and a.transDate >='${condition.transDateStart} 00:00:00'
+			</if>
+			<if test="condition.transDateEnd != null and condition.transDateEnd != ''">
+				and a.transDate &lt;='${condition.transDateEnd} 23:23:59'
+			</if>
+			<if test="condition.uploadStartDate != null and condition.uploadStartDate != ''">
+				and f.UploadTime >='${condition.uploadStartDate} 00:00:00'
+			</if>
+			<if test="condition.uploadsEndDate != null and condition.uploadsEndDate != ''">
+				and f.UploadTime &lt;='${condition.uploadsEndDate} 23:23:59'
+			</if>
+			<if test="condition.refundStatus != null and condition.refundStatus!= '' ">
+				and a.transRefund=#{condition.refundStatus}
+			</if>
+			<if test="condition.disStatus != null and condition.disStatus!= '' ">
+				and a.transDishonor=#{condition.disStatus}
+			</if>
+			<if test="condition.frozenStatus != null and condition.frozenStatus!= '' ">
+				and a.transFrozen=#{condition.frozenStatus}
+			</if>
+			<if test="condition.isSettle != null and condition.isSettle!= '' ">
+				<if test="condition.isSettle ==0 ">
+					and a.batchNo is null 
+				</if>
+				<if test="condition.isSettle ==1 ">
+					and a.batchNo is not null 
+				</if>
+			</if>
+			<if test="condition.settleType != null and condition.settleType != '' ">
+				<if test="condition.settleType ==0 ">
+					and a.merNo in(
+					select DISTINCT merNo from gw_settle_type_info where settleType='TN'
+					)
+					and a.terNo in (
+					select DISTINCT terNo from gw_settle_type_info where settleType='TN'
+					)
+				</if>
+				<if test="condition.settleType ==1 ">
+					and a.merNo in(
+					select DISTINCT merNo from gw_settle_type_info where settleType='sendGoods'
+					)
+					and a.terNo in (
+					select DISTINCT terNo from gw_settle_type_info where settleType='sendGoods'
+					)
+				</if>
+				<if test="condition.settleType ==2 ">
+					and a.merNo in(
+					select DISTINCT merNo from gw_settle_type_info where settleType='signed'
+					)
+					and a.terNo in (
+					select DISTINCT terNo from gw_settle_type_info where settleType='signed'
+					)
+				</if>
+			</if>
+	   </where>
+	</sql>		
+	<insert id="saveDeliveryDetail">
+		insert into gw_GoodsPress(
+			tradeNo,
+			trackNo,
+			merNo,
+			status,
+			createby,
+			updateDate,
+			Iogistics,
+			tradetime
+		)values(
+			#{tradeNo},
+			#{trackNo},
+			#{merNo},
+			#{status},
+			#{createby},
+			now(),
+			#{iogistics},
+			#{tradetime}
+		)
+	</insert>
+	<!-- 统计妥投条数 -->
+	<select id="countDeliveryInfo" resultType="int">
+	select count(*) from (select 
+			f.operationStatus,
+			f.remark,
+			f.Iogistics,
+			f.Status as status,
+			f.lastModifyBy as modifyPerson,
+			f.lastDateTime as modifyTime,
+			a.*
+			from
+			 gw_GoodsPress f  
+		right join gw_trans_info a on a.tradeNo=f.tradeNo
+		<include refid="Where_Delivery_info"/>
+		) as t
+    left join gw_trans_order_info c on t.tradeNo=c.tradeNo
+		
+	</select>
+	<!-- 查询妥投信息-->
+	<select id="queryDeliveryInfo" resultType="com.gateway.goodstrace.model.DeliveryInfo">
+		select * from (select 
+			f.operationStatus,
+			f.remark,
+			a.terNo,
+			f.id,
+			f.Iogistics,
+			f.Status as status,
+			f.lastModifyBy as modifyPerson,
+			f.lastDateTime ,
+			a.tradeNo as tradeNo,
+			a.orderNo as orderNo,
+			a.merTransAmount as realAmount,
+			a.merBusCurrency as realCurrency,
+			a.bankTransAmount as amount,
+			a.bankCurrency as currency,
+			a.transDate as tradetime,
+			f.trackNo as trackNo,
+			f.Uploadtime as Uploadtime,
+			a.payWebSite as merwebsite,
+			a.merNo 
+			from
+			 gw_GoodsPress f  
+		right join gw_trans_info a on a.tradeNo=f.tradeNo
+		<include refid="Where_Delivery_info"/>
+		) as t
+    left join gw_trans_order_info c on t.tradeNo=c.tradeNo
+    order by tradetime desc 
+	</select>
+	<!--导出运单内容  -->
+	<select id="exportDelivery" resultType="com.gateway.goodstrace.model.ExpDeliveryInfo">
+		select t.*,
+			GROUP_CONCAT(CONCAT(g.goodsName,',',g.quantity,',',g.goodsPrice)) AS goodsInfo
+		FROM
+			(SELECT 
+				a.merNo,
+				a.tradeNo,
+				a.orderNo,
+				a.transDate,
+				a.merBusCurrency,
+				a.merTransAmount,
+				a.merSettleCurrency,
+				a.bankCurrency,
+				a.bankTransAmount,
+				a.cardType,
+				a.respCode,
+				a.respMsg,
+				a.terNo,
+				a.checkNo,
+				a.last,
+				a.riskScore,
+				c.currencyName,
+				c.acquirer,
+				a.payWebsite,
+				a.email,
+				b.grPerName,
+				b.grphoneNumber,
+				a.ipAddress,
+				b.grCountry,
+				b.grState,
+				b.grCity,
+				b.grAddress,
+				b.grZipCode,
+				b.cardCountry,	
+				b.cardState,
+				b.cardCity,
+				b.cardAddress,
+				b.cardZipCode,
+				b.cardFullName,
+				b.cardFullPhone,
+				b.cardEmail,
+				f.trackNo,
+				f.iogistics,
+				f.status,
+				f.uploadTime,
+				f.OperationStatus,
+				f.createby,
+				f.lastModifyBy as operationBy,
+				f.lastDateTime,
+				f.remark,
+				a.webInfo,
+				(CASE WHEN  SUM(CASE d.transType WHEN 'refund' THEN d.transMoney ELSE 0 END)>0 THEN 1 ELSE 0 END) refundStatus,
+				FORMAT(SUM(CASE d.transType WHEN 'refund' THEN d.transMoney ELSE 0 END),2) AS refundAmount,
+				(CASE WHEN  SUM(CASE d.transType WHEN 'dishonor' THEN d.transMoney ELSE 0 END)>0 THEN 1 ELSE 0 END) dishonorStatus,
+				FORMAT(SUM(CASE d.transType WHEN 'dishonor' THEN d.transMoney ELSE 0 END),2) AS dishonorAmount,
+				(CASE WHEN  SUM(CASE d.transType WHEN 'frozen' THEN d.transMoney WHEN 'thaw' THEN d.transMoney*(-1) ELSE  0 END)>0 THEN 1 ELSE 0 END) frozenStatus,
+				FORMAT(SUM(CASE d.transType WHEN 'frozen' THEN d.transMoney WHEN 'thaw' THEN d.transMoney*(-1) ELSE  0 END),2) AS frozenAmount
+			FROM 
+				gw_trans_info a LEFT JOIN gw_trans_info_log d ON a.tradeNo=d.tradeNo AND d.status=2
+				LEFT JOIN gw_currency_info c ON a.currencyId=c.id
+				LEFT JOIN gw_trans_order_info b ON a.tradeNo=b.tradeNo
+				LEFT JOIN gw_GoodsPress f ON a.tradeNo=f.tradeNo
+			<include refid="Where_Delivery_info"/>
+			GROUP BY 
+				a.tradeNo) AS t LEFT JOIN gw_trans_goods_info g ON t.tradeNo=g.tradeNo
+			GROUP BY  t.tradeNo order by t.transDate DESC
+	</select>
+	<!-- 根据id查询妥投信息 -->
+	<select id="queryDeliveryInfoById" resultType="com.gateway.goodstrace.model.DeliveryInfo">
+			select * from (select 
+			f.operationStatus,
+			f.remark,
+			a.terNo,
+			f.id,
+			f.Iogistics,
+			f.Status as status,
+			f.lastModifyBy as modifyPerson,
+			f.lastDateTime as modifyTime,
+			a.tradeNo as tradeNo,
+			a.orderNo as orderNo,
+			a.merTransAmount as realAmount,
+			a.merBusCurrency as realCurrency,
+			a.transDate as tradetime,
+			f.trackNo as trackNo,
+			f.Uploadtime as Uploadtime,
+			a.payWebSite as merwebsite,
+			a.merNo 
+			from
+			 gw_GoodsPress f  
+		right join gw_trans_info a on a.tradeNo=f.tradeNo
+		where f.id=#{id}
+		) as t
+    left join gw_trans_order_info c on t.tradeNo=c.tradeNo
+	</select>
+	<!-- 根据交易流水号查询妥投信息 -->
+	<select id="queryDeliveryInfoByTradeNo" resultType="com.gateway.goodstrace.model.DeliveryInfo">
+		select * from gw_GoodsPress where tradeNo=#{TradeNo} limit 1
+	</select>
+	<update id="updateDeliveryInfo">
+		update gw_GoodsPress 
+		set 
+		<if test="deliveryInfo.status !=null and deliveryInfo.status !=''">
+			Status=#{deliveryInfo.status} ,
+		</if>
+		<if test="deliveryInfo.operationStatus !=null and deliveryInfo.operationStatus !=''">
+			 operationStatus=#{deliveryInfo.operationStatus} ,
+		</if>
+			lastModifyBy=#{deliveryInfo.lastModifyBy},
+			lastDateTime=SYSDATE()
+		where id=#{deliveryInfo.id}
+	</update>
+	<!-- 根据交易流水号更新状态 -->
+	<update id="updateDeliverInfoByTradeNo">
+		update gw_GoodsPress set Status=#{deliveryInfo.status} where TradeNo=#{deliveryInfo.tradeNo}
+	</update>
+	<!-- 修改货运状态和备注 -->
+	<update id="UpdateStatusAndRemark">
+		update gw_GoodsPress set 
+		operationStatus=#{deliveryInfo.operationStatus} ,
+		remark=#{deliveryInfo.remark},
+		lastModifyBy=#{deliveryInfo.lastModifyBy},
+			lastDateTime=SYSDATE()
+		where id=#{deliveryInfo.id}
+	</update>
+	<!-- 批量修改货运状态与备注 -->
+	<update id="updateRemarkAndStatusByTradeNo">
+		update gw_GoodsPress set operationStatus=#{deliveryInfo.operationStatus} ,remark=#{deliveryInfo.remark},
+		lastModifyBy=#{deliveryInfo.lastModifyBy},lastDateTime=now()
+		where tradeNo=#{deliveryInfo.tradeNo}
+	</update>
+	
+	<select id="getIogisticsInfo" resultType="com.gateway.goodstrace.model.IogisticsInfo">
+		select * from gw_iogistics_info
+		<include refid="Where_Iogistics_Clause"/>
+		order by createDate desc
+	</select>
+	
+	<select id="countIogisticsInfo" resultType="int">
+		select count(*) from gw_iogistics_info
+		<include refid="Where_Iogistics_Clause"/>
+		order by createDate desc
+	</select>
+	
+	<insert id="addIogistics">
+		insert into gw_iogistics_info
+		(
+			Iogistics,
+			name,
+			IogisticsUrl,
+			createby,
+			createDate
+		)
+		values
+		(
+			#{info.iogistics},
+			#{info.name},
+			#{info.iogisticsUrl},
+			#{info.createby},
+			SYSDATE()
+		)
+	</insert>
+	<select id="queryIogisticsById" resultType="com.gateway.goodstrace.model.IogisticsInfo">
+		select * from gw_iogistics_info where id = #{id}
+	</select>
+	<update id="updateIogisticsById">
+		update gw_iogistics_info set iogistics = #{info.iogistics} ,name = #{info.name} ,createBy = #{info.createby} ,createDate = SYSDATE(),IogisticsUrl =#{info.iogisticsUrl}  where id = #{info.id}
+	</update>
+	<delete id="deleteIogistics">
+		delete from gw_iogistics_info where id=#{id}
+	</delete>
+</mapper>

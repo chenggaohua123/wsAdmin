@@ -1,0 +1,573 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="com.gateway.exchangRate.mapper.ExchangRateDao">
+	<sql id="Where_Clause_Bank_ExchangRate_Info">
+			<where>
+				<if test="condition.groupName != null and condition.groupName !=''">
+					and groupName = #{condition.groupName}
+				</if>
+				<if test="condition.sourceCurrency != null and condition.sourceCurrency !=''">
+					and sourceCurrency = #{condition.sourceCurrency}
+				</if>
+				<if test="condition.targetCurrency != null and condition.targetCurrency !=''">
+					and targetCurrency = #{condition.targetCurrency}
+				</if>
+				<if test="condition.type != null and condition.type !=''">
+					and type = #{condition.type}
+				</if>
+				<if test="condition.bankType != null and condition.bankType !=''">
+					and bankType = #{condition.bankType}
+				</if>
+				<if test="condition.status != null and condition.status !=''">
+					and status = #{condition.status}
+				</if>
+				<if test="condition.createDateStart != null and condition.createDateStart != ''">
+			     and createDate >= '${condition.createDateStart} 00:00:00'
+			    </if>
+			    <if test="condition.createDateEnd != null and condition.createDateEnd != ''">
+			      and createDate &lt;='${condition.createDateEnd} 23:59:59'
+			    </if>
+			    <if test="condition.updateDateStart != null and condition.updateDateStart != ''">
+			     and updateDate >= '${condition.updateDateStart} 00:00:00'
+			    </if>
+			    <if test="condition.updateDateEnd != null and condition.updateDateEnd != ''">
+			      and updateDate &lt;='${condition.updateDateEnd} 23:59:59'
+			    </if>
+			</where>
+	</sql>
+	<sql id="Where_Clause_Bank_ExchangRate_Log">
+			<where>
+				<if test="condition.groupName != null and condition.groupName !=''">
+					and groupName = #{condition.groupName}
+				</if>
+				<if test="condition.sourceCurrency != null and condition.sourceCurrency !=''">
+					and sourceCurrency = #{condition.sourceCurrency}
+				</if>
+				<if test="condition.targetCurrency != null and condition.targetCurrency !=''">
+					and targetCurrency = #{condition.targetCurrency}
+				</if>
+				<if test="condition.type != null and condition.type !=''">
+					and type = #{condition.type}
+				</if>
+				<if test="condition.bankType != null and condition.bankType !=''">
+					and bankType = #{condition.bankType}
+				</if>
+				<if test="condition.checkStatus != null and condition.checkStatus !=''">
+					and checkStatus = #{condition.checkStatus}
+				</if>
+			</where>
+	</sql>
+	<sql id="Where_Clause_Bank_SourceRate_Info">
+		<where>
+			<if test="condition.sourceCurrencyCode != null and condition.sourceCurrencyCode !=''">
+					and sourceCurrencyCode like CONCAT(CONCAT('%', '${condition.sourceCurrencyCode}'),'%')
+			</if>
+			<if test="condition.targetCurrencyCode != null and condition.targetCurrencyCode !=''">
+					and targetCurrencyCode LIKE CONCAT(CONCAT('%', '${condition.targetCurrencyCode}'),'%')
+			</if>
+			<if test="condition.rateType != null and condition.rateType !=''">
+					and rateType = #{condition.rateType}
+			</if>
+		</where>
+	</sql>
+	<sql id="Where_Clause_Bank_SourceRate_Log_Info">
+		<where>
+			and sourceCurrencyCode=#{condition.sourceCurrencyCode}
+		</where>
+	</sql>
+	<sql id="Where_Clause_ExchangRate_Info">
+			<where>
+				<if test="condition.groupName != null and condition.groupName !=''">
+					and groupName = #{condition.groupName}
+				</if>
+				<if test="condition.sourceCurrency != null and condition.sourceCurrency !=''">
+					and sourceCurrency = #{condition.sourceCurrency}
+				</if>
+				<if test="condition.targetCurrency != null and condition.targetCurrency !=''">
+					and targetCurrency = #{condition.targetCurrency}
+				</if>
+				<if test="condition.type != null and condition.type !=''">
+					and type = #{condition.type}
+				</if>
+				<if test="condition.enabled != null and condition.enabled !=''">
+					and a.enabled = #{condition.enabled}
+				</if>
+				<if test="condition.exceptionType != null and condition.exceptionType !=''">
+					and exceptionType = #{condition.exceptionType}
+				</if>
+			</where>
+	</sql>
+	<sql id="Where_Clause_Merchant_ExchangRate_Info">
+			<where>
+				<if test="condition.groupName != null and condition.groupName !=''">
+					and groupName = #{condition.groupName}
+				</if>
+				<if test="condition.terNo != null and condition.terNo !=''">
+					and terNo  = #{condition.terNo }
+				</if>
+				<if test="condition.merNo != null and condition.merNo !=''">
+					and merNo  = #{condition.merNo }
+				</if>
+				<if test="condition.type != null and condition.type !=''">
+					and type = #{condition.type}
+				</if>
+				<if test="condition.enabled != null and condition.enabled !=''">
+					and enabled = #{condition.enabled}
+				</if>
+			</where>
+	</sql>
+	
+	<select id="queryExchangRateList" resultType="com.gateway.exchangRate.model.ExchangRateInfo">
+		select a.*,b.bankName from gw_exchang_rate_info a left join gw_bank_info b on a.bankId=b.id
+		<include refid="Where_Clause_ExchangRate_Info"/>
+		
+	</select>
+	
+	<select id="countExchangRateTotal" resultType="int">
+		select count(*) from gw_exchang_rate_info a
+		<include refid="Where_Clause_ExchangRate_Info"/>
+	</select>
+	
+	<insert id="addExchangRate">
+		insert into gw_exchang_rate_info (
+			groupName,
+			sourceCurrency,
+			targetCurrency,
+			rate,
+			offsetValue,
+			createDate,
+			createBy,
+			enabled,
+			type,
+			rateType,
+			bankId
+		)values(
+			#{exchangRateInfo.groupName},
+			#{exchangRateInfo.sourceCurrency},
+			#{exchangRateInfo.targetCurrency},
+			#{exchangRateInfo.rate},
+			#{exchangRateInfo.offsetValue},
+			now(),
+			#{exchangRateInfo.createBy},
+			#{exchangRateInfo.enabled},
+			#{exchangRateInfo.type},
+			#{exchangRateInfo.rateType},
+			#{exchangRateInfo.bankId}
+			
+		)
+	</insert>
+	<select id="queryExchangRate" resultType="com.gateway.exchangRate.model.ExchangRateInfo">
+	select * from gw_exchang_rate_info 
+	where 
+		bankId=#{info.bankId}
+		and
+		groupName=#{info.groupName}
+		and 
+		sourceCurrency=#{info.sourceCurrency}
+		and 
+		targetCurrency=#{info.targetCurrency}
+		and 
+		type=#{info.type}
+	<if test="info.id != null and info.id != '' ">
+		and id != #{info.id}
+	</if>
+	limit 1
+	</select>
+	<select id="queryExchangRateLog" resultType="com.gateway.exchangRate.model.ExchangRateInfo">
+		select * from gw_exchang_rate_log 
+		where 
+			groupName=#{info.groupName}
+			and 
+			sourceCurrency=#{info.sourceCurrency}
+			and 
+			targetCurrency=#{info.targetCurrency}
+			and 
+			type=#{info.type}
+			and 
+			checkStatus = 0
+		<if test="rateId != null and rateId != '' ">
+			and rateId != #{rateId}
+		</if>
+		limit 1
+	</select>
+	
+	<select id="queryExchangRateInfoId" resultType="com.gateway.exchangRate.model.ExchangRateInfo">
+		select * from gw_exchang_rate_info 
+		where 
+			id=#{id}
+	</select>
+	
+	<update id="updateExchangRate">
+		update gw_exchang_rate_info set
+			groupName=#{groupName},
+			sourceCurrency=#{sourceCurrency},
+			targetCurrency=#{targetCurrency},
+			rate=#{rate},
+			offsetValue=#{offsetValue},
+			updateDate=now(),
+			updateBy=#{updateBy},
+			enabled=#{enabled},
+			type=#{type},
+			rateType=#{rateType},
+			bankId=#{bankId}
+		where 
+			id=#{id}	
+	</update>
+	
+	<select id="queryMerchantExchangRateList" resultType="com.gateway.exchangRate.model.MerExchangRateInfo">
+		select * from gw_mer_ref_exchang_rate_info 
+		<include refid="Where_Clause_Merchant_ExchangRate_Info"/>
+	</select>
+	
+	<select id="countMerchantExchangRateTotal" resultType="int">
+		select count(*) from gw_mer_ref_exchang_rate_info 
+		<include refid="Where_Clause_Merchant_ExchangRate_Info"/>
+	</select>
+	<select id="queryRateGroupNamesByType" resultType="String">
+		select distinct groupName from gw_exchang_rate_info 
+		where 
+		enabled=1
+		<if test="type!=null and type!='' ">
+			and `type`=#{type} 
+		</if>
+		 
+	</select>
+	<select id="queryMerNoByTerNo" resultType="String">
+		select merNo from gw_merchant_terno_info where terNo=#{terNo}
+	</select>
+	<insert id="addMerchantExchangRate">
+		insert into gw_mer_ref_exchang_rate_info (
+			merNo,
+			terNo,
+			groupName,
+			updateDate,
+			createBy,
+			enabled,
+			type
+		)values(
+			#{info.merNo},
+			#{info.terNo},
+			#{info.groupName},
+			now(),
+			#{info.createBy},
+			#{info.enabled},
+			#{info.type}
+		)
+	</insert>
+	<select id="queryMerchantExchangRateById" resultType="com.gateway.exchangRate.model.MerExchangRateInfo">
+		select * from gw_mer_ref_exchang_rate_info where id = #{id}
+	</select>
+	
+	<update id="updateMerchantExchangRate">
+		update 
+			gw_mer_ref_exchang_rate_info 
+		set 
+			merNo=#{info.merNo},
+			terNo=#{info.terNo},
+			groupName=#{info.groupName},
+			updateDate=now(),
+			createBy=#{info.createBy},
+			enabled=#{info.enabled},
+			type=#{info.type}
+		where 
+			id=#{info.id}
+	</update>
+	<select id="queryBankSourceRateInfoList" resultType="com.gateway.exchangRate.model.BankSourceRateDetail">
+		SELECT sourceCurrencyCode,
+		MAX(CASE rateType WHEN 'buying rate' THEN rate*100 ELSE 0 END) AS  'buyingRate',
+		MAX(CASE rateType WHEN 'Cash Buying Rate' THEN rate*100 ELSE 0 END) AS  'cashBuyingRate',
+		MAX(CASE rateType WHEN 'Selling Rate' THEN rate*100 ELSE 0 END) AS  'sellingRate',
+		MAX(CASE rateType WHEN 'Cash Selling Rate' THEN rate*100 ELSE 0 END) AS  'cashSellingrate',
+		MAX(CASE rateType WHEN 'Middle Rate' THEN rate*100 ELSE 0 END) AS  'middleRate',
+		DATE_FORMAT(bcDate,'%Y-%m-%d %H:%i') as bcDate,DATE_FORMAT(createDate,'%Y-%m-%d %H:%i')as createDate
+		FROM gw_bank_currencyCode_rate
+		<include refid="Where_Clause_Bank_SourceRate_Info"/>
+		GROUP BY sourceCurrencyCode,DATE_FORMAT(bcDate,'%Y-%m-%d %H:%i'),DATE_FORMAT(createDate,'%Y-%m-%d %H:%i')
+		order by id
+	</select>
+	<select id="countBankSourceRateInfoTotal" resultType="int">
+		select count(*) from 
+			(SELECT sourceCurrencyCode,
+			MAX(CASE rateType WHEN 'buying rate' THEN rate*100 ELSE 0 END) AS  'buyingRate',
+			MAX(CASE rateType WHEN 'Cash Buying Rate' THEN rate*100 ELSE 0 END) AS  'cashBuyingRate',
+			MAX(CASE rateType WHEN 'Selling Rate' THEN rate*100 ELSE 0 END) AS  'sellingRate',
+			MAX(CASE rateType WHEN 'Cash Selling Rate' THEN rate*100 ELSE 0 END) AS  'cashSellingrate',
+			MAX(CASE rateType WHEN 'Middle Rate' THEN rate*100 ELSE 0 END) AS  'middleRate',
+			DATE_FORMAT(bcDate,'%Y-%m-%d %H:%i') as bcDate,DATE_FORMAT(createDate,'%Y-%m-%d %H:%i')as createDate
+			FROM gw_bank_currencyCode_rate
+			<include refid="Where_Clause_Bank_SourceRate_Info"/>
+			GROUP BY sourceCurrencyCode,DATE_FORMAT(bcDate,'%Y-%m-%d %H:%i'),DATE_FORMAT(createDate,'%Y-%m-%d %H:%i')
+			order by id)as t
+	</select>
+	<select id="queryRateType" resultType="String">
+		select distinct rateType from gw_bank_currencyCode_rate
+	</select>
+	<select id="queryBankSourceRateLogInfoList" resultType="com.gateway.exchangRate.model.BankSourceRateDetail">
+		SELECT sourceCurrencyCode,
+		MAX(CASE rateType WHEN 'buying rate' THEN rate*100 ELSE 0 END) AS  'buyingRate',
+		MAX(CASE rateType WHEN 'Cash Buying Rate' THEN rate*100 ELSE 0 END) AS  'cashBuyingRate',
+		MAX(CASE rateType WHEN 'Selling Rate' THEN rate*100 ELSE 0 END) AS  'sellingRate',
+		MAX(CASE rateType WHEN 'Cash Selling Rate' THEN rate*100 ELSE 0 END) AS  'cashSellingrate',
+		MAX(CASE rateType WHEN 'Middle Rate' THEN rate*100 ELSE 0 END) AS  'middleRate',
+		DATE_FORMAT(bcDate,'%Y-%m-%d %H:%i') AS bcDate,DATE_FORMAT(createDate,'%Y-%m-%d %H:%i')AS createDate
+		FROM gw_bank_currencyCode_rate_log
+		<include refid="Where_Clause_Bank_SourceRate_Log_Info"/>
+		GROUP BY sourceCurrencyCode,DATE_FORMAT(bcDate,'%Y-%m-%d %H:%i'),DATE_FORMAT(createDate,'%Y-%m-%d %H:%i')
+		ORDER BY createDate DESC 
+	</select>
+	<select id="countBankSourceRateLogInfoTotal" resultType="int">
+		select count(*) from (
+			SELECT sourceCurrencyCode,
+		MAX(CASE rateType WHEN 'buying rate' THEN rate*100 ELSE 0 END) AS  'buyingRate',
+		MAX(CASE rateType WHEN 'Cash Buying Rate' THEN rate*100 ELSE 0 END) AS  'cashBuyingRate',
+		MAX(CASE rateType WHEN 'Selling Rate' THEN rate*100 ELSE 0 END) AS  'sellingRate',
+		MAX(CASE rateType WHEN 'Cash Selling Rate' THEN rate*100 ELSE 0 END) AS  'cashSellingrate',
+		MAX(CASE rateType WHEN 'Middle Rate' THEN rate*100 ELSE 0 END) AS  'middleRate',
+		DATE_FORMAT(bcDate,'%Y-%m-%d %H:%i') AS bcDate,DATE_FORMAT(createDate,'%Y-%m-%d %H:%i')AS createDate
+		FROM gw_bank_currencyCode_rate_log
+		<include refid="Where_Clause_Bank_SourceRate_Log_Info"/>
+		GROUP BY sourceCurrencyCode,DATE_FORMAT(bcDate,'%Y-%m-%d %H:%i'),DATE_FORMAT(createDate,'%Y-%m-%d %H:%i')
+		ORDER BY createDate DESC 
+		) as t
+	</select>
+	
+	<select id="getBankRate" resultType="java.math.BigDecimal">
+	<choose>
+		<when test="info.targetCurrencyCode=='CNY'">
+			SELECT rate from gw_bank_currencyCode_rate where 
+			rateType=#{info.rateType} 
+			and sourceCurrencyCode=#{info.sourceCurrencyCode} 
+			and targetCurrencyCode = #{info.targetCurrencyCode} 
+		</when>
+		<otherwise>
+		select 
+			(SELECT rate from gw_bank_currencyCode_rate where 
+			rateType=#{info.rateType} 
+			and sourceCurrencyCode=#{info.sourceCurrencyCode} 
+			and targetCurrencyCode = 'CNY')
+			/
+			(SELECT rate from gw_bank_currencyCode_rate where 
+			rateType=#{info.rateType} 
+			and sourceCurrencyCode=#{info.targetCurrencyCode} 
+			and targetCurrencyCode = 'CNY')
+		</otherwise>
+	</choose>
+	</select>
+	<select id="getBankRateCNY" resultType="java.math.BigDecimal">
+			SELECT 1/rate from gw_bank_currencyCode_rate where 
+			rateType=#{info.rateType} 
+			and targetCurrencyCode=#{info.sourceCurrencyCode} 
+			and sourceCurrencyCode = #{info.targetCurrencyCode} 
+	</select>
+	
+	<select id="querySourceCurrency" resultType="string">
+		select distinct sourceCurrency from gw_exchang_rate_info
+	</select>
+	<select id="querytargetCurrency" resultType="string">
+		select distinct targetCurrency from gw_exchang_rate_info
+	</select>
+	<insert id="createCheckBankSourceRate">
+		insert into gw_bank_rate_temp_info
+		(
+			groupName,
+			sourceCurrency,
+			targetCurrency,
+			rate,
+			bankRate,
+			addRate,
+			createDate,
+			createby,
+			enabled,
+			type,
+			bankRateType,
+			status
+		) select 
+			a.groupName,
+			a.sourceCurrency,
+			a.targetCurrency,
+			a.rate,
+ 			(CASE a.sourceCurrency WHEN 'CNY' THEN 1 ELSE b.rate END)/(CASE a.targetCurrency WHEN 'CNY' THEN 1 ELSE c.rate END) AS bankRate,
+ 			#{info.addRate} as addRate,
+ 			now() as createDate,
+ 			#{info.createBy}as createBy,
+ 			a.enabled,
+ 			a.type,
+ 			#{info.bankRateType} as bankRateType,
+ 			0
+ 		from gw_exchang_rate_info a 
+ 		LEFT JOIN gw_bank_currencyCode_rate  b ON a.sourceCurrency=b.sourceCurrencyCode AND b.targetCurrencyCode='CNY' and   b.rateType=#{info.bankRateType}
+ 		LEFT JOIN gw_bank_currencyCode_rate c ON a.targetCurrency=c.sourceCurrencyCode AND b.targetCurrencyCode='CNY' and c.rateType=#{info.bankRateType}
+ 		where
+ 			a.enabled=1 
+ 			<if test="info.groupName != null and info.groupName!=''">
+	 			and a.groupName=#{info.groupName}
+ 			</if>
+ 			<if test="info.merRateType != null and info.merRateType != '' ">
+	 			and a.type=#{info.merRateType}
+ 			</if>
+ 			<if test="info.sourceCurrency != null and info.sourceCurrency != '' ">
+	 			and a.sourceCurrency=#{info.sourceCurrency}
+ 			</if>
+ 			<if test="info.targetCurrency != null and info.targetCurrency != '' ">
+	 			and a.targetCurrency=#{info.targetCurrency}
+ 			</if>
+ 			
+	</insert>
+	<select id="countCheckBankSourceRateInfoTotal" resultType="int">
+		select count(*) from gw_bank_rate_temp_info
+		<include refid="Where_Clause_Bank_ExchangRate_Info"/>
+	</select>
+	<select id="queryCheckBankSourceRateInfoList" resultType="com.gateway.exchangRate.model.CheckBankSourceRateInfo">
+		select * from gw_bank_rate_temp_info
+		<include refid="Where_Clause_Bank_ExchangRate_Info"/>
+		order by createDate desc
+	</select>
+	<select id="queryCheckBankSourceRateInfoByIds" resultType="com.gateway.exchangRate.model.CheckBankSourceRateInfo">
+		select * from gw_bank_rate_temp_info
+		where id in
+		<foreach collection="ids" item="id" index="index" open="(" close=")" separator=",">
+			#{id}
+		</foreach>
+	</select>
+	<update id="updateCheckBankSourceRateInfo">
+		update 
+			gw_bank_rate_temp_info 
+		set
+			status=#{status},
+			updateBy=#{updateBy},
+			updateDate=now()
+		where id in
+		<foreach collection="ids" item="id" index="index" open="(" close=")" separator=",">
+			#{id}
+		</foreach>
+	</update>
+	<update id="updateBankRateToExchangRate">
+		update 
+			gw_exchang_rate_info
+		set 
+			rate=#{info.bankRate},
+			updateDate=now(),
+			createBy=#{info.updateBy}
+		where 
+				groupName=#{info.groupName}
+			and 
+				sourceCurrency=#{info.sourceCurrency}
+			and 
+				targetCurrency=#{info.targetCurrency}
+			and 
+				type=#{info.type}
+	</update>
+	
+	<insert id="insertExchangRateLog" parameterType="com.gateway.exchangRate.model.ExchangRateInfo">
+		insert into gw_exchang_rate_log (
+			groupName,
+			sourceCurrency,
+			targetCurrency,
+			rate,
+			createBy,
+			createDate,
+			enabled,
+			type,
+			rateType,
+			operationType,
+			offsetValue,
+			rateId,
+			checkStatus
+		)values(
+			#{info.groupName},
+			#{info.sourceCurrency},
+			#{info.targetCurrency},
+			#{info.rate},
+			#{info.createBy},
+			now(),
+			#{info.enabled},
+			#{info.type},
+			#{info.rateType},
+			#{info.operationType},
+			#{info.offsetValue},
+			#{info.rateId},
+			0
+		)
+	</insert>
+	
+	<update id="updateCheckExchangRateLog" parameterType="com.gateway.exchangRate.model.ExchangRateInfo">
+		update gw_exchang_rate_log set
+			<if test="info.groupName!=null">
+				groupName=#{info.groupName},
+			</if>
+			<if test="info.sourceCurrency!=null">
+				sourceCurrency=#{info.sourceCurrency},	
+			</if>
+			<if test="info.targetCurrency!=null">
+				targetCurrency=#{info.targetCurrency},
+			</if>
+			<if test="info.rate!=null">
+				rate=#{info.rate},
+			</if>
+			<if test="info.enabled!=null">
+				enabled=#{info.enabled},
+			</if>
+			<if test="info.type!=null">
+				type=#{info.type},
+			</if>
+			<if test="info.checkStatus!=null">
+				checkStatus=#{info.checkStatus},
+			</if>
+			<if test="info.rateId!=null and info.rateId!=0">
+				rateId=#{info.rateId},
+			</if>
+			checkDate=now(),
+			checkBy=#{info.checkBy}
+		where 
+			id=#{info.id}
+	</update>
+	
+	<update id="updateCheckExchangRateLogRateId" parameterType="com.gateway.exchangRate.model.ExchangRateInfo">
+		update gw_exchang_rate_log set
+				rateId=#{info.rateId}
+		where 
+			id=#{info.id}
+	</update>
+	
+	<select id="queryExchangRateLogId" resultType="com.gateway.exchangRate.model.ExchangRateInfo">
+		select * from gw_exchang_rate_log where id=#{id}
+	</select>
+	
+	
+	<select id="countExchangRateTotalLog" resultType="int">
+		select count(*) from gw_exchang_rate_log
+		<include refid="Where_Clause_Bank_ExchangRate_Log"/>
+	</select>
+	
+	<select id="queryExchangRateLogList" resultType="com.gateway.exchangRate.model.ExchangRateInfo">
+		select * from gw_exchang_rate_log
+		<include refid="Where_Clause_Bank_ExchangRate_Log"/>
+	</select>
+	<select id="gotoCheckExchangRateLog" resultType="com.gateway.exchangRate.model.ExchangRateInfo">
+		select * from gw_exchang_rate_log
+			where rateId=#{rateId}
+	</select>
+	
+	<select id="getAddRateInfoId" resultType="int">
+		select max(id) from gw_exchang_rate_info
+	</select>
+	
+	<select id="queryMerExchangRateInfo" resultType="com.gateway.exchangRate.model.MerExchangRateInfo">
+		SELECT * from gw_mer_ref_exchang_rate_info where 
+		merNo=#{info.merNo} 
+		and terNo=#{info.terNo} 
+		and type=#{info.type} 
+		and groupName=#{info.groupName}
+		<if test="info.id != null and info.id != ''">
+			and id != #{info.id}
+		</if>
+		limit 1
+	</select>
+	<delete id="deleteExchangeRate">
+		delete from gw_exchang_rate_info where id=#{vo.id}
+	</delete>
+	<delete id="deleteMerchantExchangeRate">
+		delete from gw_mer_ref_exchang_rate_info where id=#{vo.id}
+	</delete>
+</mapper>

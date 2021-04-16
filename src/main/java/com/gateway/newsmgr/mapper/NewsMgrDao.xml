@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="com.gateway.newsmgr.mapper.NewsMgrDao">
+	<sql id="Where_Clase_News">
+		<where>
+			<if test="condition.newsTitle != null and condition.newsTitle !='' ">
+				and newsTitle like '%${condition.newsTitle}%'
+			</if>
+			<if test="condition.newsType != null and condition.newsType !='' ">
+				and newsType = #{condition.newsType}
+			</if>
+			<if test="condition.enableFlag != null and condition.enableFlag !='' ">
+				and enableFlag = ${condition.enableFlag}
+			</if>
+		</where>
+	</sql>
+	<select id="countNews" resultType="int">
+		select count(*) from gw_sys_news
+		<include refid="Where_Clase_News"/>
+	</select>
+	<select id="getListNews" resultType="com.gateway.newsmgr.model.News" >
+		select * from gw_sys_news
+		<include refid="Where_Clase_News"/>
+		 order by createDate DESC
+	</select>
+	<select id="getNewsInfoById" resultType="com.gateway.newsmgr.model.News">
+		select * from gw_sys_news where id=#{id}
+	</select>
+	<insert id="addNews">
+		insert into gw_sys_news(
+			newsTitle,
+			newsContext,
+			newsType,
+			isTop,
+			belongTo,
+			createBy,
+			createDate,
+			startDate,
+			endDate,
+			topDate,
+			enableFlag
+		)values(
+			#{newsTitle},
+			#{newsContext},
+			#{newsType},
+			#{isTop},
+			#{belongTo},
+			#{createBy},
+			now(),
+			#{startDate},
+			#{endDate},
+			#{topDate},
+			#{enableFlag}
+		)
+	</insert>
+	<update id="updateNews">
+		update gw_sys_news set
+			newsTitle=#{newsTitle},
+			newsContext=#{newsContext},
+			newsType=#{newsType},
+			isTop=#{isTop},
+			belongTo=#{belongTo},
+			lastModify=#{lastModify},
+			lastModifyDate=now(),
+			startDate=#{startDate},
+			endDate=#{endDate},
+			topDate=#{topDate},
+			enableFlag=#{enableFlag}
+		where 
+			id=#{id}
+			
+	</update>
+	<delete id="deleteNews">
+		delete from gw_sys_news where id=#{id}
+	</delete>
+</mapper>
+

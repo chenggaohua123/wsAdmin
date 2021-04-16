@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="com.gateway.refund.mapper.TransInfoLogMapper">
+
+	<sql id="Where_Clause_trans_Info">
+		<if test="condition.tradeNo != null and condition.tradeNo !=''">
+			and t.tradeNo = #{condition.tradeNo}
+		</if>
+		<if
+			test="condition.orderNo != null and condition.orderNo !=''">
+			and t.orderNo = #{condition.orderNo}
+		</if>
+		<if
+			test="condition.merNo != null and condition.merNo !=''">
+			and t.merNo = #{condition.merNo}
+		</if>
+		<if test="condition.transDateStart != null and condition.transDateStart != ''">
+	     and t.transDate >= '${condition.transDateStart} 00:00:00'
+	    </if>
+	    <if test="condition.transDateEnd != null and condition.transDateEnd != ''">
+	      and t.transDate &lt;='${condition.transDateEnd} 23:59:59'
+	    </if>
+	      <if test="condition.transDateLogStart != null and condition.transDateLogStart != ''">
+	     and a.createDate >= '${condition.transDateLogStart} 00:00:00'
+	    </if>
+	    <if test="condition.transDateLogEnd != null and condition.transDateLogEnd != ''">
+	      and a.createDate &lt;='${condition.transDateLogEnd} 23:59:59'
+	    </if>
+		<if test="condition.isDishonor != null and condition.isDishonor !=''">
+			and t.isDishonor = #{condition.isDishonor}
+		</if>
+		<if test="condition.isFrozen != null and condition.isFrozen !=''">
+			and t.isFrozen = #{condition.isFrozen}
+		</if>
+		<if test="condition.isThaw != null and condition.isThaw !=''">
+			and t.isThaw = #{condition.isThaw}
+		</if>
+		<if test="condition.gateway != null and condition.gateway !=''">
+			and c.currencyName like CONCAT(CONCAT('%', '${condition.currencyName}'),'%')
+		</if>
+		<if test="condition.isRefund != null and condition.isRefund !=''">
+			and t.isRefund = #{condition.isRefund}
+		</if>
+	</sql>
+	
+	<select id="queryToTransInfo" resultType="com.gateway.refund.model.TransInfoLog">
+		SELECT 
+			t.merNo, 
+			t.tradeNo, 
+			t.orderNo, 
+			t.transDate, 
+			t.merBusCurrency, 
+			t.merTransAmount, 
+			t.isRefund, 
+			t.isDishonor, 
+			t.isFrozen, 
+			t.isThaw, 
+			sum(case when a.status=2 and a.transType='refund' then a.transMoney else 0 end) refundAmount,
+			sum(case when a.status=2 and a.transType='dishonor' then a.transMoney else 0 end) dishonorAmount,
+			sum(case when a.status=2 and a.transType='frozen' then a.transMoney else 0 end) frozenAmount,
+			sum(case when a.status=2 and a.transType='thaw' then a.transMoney else 0 end) thawAmount,
+			c.currencyName 
+		from gw_trans_info t 
+		left join gw_currency_info c on t.currencyId=c.id 
+		left join gw_trans_info_log a on t.tradeNo=a.tradeNo
+		where 
+		t.transType='sales' 
+		and t.ischecked=1 
+		and t.respCode='00'
+		<include refid="Where_Clause_trans_Info"/>
+		group by t.tradeNo
+		ORDER BY t.id DESC
+	</select>
+	
+	<select id="countTransInfo" resultType="int">
+		select count(*) from   (SELECT 
+			t.merNo
+		from gw_trans_info t 
+		left join gw_currency_info c on t.currencyId=c.id 
+		left join gw_trans_info_log a on t.tradeNo=a.tradeNo
+		where 
+		t.transType='sales' 
+		and t.ischecked=1 
+		and t.respCode='00'
+		<include refid="Where_Clause_trans_Info"/>
+		group by t.tradeNo ) q
+	</select>
+	
+	<insert id="insertTransInfoLog" parameterType="com.gateway.refund.model.TransInfoLog">
+		INSERT INTO gw_trans_info_log (
+			tradeNo,
+			createDate,
+			createBy,
+			transType,
+			tradeNewNo,
+			transMoney,
+			status,
+			transCurrency,
+			remark,
+			reType,
+			transReason
+			)
+			VALUES(
+			#{tradeNo},
+			SYSDATE(),
+			#{createBy},
+			#{transType},
+			#{tradeNewNo},
+			#{transMoney},
+			0,
+			#{transCurrency},
+			#{remark},
+			#{reType},
+			#{transReason}
+		)
+	</insert>
+	
+	<update id="updateTransInfoLog" parameterType="com.gateway.refund.model.TransInfoLog">
+		update gw_trans_info_log 
+			set
+			tradeNewNo = #{tradeNewNo},
+			status = #{status},
+			checkBy = #{checkBy},
+			checkDate = SYSDATE(),
+			transMoney = #{transMoney},
+			remark = #{remark}
+				where id=#{id}
+	</update>
+	
+	<select id="queryTransInfoLog" parameterType="com.gateway.refund.model.TransInfoLog" resultType="com.gateway.refund.model.TransInfoLog">
+		select * from gw_trans_info_log where 1=1 
+				and tradeNo=#{transInfoLog.tradeNo} 
+			<if test="transInfoLog.id !=null and transInfoLog.id !=0">
+				and id=#{transInfoLog.id}
+			</if>
+			<if test="transInfoLog.status!=null">
+				and status = #{transInfoLog.status}
+			</if>
+			<if test="transInfoLog.transType!=null">
+				and transType = #{transInfoLog.transType}
+			</if>
+		ORDER BY createDate DESC Limit 1
+	</select>
+	
+	<select id="queryTransInfoLogId" parameterType="int" resultType="com.gateway.refund.model.TransInfoLog">
+		select * from gw_trans_info_log where 1=1 and id=#{id}
+	</select>
+	
+	<select id="queryTransInfoLogList" parameterType="string" resultType="com.gateway.refund.model.TransInfoLog">
+		select * from gw_trans_info_log where 
+		tradeNo=#{tradeNo} 
+		and reType = 1
+		ORDER BY createDate DESC
+	</select>
+	
+	<update id="updateTransInfoChange" parameterType="com.gateway.refund.model.TransInfoLog">
+		update gw_trans_info set 
+		<if test="transType == 'dishonor'">
+			isDishonor = #{status},
+			transDishonor = '1'
+		</if>
+		<if test="transType == 'frozen'">
+			isFrozen = #{status},
+			transFrozen = '1'
+		</if>
+		<if test="transType == 'thaw'">
+			isThaw = #{status},
+			transThaw = '1'
+		</if>
+		<if test="transType == 'refund'">
+			isRefund = #{status},
+			transRefund = '1'
+		</if>
+			where tradeNo=#{tradeNo}
+	</update>
+	
+	<select id="countTransMoney" resultType="com.gateway.refund.model.CountTransMoney">
+		SELECT COALESCE((SELECT merTransAmount FROM gw_trans_info WHERE tradeNo=#{tradeNo}),0) transMoney, COALESCE(SUM(transMoney),0) dishonorMoney,COALESCE((
+				SELECT SUM(transMoney) FROM gw_trans_info_log WHERE tradeNo=#{tradeNo} AND STATUS NOT IN (1,3) AND transType='thaw'
+			),0) thawMoney,
+			COALESCE((
+				SELECT SUM(transMoney) FROM gw_trans_info_log WHERE tradeNo=#{tradeNo} AND STATUS NOT IN (1,3) AND transType='frozen'
+			),0) frozenMoney,
+			COALESCE((
+				SELECT SUM(transMoney) FROM gw_trans_info_log WHERE tradeNo=#{tradeNo} AND STATUS NOT IN (1,3) AND transType='refund'
+			),0) refundMoney
+			 FROM gw_trans_info_log WHERE tradeNo=#{tradeNo} AND STATUS NOT IN (1,3) AND transType='dishonor'
+	</select>
+	
+	<sql id="Where_Clause_trans_info_log">
+	<where>
+		<if test="condition.tradeNo != null and condition.tradeNo !=''">
+			and l.tradeNo = #{condition.tradeNo}
+		</if>
+		<if
+			test="condition.orderNo != null and condition.orderNo !=''">
+			and i.orderNo = #{condition.orderNo}
+		</if>
+		<if
+			test="condition.merNo != null and condition.merNo !=''">
+			and i.merNo = #{condition.merNo}
+		</if>
+		<if test="condition.startDate != null and condition.startDate != ''">
+	     and l.createDate >= '${condition.startDate} 00:00:00'
+	    </if>
+	    <if test="condition.endDate != null and condition.endDate != ''">
+	      and l.createDate &lt;='${condition.endDate} 23:59:59'
+	    </if>
+	  <if test="condition.transDateLogStart != null and condition.transDateLogStart != ''">
+	     and l.checkDate >= '${condition.transDateLogStart} 00:00:00'
+	    </if>
+	    <if test="condition.transDateLogEnd != null and condition.transDateLogEnd != ''">
+	      and l.checkDate &lt;='${condition.transDateLogEnd} 23:59:59'
+	    </if>
+		<if test="condition.transType != null and condition.transType !=''">
+			and l.transType = #{condition.transType}
+		</if>
+		<if test="condition.status != null and condition.status !=''">
+			and l.status = #{condition.status}
+		</if>
+		</where>
+	</sql>
+	
+	<select id="selectTransInfoLogList" resultType="com.gateway.refund.model.TransInfoLog">
+		SELECT 
+		l.id,
+		l.tradeNo,
+		l.createDate,
+		l.createBy,
+		l.transType,
+		l.checkBy,
+		l.checkDate,
+		l.tradeNewNo,
+		l.transMoney,
+		l.transCurrency,
+		l.transReason,
+		l.status,
+		l.remark,
+		l.refundStatus,
+		i.orderNo,
+		i.merBusCurrency,
+		i.merTransAmount,
+		i.transDate,
+		i.bankCurrency,
+		i.bankTransAmount,
+		i.merNo from gw_trans_info_log l 
+		inner join gw_trans_info i on i.tradeNo=l.tradeNo
+		<include refid="Where_Clause_trans_info_log"/>
+			order by l.createDate DESC
+	</select>
+	
+	<select id="countTransInfoLogList" resultType="int">
+		SELECT 
+		count(*) from gw_trans_info_log l 
+		inner join gw_trans_info i on i.tradeNo=l.tradeNo
+		<include refid="Where_Clause_trans_info_log"/>
+	</select>
+	
+	<select id="exportTransLogList" resultType="com.gateway.transmgr.model.TransInfo">
+		select 
+			l.tradeNo tradeNo,
+			i.merNo merNo,
+			i.checkNo checkNo,
+			i.last last,
+			i.merBusCurrency merBusCurrency,
+			i.merTransAmount merTransAmount,
+			i.bankCurrency bankCurrency,
+			i.bankTransAmount bankTransAmount,
+			l.transType transLogType,
+			i.cardType cardType,
+			i.batchNo batchNo,
+			i.transDate transDate,
+			i.orderNo orderNo,
+			i.payWebSite payWebSite,
+			b.bankName bankName,
+			o.cardCountry cardCountry,
+			o.cardAddress cardAddress,
+			o.cardFullName cardFullName,
+			o.cardFullPhone cardFullPhone,
+			o.cardEmail cardEmail,
+			o.grCountry grCountry,
+			o.grAddress grAddress,
+			o.grZipCode grZipCode,
+			l.transCurrency transCurrency,
+			l.transMoney transMoney,
+			l.status status,
+			i.ischecked ischecked,
+			l.refundStatus
+			from gw_trans_info_log l
+		inner join gw_trans_info i on i.tradeNo=l.tradeNo
+		left join gw_trans_order_info o on o.tradeNo=i.tradeNo
+		left join gw_currency_info c on c.id=i.currencyId
+		left join gw_bank_info b  on b.id=c.bankId
+		<include refid="Where_Clause_trans_info_log"/>
+		GROUP BY l.id desc
+	</select>
+	
+	<select id="exportTradeNoTransLogList" resultType="com.gateway.transmgr.model.TransInfo">
+		select 
+			l.tradeNo tradeNo,
+			i.merNo merNo,
+			i.checkNo checkNo,
+			i.last last,
+			i.merBusCurrency merBusCurrency,
+			i.merTransAmount merTransAmount,
+			i.bankCurrency bankCurrency,
+			i.bankTransAmount bankTransAmount,
+			l.transType transLogType,
+			i.cardType cardType,
+			i.batchNo batchNo,
+			i.transDate transDate,
+			i.orderNo orderNo,
+			i.payWebSite payWebSite,
+			b.bankName bankName,
+			o.cardCountry cardCountry,
+			o.cardAddress cardAddress,
+			o.cardFullName cardFullName,
+			o.cardFullPhone cardFullPhone,
+			o.cardEmail cardEmail,
+			o.grCountry grCountry,
+			o.grAddress grAddress,
+			o.grZipCode grZipCode,
+			l.transCurrency transCurrency,
+			l.transMoney transMoney,
+			l.status status,
+			i.ischecked ischecked
+			from gw_trans_info_log l
+		inner join gw_trans_info i on i.tradeNo=l.tradeNo
+		left join gw_trans_order_info o on o.tradeNo=i.tradeNo
+		left join gw_currency_info c on c.id=i.currencyId
+		left join gw_bank_info b  on b.id=c.bankId
+		where i.tradeNo=#{tradeNo}
+		and l.transType='dishonor'
+		GROUP BY l.id desc
+	</select>
+</mapper>
+

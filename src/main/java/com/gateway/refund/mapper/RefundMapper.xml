@@ -1,0 +1,365 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="com.gateway.refund.mapper.RefundMapper">
+	<sql id="Where_Clause_Refund_Info">
+		<where>
+			and a.reType = 0
+			<if test="condition.tradeNo != null and condition.tradeNo !=''">
+				and a.tradeNo = #{condition.tradeNo}
+			</if>
+			<if
+				test="condition.merNo != null and condition.merNo !=''">
+				and a.merNo = #{condition.merNo}
+			</if>
+			<if
+				test="condition.terNo != null and condition.terNo !=''">
+				and a.terNo = #{condition.terNo}
+			</if>
+			<if test="condition.status != null and condition.status !=''">
+				and a.status = #{condition.status}
+			</if>
+			<if test="condition.applyDateStart != null and condition.applyDateStart != ''">
+		     and a.applyDate >= '${condition.applyDateStart} 00:00:00'
+		    </if>
+		    <if test="condition.applyDateEnd != null and condition.applyDateEnd != ''">
+		      and a.applyDate &lt;='${condition.applyDateEnd} 23:59:59'
+		    </if>	
+			<if test="condition.refundDateStart != null and condition.refundDateStart != ''">
+		     and a.refundDate >= '${condition.refundDateStart} 00:00:00'
+		    </if>
+		    <if test="condition.refundDateEnd != null and condition.refundDateEnd != ''">
+		      and a.refundDate &lt;='${condition.refundDateEnd} 23:59:59'
+		    </if>
+		    <if test="condition.orderNo != null and condition.orderNo != ''">
+		      and b.orderNo  = #{condition.orderNo}
+		    </if>
+		    <if test="condition.isChecked != null  and condition.isChecked!= ''">
+		    	and b.isChecked=#{condition.isChecked}
+		    </if>
+		</where>
+	</sql>
+	<select id="queryRefundInfo" resultType="com.gateway.refund.model.RefundInfo">
+		select
+			a.*,b.merBusCurrency as busCurrency,b.merTransAmount as busAmount,
+			b.orderNo orderNo,b.bankCurrency,b.bankTransAmount,
+			c.currencyName,
+			b.autoCode,
+			b.checkNo,
+			b.middle,
+			b.last,
+			b.isChecked
+		from
+			gw_refund_info a left join gw_trans_info b on a.tradeNo=b.tradeNo
+			left join gw_currency_info  c on b.currencyId=c.id
+			left join gw_trans_info d on a.tradeNewNo=d.tradeNo
+			<include refid="Where_Clause_Refund_Info"/>
+			group by id DESC 
+	</select>
+	<select id="countRefundInfo" resultType="int">
+		select
+			count(*)
+		from
+			gw_refund_info a left join gw_trans_info b on a.tradeNo=b.tradeNo
+			<include refid="Where_Clause_Refund_Info"/>
+	</select>
+	
+	<select id="queryRefundInfoById" resultType="com.gateway.refund.model.RefundInfo">
+		select
+			a.*,b.merBusCurrency as busCurrency,b.merTransAmount as busAmount
+			,b.isRefund,b.isFrozen,b.transFrozen,b.isDishonor,transDishonor
+		from
+			gw_refund_info a left join gw_trans_info b on a.tradeNo=b.tradeNo
+		where a.id=#{id}
+	</select>
+	
+	<select id="getMerchantShaKeyByTradeNo" resultType="string">
+		select configValue
+		from 
+			gw_trans_info a left join gw_currency_info b on a.currencyId=b.id 
+			left join gw_bank_config_info c on b.bankId=c.bankId
+		where 
+			a.tradeNo=#{tradeNo} and c.configName='shaKey'
+	</select>
+	
+	
+	<update id="updateRefundInfoById">
+		update 
+			gw_refund_info
+		set 
+			status=#{info.status},
+			auditor=#{info.auditor},
+			remark=#{info.remark},
+			refundDate=now(),
+			tradeNewNo=#{info.tradeNewNo}
+		where 
+			id=#{info.id}
+	</update>
+	
+	<!-- 根据id更新退款异步通知状态 -->
+	<update id="updateRefundNotifyStatusById">
+		update 
+			gw_refund_info
+		set 
+			refundNotifyStatus=#{info.refundNotifyStatus}
+		where 
+			id=#{info.id}
+	</update>
+	
+	<insert id="insertRefundInfo" parameterType="com.gateway.refund.model.RefundInfo">
+		insert INTO gw_refund_info(
+			tradeNo,
+			merNo,
+			terNo,
+			refundCurrency,
+			refundAmount,
+			refundReason,
+			applyBy,
+			applyDate,
+			status,
+			transLogId,
+			reType,
+			remark
+		)value(
+			#{info.tradeNo},
+			#{info.merNo},
+			#{info.terNo},
+			#{info.refundCurrency},
+			#{info.refundAmount},
+			#{info.refundReason},
+			#{info.applyBy},
+			SYSDATE(),
+			#{info.status},
+			#{info.transLogId},
+			#{info.reType},
+			#{info.remark}
+		)
+	</insert>
+	
+	<select id="qeuryTrasnInfo" resultType="com.gateway.transmgr.model.TransInfo">
+		select * from gw_trans_info where tradeNo = #{tradeNo} and transType='sales'
+	</select>
+	
+	<select id="countTransMoney" resultType="com.gateway.refund.model.CountTransMoney">
+		select COALESCE((SELECT merTransAmount from gw_trans_info where tradeNo=#{tradeNo}),0) transMoney, COALESCE(SUM(transMoney),0) dishonorMoney,COALESCE((
+				select SUM(transMoney) from gw_trans_info_log where tradeNo=#{tradeNo} and status != 1 and transType='thaw'
+			),0) thawMoney,
+			COALESCE((
+				select SUM(transMoney) from gw_trans_info_log where tradeNo=#{tradeNo} and status != 1 and transType='frozen'
+			),0) frozenMoney,
+			COALESCE((
+				select SUM(refundAmount) from gw_refund_info where tradeNo=#{tradeNo} and status != 1
+			),0) refundMoney
+			 from gw_trans_info_log where tradeNo=#{tradeNo} and status != 1 and transType='dishonor'
+	</select>
+	
+	<insert id="addRefundTransInfoLog" parameterType="com.gateway.refund.model.RefundInfo">
+		INSERT INTO gw_trans_info_log (
+			tradeNo,
+			createDate,
+			createBy,
+			transType,
+			transMoney,
+			status,
+			transCurrency,
+			remark,
+			transReason
+		)
+		VALUES(
+			#{tradeNo},
+			SYSDATE(),
+			#{applyBy},
+			'refund',
+			#{refundAmount},
+			3,
+			#{refundCurrency},
+			#{remark},
+			#{refundReason}
+		)
+	</insert>
+	
+	<select id="selectTransInfoLog" resultType="int">
+		select max(id) from gw_trans_info_log
+	</select>
+	
+	<insert id="addRefundInfo" parameterType="com.gateway.refund.model.RefundInfo">
+		insert into gw_refund_info(
+			tradeNo,
+			terNo,
+			merNo,
+			refundCurrency,
+			refundAmount,
+			refundReason,
+			applyBy,
+			applyDate,
+			transLogId,
+			reType,
+			status
+		)value(
+			#{tradeNo},
+			#{terNo},
+			#{merNo},
+			#{refundCurrency},
+			#{refundAmount},
+			#{refundReason},
+			#{applyBy},
+			SYSDATE(),
+			#{transLogId},
+			#{reType},
+			0
+		)
+	</insert>
+	<update id="updateTransLogInfoById">
+		update gw_trans_info_log set refundStatus=#{refundStatus} where id=#{id}
+	</update>
+	<select id="queryExceptionFeeInfoByTradeNo" resultType="com.gateway.refund.model.ExceptionFee">
+		SELECT 
+		IFNULL((SELECT amount FROM gw_exception_settle_type 
+		WHERE 
+						(merNo =(select merNo from gw_trans_info where tradeNo=#{tradeNo}) OR merNo=0) 
+				AND (terNo=(select terNo from gw_trans_info where tradeNo=#{tradeNo}) OR terNo=0)
+				AND (cardType=(select cardType from gw_trans_info where tradeNo=#{tradeNo}) OR cardType='' OR cardType IS NULL)
+				AND (bankId=(SELECT bankId FROM gw_currency_info WHERE id=(select currencyId from gw_trans_info where tradeNo=#{tradeNo}) ) OR bankId=0)
+						AND gatherType=1  AND enabled=1
+						ORDER BY merNo DESC ,bankId DESC,cardType DESC LIMIT 1 ),0) AS disFee,
+		IFNULL((SELECT amount FROM gw_exception_settle_type 
+		WHERE 
+						(merNo =(select merNo from gw_trans_info where tradeNo=#{tradeNo}) OR merNo=0) 
+				AND (terNo=(select terNo from gw_trans_info where tradeNo=#{tradeNo}) OR terNo=0)
+				AND (cardType=(select cardType from gw_trans_info where tradeNo=#{tradeNo}) OR cardType='' OR cardType IS NULL)
+				AND (bankId=(SELECT bankId FROM gw_currency_info WHERE id=(select currencyId from gw_trans_info where tradeNo=#{tradeNo}) ) OR bankId=0)
+						AND gatherType=2  AND enabled=1
+						ORDER BY merNo DESC ,bankId DESC,cardType DESC LIMIT 1 ),0)  AS disFine,
+		IFNULL((SELECT amount FROM gw_exception_settle_type 
+		WHERE 
+						(merNo =(select merNo from gw_trans_info where tradeNo=#{tradeNo}) OR merNo=0) 
+				AND (terNo=(select terNo from gw_trans_info where tradeNo=#{tradeNo}) OR terNo=0)
+				AND (cardType=(select cardType from gw_trans_info where tradeNo=#{tradeNo}) OR cardType='' OR cardType IS NULL)
+				AND (bankId=(SELECT bankId FROM gw_currency_info WHERE id=(select currencyId from gw_trans_info where tradeNo=#{tradeNo}) ) OR bankId=0)
+						AND gatherType=3  AND enabled=1
+						ORDER BY merNo DESC ,bankId DESC,cardType DESC LIMIT 1 ),0)  AS refundFee,
+		IFNULL((SELECT refundHour FROM gw_exception_settle_type 
+		WHERE 
+						(merNo =(select merNo from gw_trans_info where tradeNo=#{tradeNo}) OR merNo=0) 
+				AND (terNo=(select terNo from gw_trans_info where tradeNo=#{tradeNo}) OR terNo=0)
+				AND (cardType=(select cardType from gw_trans_info where tradeNo=#{tradeNo}) OR cardType='' OR cardType IS NULL)
+				AND (bankId=(SELECT bankId FROM gw_currency_info WHERE id=(select currencyId from gw_trans_info where tradeNo=#{tradeNo}) ) OR bankId=0)
+						AND gatherType=4  AND enabled=1
+						ORDER BY merNo DESC ,bankId DESC,cardType DESC LIMIT 1 ),0)  AS transRefundFeeStatus,
+		IFNULL((SELECT amount FROM gw_exception_settle_type 
+		WHERE 
+						(merNo =(select merNo from gw_trans_info where tradeNo=#{tradeNo}) OR merNo=0) 
+				AND (terNo=(select terNo from gw_trans_info where tradeNo=#{tradeNo}) OR terNo=0)
+				AND (cardType=(select cardType from gw_trans_info where tradeNo=#{tradeNo}) OR cardType='' OR cardType IS NULL)
+				AND (bankId=(SELECT bankId FROM gw_currency_info WHERE id=(select currencyId from gw_trans_info where tradeNo=#{tradeNo}) ) OR bankId=0)
+						AND gatherType=5  AND enabled=1
+						ORDER BY merNo DESC ,bankId DESC,cardType DESC LIMIT 1 ),0)  AS transFailFee	
+		
+	</select>
+	<update id="updateTransInfoByLogId">
+		update gw_trans_info 
+		set 
+			bankrefNo=#{info.refNo},
+			bankTransDate=#{info.tradeDate},
+			bankTransTime=#{infp.tradeTime},
+			autoCode=#{info.autoCode},
+			bankPosNo=#{info.bankOrderNo},
+			bankBatchNo=#{info.invoiceNo}
+		where
+			tradeNo=(
+				select tradeNewNo from gw_trans_info_log where id=#{id}
+			) 
+	</update>
+	<sql id="Where_Clause_Bank_Refund_info">
+		<where>
+			<if test="condition.tradeNo != null and condition.tradeNo != ''">
+				and a.tradeNo=#{condition.tradeNo}
+			</if>
+			<if test="condition.dateStart != null and condition.dateStart != ''">
+		    	and a.refundDate >= '${condition.dateStart} 00:00:00'
+		    </if>
+		    <if test="condition.dateEnd != null and condition.dateEnd != ''">
+		  	    and a.refundDate &lt;='${condition.dateEnd} 23:59:59'
+		    </if>	
+		</where>
+	</sql>
+	<select id="countBankRefundInfo" resultType="int">
+		select count(*) from gw_bank_refund_info a left join gw_trans_info b
+		on a.tradeNo=b.tradeNo
+		<include refid="Where_Clause_Bank_Refund_info"/>
+	</select>
+	<select id="queryBankRefundInfo" resultType="com.gateway.refund.model.BankRefundInfo">
+		select 
+			a.*,
+			b.bankCurrency ,
+			b.bankTransAmount as bankAmount,
+			b.transDate
+		from gw_bank_refund_info a left join gw_trans_info b
+		on a.tradeNo=b.tradeNo
+		<include refid="Where_Clause_Bank_Refund_info"/>
+	</select>
+	<select id="queryTransInfoByTradeNo" resultType="int">
+		select count(*) from gw_trans_info where tradeNo=#{tradeNo}
+	</select>
+	<insert id="insertBankRefundInfo">
+		insert into gw_bank_refund_info (
+			tradeNo,
+			refundDate,
+			refundStatus,
+			refundMsg,
+			createBy,
+			refundAmount,
+			refundCurrency,
+			remark,
+			autoCode,
+			refNo,
+			tradeDate,
+			tradeTime,
+			invoiceNo,
+			bankOrderNo
+		)values(
+			#{tradeNo},
+			now(),
+			#{refundStatus},
+			#{refundMsg},
+			#{createBy},
+			#{refundAmount},
+			#{refundCurrency},
+			#{remark},
+			#{autoCode},
+			#{refNo},
+			#{tradeDate},
+			#{tradeTime},
+			#{invoiceNo},
+			#{bankOrderNo}
+		)
+	</insert>
+	<update id="updateBankRefundInfo">
+		update gw_bank_refund_info set
+			refundAmount=#{refundAmount},
+			refundCurrency=#{refundCurrency},
+			refundDate=now(),
+			refundMsg=#{refundMsg},
+			refundStatus=#{refundStatus},
+			remark=#{remark},
+			createBy=#{createBy},
+			autoCode=#{autoCode},
+			refNo=#{refNo},
+			tradeDate=#{tradeDate},
+			tradeTime=#{tradeTime},
+			invoiceNo=#{invoiceNo},
+			bankOrderNo=#{bankOrderNo}
+		where id=#{id}
+	</update>
+	<select id="queryBankRefundInfoById" resultType="com.gateway.refund.model.BankRefundInfo">
+		select 
+			a.*,
+			b.bankCurrency ,
+			b.bankTransAmount as bankAmount,
+			b.transDate
+		from gw_bank_refund_info a left join gw_trans_info b
+		on a.tradeNo=b.tradeNo
+		where a.id=#{id}
+	</select>
+</mapper>
+

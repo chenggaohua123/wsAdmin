@@ -1,0 +1,348 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="com.gateway.form.mapper.FormMgrDao">
+	<select id="queryMerchantReportForms" resultType="com.gateway.form.model.MerchantReportFormsInfo">
+		<choose>
+			<when test="condition.formType==1"><!-- 月报表   -->
+				select 
+				merNo,
+				#{condition.formType} as formType,
+				CONCAT(DATE_FORMAT(DATE_SUB(LAST_DAY(#{condition.formDate}),INTERVAL 1 month ),'%Y-%m-'),'01') as startDate,
+				DATE_ADD(#{condition.formDate}, INTERVAL - DAY(#{condition.formDate})  DAY) as endDate
+				from 
+				gw_trans_info 
+				where 
+				transDate>=CONCAT(DATE_FORMAT(DATE_SUB(LAST_DAY(#{condition.formDate}),INTERVAL 1 month ),'%Y-%m-'),'01')
+				and 
+				transDate&lt;=CONCAT(DATE_ADD(#{condition.formDate}, INTERVAL - DAY(#{condition.formDate})  DAY),' 23:59:59')
+				and 
+				transType='sales'
+				<if test="condition.merNo!=null and condition.merNo != '' ">
+					and merNo=#{condition.merNo}
+				</if>
+				<if test="condition.sellType != null and condition.sellType != '' ">
+					and merNo in (${condition.userRefMerNo})
+				</if>
+				group by merNo
+				order by sum(merNo) desc 
+			</when>
+			<when test="condition.formType==2"><!-- 周报表   -->
+				select 
+				merNo,
+				#{condition.formType} as formType,
+				DATE_SUB(#{condition.formDate},INTERVAL WEEKDAY(#{condition.formDate}) +7 DAY) as startDate,
+				DATE_SUB(#{condition.formDate},INTERVAL WEEKDAY(#{condition.formDate}) +1 DAY) as endDate
+				from 
+				gw_trans_info 
+				where 
+				transDate>=DATE_SUB(#{condition.formDate},INTERVAL WEEKDAY(#{condition.formDate}) +7 DAY)
+				and 
+				transDate&lt;=CONCAT(DATE_SUB(#{condition.formDate},INTERVAL WEEKDAY(#{condition.formDate}) +1 DAY),' 23:59:59')
+				and 
+				transType='sales'
+				<if test="condition.merNo!=null and condition.merNo != '' ">
+					and merNo=#{condition.merNo}
+				</if>
+				<if test="condition.sellType != null and condition.sellType != '' ">
+					and merNo in (${condition.userRefMerNo})
+				</if>
+				group by merNo
+				order by sum(merNo) desc 
+			</when>
+			<otherwise><!-- 日报表   -->
+					select 
+				merNo,
+				3 as formType,
+				DATE_FORMAT(DATE_SUB(#{condition.formDate},INTERVAL 1 DAY),'%Y-%m-%d') as startDate,
+				DATE_FORMAT(DATE_SUB(#{condition.formDate},INTERVAL 1 DAY),'%Y-%m-%d') as endDate
+				from 
+				gw_trans_info 
+				where 
+				transDate>=DATE_SUB(#{condition.formDate},INTERVAL 1 DAY)
+				and 
+				transDate&lt;=CONCAT(DATE_SUB(#{condition.formDate},INTERVAL 1 DAY),' 23:59:59')
+				and 
+				transType='sales'
+				<if test="condition.merNo!=null and condition.merNo != '' ">
+					and merNo=#{condition.merNo}
+				</if>
+				<if test="condition.sellType != null and condition.sellType != '' ">
+					and merNo in (${condition.userRefMerNo})
+				</if>
+				group by merNo
+				order by sum(merNo) desc 
+			</otherwise>
+		</choose>
+	</select>
+	<select id="countMerchantReportForms" resultType="int">
+		select count(*) from (
+			<choose>
+			<when test="condition.formType==1"><!-- 月报表   -->
+				select 
+				merNo,
+				#{condition.formType} as formType,
+				CONCAT(DATE_FORMAT(DATE_SUB(LAST_DAY(#{condition.formDate}),INTERVAL 1 month ),'%Y-%m-'),'01') as startDate,
+				DATE_SUB(LAST_DAY(#{condition.formDate}),INTERVAL 1 month ) as endDate
+				from 
+				gw_trans_info 
+				where 
+				transDate>=CONCAT(DATE_FORMAT(DATE_SUB(LAST_DAY(#{condition.formDate}),INTERVAL 1 month ),'%Y-%m-'),'01')
+				and 
+				transDate&lt;=CONCAT(DATE_ADD(#{condition.formDate}, INTERVAL - DAY(#{condition.formDate})  DAY),' 23:59:59')
+				and 
+				transType='sales'
+				<if test="condition.merNo!=null and condition.merNo != '' ">
+					and merNo=#{condition.merNo}
+				</if>
+				<if test="condition.sellType != null and condition.sellType != '' ">
+					and merNo in (${condition.userRefMerNo})
+				</if>
+				group by merNo
+				order by sum(merNo) desc 
+			</when>
+			<when test="condition.formType==2"><!-- 周报表   -->
+				select 
+				merNo,
+				#{condition.formType} as formType,
+				DATE_SUB(#{condition.formDate},INTERVAL WEEKDAY(#{condition.formDate}) +7 DAY) as startDate,
+				DATE_SUB(#{condition.formDate},INTERVAL WEEKDAY(#{condition.formDate}) +1 DAY) as endDate
+				from 
+				gw_trans_info 
+				where 
+				transDate>=DATE_SUB(#{condition.formDate},INTERVAL WEEKDAY(#{condition.formDate}) +7 DAY)
+				and 
+				transDate&lt;=CONCAT(DATE_SUB(#{condition.formDate},INTERVAL WEEKDAY(#{condition.formDate}) +1 DAY),' 23:59:59')
+				and 
+				transType='sales'
+				<if test="condition.merNo!=null and condition.merNo != '' ">
+					and merNo=#{condition.merNo}
+				</if>
+				<if test="condition.sellType != null and condition.sellType != '' ">
+					and merNo in (${condition.userRefMerNo})
+				</if>
+				group by merNo
+				order by sum(merNo) desc 
+			</when>
+			<otherwise><!-- 日报表   -->
+				select 
+				merNo,
+				3 as formType,
+				DATE_FORMAT(DATE_SUB(#{condition.formDate},INTERVAL 1 DAY),'%Y-%m-%d') as startDate,
+				DATE_FORMAT(DATE_SUB(#{condition.formDate},INTERVAL 1 DAY),'%Y-%m-%d') as endDate
+				from 
+				gw_trans_info 
+				where 
+				transDate>=DATE_SUB(#{condition.formDate},INTERVAL 1 DAY)
+				and 
+				transDate&lt;=CONCAT(DATE_SUB(#{condition.formDate},INTERVAL 1 DAY),' 23:59:59')
+				and 
+				transType='sales'
+				<if test="condition.merNo!=null and condition.merNo != '' ">
+					and merNo=#{condition.merNo}
+				</if>
+				<if test="condition.sellType != null and condition.sellType != '' ">
+					and merNo in (${condition.userRefMerNo})
+				</if>
+				group by merNo
+				order by sum(merNo) desc 
+			</otherwise>
+		</choose>
+		)as t
+	</select>
+	
+	<sql id="Where_Trans_Count">
+		<where>
+			<if test="condition.startDate != null and condition.startDate != '' ">
+				and a.enterTime >= '${condition.startDate} 00:00:00'
+			</if>
+			<if test="condition.endDate != null and condition.endDate != '' ">
+				and a.enterTime &lt;='${condition.endDate} 23:59:59'
+			</if>
+			and a.merNo in(select merNo from gw_merchant_info)
+			and a.terNo in(select terNo from gw_merchant_terno_info)
+			<if test="condition.merNo != null and condition.merNo != '' ">
+				and a.merNo = #{condition.merNo}
+			</if>
+			<if test="condition.cardType != null and condition.cardType != '' ">
+				and b.cardType =#{condition.cardType}
+			</if>
+			<if test="condition.terNo != null and condition.terNo != '' ">
+				and a.terNo = ${condition.terNo}
+			</if>
+			<if test="condition.type != null and condition.type != '' ">
+				and a.merNo in (select merNo from gw_merchant_info where type =#{condition.type})
+			</if>
+		</where>
+	</sql>
+	
+	<select id="queryCountAnalysisInfo" resultType="com.gateway.form.model.CountAnalysis">
+		select *,
+		 IFNULL(CONCAT(left((dishonorCount/transSuccessCount ) *100,5),'%'),'0.00%') dishonorRate,
+		IFNULL(CONCAT(left(( refundCount/transSuccessCount) *100,5),'%'),'0.00%') refundRate
+		 from(
+		SELECT 	 
+		COUNT(a.tradeNo) AS totalCount,
+		a.merNo,a.terNo terNo,
+		sum(case when b.tradeNo is not null then 1 else 0 end) transCount,
+		d.settleCurrency transCurrency,
+		SUM(IFNULL(b.bankTransAmount,0)) transAmount,
+		SUM(IFNULL(b.merSettleAmount,0)) merSettleAmount,
+		SUM(CASE b.respCode WHEN '00' THEN 1 ELSE 0 END) transSuccessCount,
+		SUM(CASE b.respCode WHEN '00' THEN b.bankTransAmount ELSE 0 END) transSuccessAmount,
+		SUM(CASE b.respCode WHEN '00' THEN b.merSettleAmount ELSE 0 END) merSettleSuccessAmount,
+		SUM(CASE b.respCode='01' and b.respMsg not LIKE '%high risk%' WHEN true THEN 1 ELSE 0 END)transFailureCount,
+		SUM(CASE WHEN b.respMsg LIKE '%high risk%' THEN 1 ELSE 0 END) transRiskCount,
+		SUM(CASE  when c.tradeNo is not null then 1 else 0 end) complaintCount,
+		sum(case  b.duplicateFlag when 1 then 1 else 0 end) duplicateCount,
+		IFNULL(CONCAT(left((SUM(CASE b.respCode WHEN '00' THEN 1 ELSE 0 END)/(SUM(CASE WHEN b.respMsg not LIKE '%high risk%' THEN 1 ELSE 0 END)-sum(case when  b.duplicateFlag = 1 and b.respCode !='00' then 1 else 0 end))) *100,5),'%'),'0.00%') successRate,
+		IFNULL(CONCAT(left((SUM(CASE  when c.tradeNo is not null then 1 else 0 end)/(SUM(CASE WHEN b.respCode = '00' THEN 1 ELSE 0 END))) *100,5),'%'),'0.00%') complaintRate
+		FROM 
+		gw_Trade_order_record a LEFT JOIN 
+		gw_trans_info 
+		b   ON a.tradeNo=b.tradeNo and b.transType ='sales'  
+		LEFT JOIN  gw_trans_complaint_info  c on c.tradeNo = b.tradeNo and c.type=2
+		left join gw_merchant_terno_info d on a.merNo=d.merNo and a.terNo=d.terNo
+		<include refid="Where_Trans_Count"/>
+		GROUP BY a.merNo,a.terNo,d.settleCurrency
+		order by a.merNo,a.terNo)as t
+		left join (
+		select p1.merNo,p1.terNo ,count(*) as dishonorCount  from
+		gw_trans_complaint_info p left join gw_trans_info p1 on p.tradeNo=p1.tradeNo
+		where 
+		p.type=1 and p.isMerchantSee=0 
+		<if test="condition.cardType != null and condition.cardType != '' ">
+				and p1.cardType =#{condition.cardType}
+		</if>
+		<if test="condition.startDate != null and condition.startDate != '' ">
+				and p.complaintDate >= '${condition.startDate} 00:00:00'
+		</if>
+		<if test="condition.endDate != null and condition.endDate != '' ">
+				and p.complaintDate &lt;='${condition.endDate} 23:59:59'
+		</if>
+		group by p1.merNo,p1.terNo
+		) as t1 on t.merNo=t1.merNo and t.terNo=t1.terNo
+		left join (
+		select p1.merNo,p1.terNo ,count(*) as refundCount  from gw_trans_info_log p left join gw_trans_info p1 on p.tradeNewNo=p1.tradeNo
+		where 
+		p.transType='refund' 
+		<if test="condition.cardType != null and condition.cardType != '' ">
+				and p1.cardType =#{condition.cardType}
+		</if>
+		<if test="condition.startDate != null and condition.startDate != '' ">
+				and p.checkDate >= '${condition.startDate} 00:00:00'
+		</if>
+		<if test="condition.endDate != null and condition.endDate != '' ">
+				and p.checkDate &lt;='${condition.endDate} 23:59:59'
+		</if>
+		and p.status=2 
+		group by p1.merNo,p1.terNo
+		) as t2 on t.merNo=t2.merNo and t.terNo=t2.terNo
+	</select>
+	
+	<select id="queryTransCountInfoForDay" resultType="com.gateway.form.model.CountAnalysis">
+		select 
+			merNo,
+			day(transDate) as day,
+			count(id) as transCount
+		FROM 
+		gw_trans_info 
+		<where>
+			and merNo=#{condition.merNo}
+			and transType='sales'
+			and respCode='00'
+			<if test="condition.startDate != null and condition.startDate != '' ">
+				and transDate >= '${condition.startDate} 00:00:00'
+			</if>
+			<if test="condition.endDate != null and condition.endDate != '' ">
+				and transDate &lt;='${condition.endDate} 23:59:59'
+			</if>
+		</where>
+		group by 
+			day(transDate)
+		
+	</select>
+	<select id="queryTransTimeCountInfo" resultType="com.gateway.form.model.TransTimeCountInfo">
+		select 
+			merNo,
+			HOUR(transDate) as hour,
+			count(id) as count
+		FROM 
+		gw_trans_info 
+		<where>
+			and merNo=#{condition.merNo}
+			and transType='sales'
+			and respCode='00'
+			<if test="condition.startDate != null and condition.startDate != '' ">
+				and transDate >= '${condition.startDate} 00:00:00'
+			</if>
+			<if test="condition.endDate != null and condition.endDate != '' ">
+				and transDate &lt;='${condition.endDate} 23:59:59'
+			</if>
+		</where>
+		group by 
+			hour(transDate)
+	</select>
+	<select id="queryTransAmountCountInfo" resultType="com.gateway.form.model.TransAmountCountInfo">
+		<choose>
+			<when test="condition.currency=='CNY'">
+				select 
+					#{condition.currency} as currency,
+					sum(case when merSettleAmount&lt;=200 then 1 else 0 end) as a1,
+					sum(case when merSettleAmount>200 and merSettleAmount&lt;=400 then 1 else 0 end) as a2,
+					sum(case when merSettleAmount&lt;=600 and merSettleAmount>400 then 1 else 0 end) as a3,
+					sum(case when merSettleAmount>600 and merSettleAmount&lt;=800 then 1 else 0 end) as a4,
+					sum(case when merSettleAmount&lt;=1000 and merSettleAmount>800 then 1 else 0 end) as a5,
+					sum(case when merSettleAmount&lt;=1500  and merSettleAmount>1000 then 1 else 0 end) as a6,
+					sum(case when merSettleAmount&lt;=2000  and merSettleAmount>1500 then 1 else 0 end) as a7,
+					sum(case when merSettleAmount&lt;=3000  and merSettleAmount>2000 then 1 else 0 end) as a8,
+					sum(case when merSettleAmount&lt;=4000  and merSettleAmount>3000 then 1 else 0 end) as a9,
+					sum(case when merSettleAmount&lt;=5000  and merSettleAmount>4000 then 1 else 0 end) as a10,
+					sum(case when merSettleAmount>=5000 then 1 else 0 end) as a11
+				FROM 
+				gw_trans_info 
+				<where>
+					and merNo=#{condition.merNo}
+					and transType='sales'
+					and respCode='00'
+					and merSettleCurrency=#{condition.currency}
+					<if test="condition.startDate != null and condition.startDate != '' ">
+						and transDate >= '${condition.startDate} 00:00:00'
+					</if>
+					<if test="condition.endDate != null and condition.endDate != '' ">
+						and transDate &lt;='${condition.endDate} 23:59:59'
+					</if>
+				</where>
+			</when>
+			<otherwise>
+				select 
+					#{condition.currency} as currency,
+					sum(case when merSettleAmount&lt;=20 then 1 else 0 end) as a1,
+					sum(case when merSettleAmount&lt;=40 and merSettleAmount>20  then 1 else 0 end) as a2,
+					sum(case when merSettleAmount&lt;=60 and merSettleAmount>40  then 1 else 0 end) as a3,
+					sum(case when merSettleAmount&lt;=80 and merSettleAmount>60  then 1 else 0 end) as a4,
+					sum(case when merSettleAmount&lt;=100 and merSettleAmount>80  then 1 else 0 end) as a5,
+					sum(case when merSettleAmount&lt;=150 and merSettleAmount>100  then 1 else 0 end) as a6,
+					sum(case when merSettleAmount&lt;=200 and merSettleAmount>150  then 1 else 0 end) as a7,
+					sum(case when merSettleAmount&lt;=300 and merSettleAmount>200  then 1 else 0 end) as a8,
+					sum(case when merSettleAmount&lt;=400 and merSettleAmount>300  then 1 else 0 end) as a9,
+					sum(case when merSettleAmount&lt;=500 and merSettleAmount>400  then 1 else 0 end) as a10,
+					sum(case when merSettleAmount>=500 then 1 else 0 end) as a11
+				FROM 
+				gw_trans_info 
+				<where>
+					and merNo=#{condition.merNo}
+					and transType='sales'
+					and respCode='00'
+					and merSettleCurrency=#{condition.currency}
+					<if test="condition.startDate != null and condition.startDate != '' ">
+						and transDate >= '${condition.startDate} 00:00:00'
+					</if>
+					<if test="condition.endDate != null and condition.endDate != '' ">
+						and transDate &lt;='${condition.endDate} 23:59:59'
+					</if>
+				</where>
+			</otherwise>
+		</choose>
+	</select>
+</mapper>

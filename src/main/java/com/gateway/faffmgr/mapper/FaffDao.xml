@@ -1,0 +1,1542 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="com.gateway.faffmgr.mapper.FaffDao">
+
+	<select id="queryCheckedTransInfo" resultType="com.gateway.faffmgr.model.TransCheckedInfo">
+		SELECT
+		a.tradeNo,
+		a.merNo,
+		a.terNo,
+		a.transDate,
+		a.bankCurrency,
+		a.bankTransAmount,
+		a.respCode,
+		a.ischecked,
+		a.access,
+		(SELECT currencyName FROM
+		gw_currency_info WHERE gw_currency_info.id=a.currencyId) AS
+		currencyName,
+		SUM(CASE WHEN b.transType='dishonor' THEN 1 ELSE 0 END)
+		AS isDis,
+		SUM(CASE WHEN b.transType='refund' THEN 1 ELSE 0 END) AS
+		isRefund,
+		SUM(CASE WHEN b.transType='dishonor' THEN
+		b.transMoney/a.merTransAmount*a.bankTransAmount ELSE 0 END) AS
+		disAmount,
+		SUM(CASE WHEN b.transType='refund' THEN
+		b.transMoney/a.merTransAmount*a.bankTransAmount ELSE 0 END) AS
+		refundAmount,
+		(SELECT checkDate FROM gw_trans_info_log WHERE
+		gw_trans_info_log.tradeNo=a.tradeNo AND transType='dishonor' AND
+		STATUS='2' ORDER BY checkDate DESC LIMIT 1) AS disDate,
+		(SELECT
+		checkDate FROM gw_trans_info_log WHERE
+		gw_trans_info_log.tradeNo=a.tradeNo AND transType='refund' AND
+		STATUS='2' ORDER BY checkDate DESC LIMIT 1) AS refundDate,
+		(SELECT
+		COUNT(*) FROM gw_check_trans_info WHERE
+		gw_check_trans_info.tradeNo=a.tradeNo AND settleType='sales') AS
+		isFaff,
+		(SELECT IFNULL(SUM(IFNULL(bankSettleAmount,0)),0) FROM
+		gw_check_trans_info WHERE gw_check_trans_info.tradeNo=a.tradeNo AND
+		settleType='sales') AS faffAmount
+		FROM gw_trans_info a
+		LEFT JOIN gw_trans_info_log b ON a.tradeNo=b.tradeNo AND b.status=2 AND
+		b.transType IN ('dishonor','refund')
+		where
+		a.tradeNo=#{tradeNo}
+		and
+		a.bankCurrency=#{bankSettleCurrency}
+		GROUP BY
+		a.id
+
+	</select>
+
+	<insert id="insertFaffUploadDateInfo">
+		insert into gw_check_trans_info(
+		tradeNo,
+		bankSettleAmount,
+		bankSettleCurrency,
+		bankFee,
+		settleDate,
+		settleType,
+		createDate,
+		createBy
+		)values(
+		#{tradeNo},
+		<choose>
+			<when test="settleType=='dis' or settleType=='refund'">
+				${bankSettleAmount}*-1,
+			</when>
+			<otherwise>
+				${bankSettleAmount},
+			</otherwise>
+		</choose>
+		#{bankSettleCurrency},
+		${bankFee}*-1,
+		#{settleDate},
+		#{settleType},
+		now(),
+		#{createBy}
+		)
+	</insert>
+
+	<!-- 对账数据查询 -->
+	<sql id="Where_Trans_Checked_info">
+	<where>
+	
+		<if
+			test="condition.transDateStart != null and condition.transDateEnd != '' ">
+			and a.transDate >='${condition.transDateStart} 00:00:00'
+		</if>
+		<if test="condition.transDateEnd != null and condition.transDateEnd != '' ">
+			and a.transDate &lt;='${condition.transDateEnd} 23:59:59'
+		</if>
+		<if
+			test="condition.transSettleStart != null and condition.transSettleEnd != '' ">
+			and e.settleDate >='${condition.transSettleStart} 00:00:00'
+		</if>
+		<if
+			test="condition.transSettleEnd != null and condition.transSettleEnd != '' ">
+			and e.settleDate &lt;='${condition.transSettleEnd} 23:59:59'
+		</if>
+		and a.transType='sales'
+		AND
+		a.respCode='00'
+		<if test="condition.merNo != null and condition.merNo != '' ">
+			and a.merNo=#{condition.merNo}
+		</if>
+		<if test="condition.terNo != null and condition.terNo != '' ">
+			and a.terNo=#{condition.terNo}
+		</if>
+		<if test="condition.tradeNo != null and condition.tradeNo != '' ">
+			and a.tradeNo=#{condition.tradeNo}
+		</if>
+		<if test="condition.isChecked != null and condition.isChecked != '' ">
+			and a.isChecked =#{condition.isChecked}
+		</if>
+		<if test="condition.access != null and condition.access != '' ">
+			and a.access =#{condition.access}
+		</if>
+		<if test="condition.transRefund != null and condition.transRefund != '' ">
+			and a.transRefund =#{condition.transRefund}
+		</if>
+		<if
+			test="condition.transRefundCheck != null and condition.transRefundCheck != '' ">
+			<choose>
+				<when test="condition.transRefundCheck == 0 ">
+					and (d.refundSettleAmount is null or d.refundSettleAmount = 0 ) 
+				</when>
+				<otherwise>
+					and d.refundSettleAmount !=0
+				</otherwise>
+			</choose>
+		</if>
+		<if
+			test="condition.transDishonor != null and condition.transDishonor != '' ">
+			and a.transDishonor =#{condition.transDishonor}
+		</if>
+		<if
+			test="condition.transDishonorCheck != null and condition.transDishonorCheck != '' ">
+			<choose>
+				<when test="condition.transDishonorCheck == 0 ">
+					and (d.disSettleAmount is null or d.disSettleAmount = 0 ) 
+				</when>
+				<otherwise>
+					and d.disSettleAmount !=0
+				</otherwise>
+			</choose>
+		</if>
+		<if test="condition.transCheck != null and condition.transCheck != '' ">
+			<choose>
+				<when test="condition.transCheck == 0 ">
+					and (d.salesSettleAmount is null or  d.salesSettleAmount=0)
+				</when>
+				<otherwise>
+					and d.salesSettleAmount !=0
+				</otherwise>
+			</choose>
+		</if>
+		<if test="condition.isSp != null and condition.isSp != '' ">
+			<choose>
+				<when test="condition.isSp==1">
+					and a.tradeNo in(
+					select tradeNo from gw_trans_complaint_info where type=1 and
+					isSp=#{condition.isSp}
+					)
+				</when>
+				<otherwise>
+					and a.tradeNo not in(
+					select tradeNo from gw_trans_complaint_info where type=1 and isSp=1
+					)
+				</otherwise>
+			</choose>
+
+		</if>
+		<if test="condition.isComp != null and condition.isComp != '' ">
+			<choose>
+				<when test="condition.isComp==1">
+					and a.tradeNo in(
+					select tradeNo from
+					gw_trans_complaint_info where type=1 and isComp=#{condition.isComp}
+					)
+				</when>
+				<otherwise>
+					and a.tradeNo not in(
+					select tradeNo from gw_trans_complaint_info where
+					type=1 and isComp=1
+					)
+				</otherwise>
+			</choose>
+
+		</if>
+		<if test="condition.currencyId != null and condition.currencyId != '' ">
+			and a.currencyId =#{condition.currencyId}
+		</if>
+		<if
+			test="condition.bankId != null and condition.bankId != '' and condition.bankId != 0 ">
+			and a.currencyId in(
+			select distinct id from gw_currency_info where bankId =#{condition.bankId}
+			)
+		</if>
+	</where>
+	</sql>
+	<sql id="WHERE_INCOME_CHECK_INFO">
+		<where>
+			<if test="condition.startIncomeDate != null and condition.startIncomeDate != ''">
+				<![CDATA[and str_to_date(#{condition.startIncomeDate}, '%Y-%m-%d %H:%i:%s')<=incomeDate]]>
+			</if>
+			<if test="condition.endIncomeDate!=null and condition.endIncomeDate!=''">
+				<![CDATA[and str_to_date(#{condition.endIncomeDate}, '%Y-%m-%d %H:%i:%s')>=incomeDate]]>
+			</if>
+			<if test="condition.startCreateDate!=null and condition.startCreateDate!=''">
+				<![CDATA[and str_to_date(#{condition.startCreateDate}, '%Y-%m-%d %H:%i:%s')<=createDate]]>
+			</if>
+			<if test="condition.endCreateDate!=null and condition.endCreateDate!=''">
+				<![CDATA[and str_to_date(#{condition.endCreateDate}, '%Y-%m-%d %H:%i:%s')>=createDate]]>
+			</if>
+			<if
+				test="condition.currencyId != null and condition.currencyId != ''">
+				and currencyId=#{condition.currencyId}
+			</if>
+			<if test="condition.incomeType != null and condition.incomeType != ''">
+				and type=#{condition.incomeType}
+			</if>
+			<if test="condition.createBy!=null and condition.createBy!=''">
+				and createBy=#{condition.createBy}
+			</if>
+		</where>
+	</sql>
+	<sql id="WHERE_INCOME_AMOUNT_INFO">
+	<where>
+		<if
+			test="condition.startIncomeDate != null and condition.startIncomeDate != ''">
+					<![CDATA[and str_to_date(#{condition.startIncomeDate}, '%Y-%m-%d %H:%i:%s')<=incomeDate]]>
+		</if>
+		<if test="condition.endIncomeDate!=null and condition.endIncomeDate!=''">
+					<![CDATA[and str_to_date(#{condition.endIncomeDate}, '%Y-%m-%d %H:%i:%s')>=incomeDate]]>
+		</if>
+		<if
+			test="condition.startCreateDate!=null and condition.startCreateDate!=''">
+					<![CDATA[and str_to_date(#{condition.startCreateDate}, '%Y-%m-%d %H:%i:%s')<=createDate]]>
+		</if>
+		<if test="condition.endCreateDate!=null and condition.endCreateDate!=''">
+					<![CDATA[and str_to_date(#{condition.endCreateDate}, '%Y-%m-%d %H:%i:%s')>=createDate]]>
+		</if>
+		<if
+			test="condition.incomeBankName != null and condition.incomeBankName != ''">
+			and bankName=#{condition.incomeBankName}
+		</if>
+		<if test="condition.incomeType != null and condition.incomeType != ''">
+			and type=#{condition.incomeType}
+		</if>
+		<if test="condition.createBy!=null and condition.createBy!=''">
+			and createBy=#{condition.createBy}
+		</if>
+	</where>
+</sql>
+	<select id="queryTransCheckedInfoList" resultType="com.gateway.faffmgr.model.TransCheckForQuery">
+		SELECT
+		a.merNo,
+		a.terNo,
+		a.tradeNo,
+		a.transDate,
+		c.bankName,
+		b.currencyName,
+		a.ischecked,
+		a.access,
+		a.respCode,
+		a.bankTransAmount,
+		a.bankCurrency,
+		d.bankSettleCurrency,
+		d.bondSettleAmount,
+		d.disSettleAmount,
+		d.salesSettleAmount,
+		d.salesSettleFee,
+		d.refundSettleAmount,
+		a.transRefund,
+		a.transDishonor,
+		IFNULL((SELECT
+		SUM(isComp) FROM gw_trans_complaint_info WHERE
+		gw_trans_complaint_info.tradeNo=a.tradeNo AND TYPE=1 ),0) AS isComp,
+		IFNULL((SELECT SUM(isSp) FROM gw_trans_complaint_info WHERE
+		gw_trans_complaint_info.tradeNo=a.tradeNo AND TYPE=1 ),0) AS isSp,
+		e.settleDate,
+		SUM(CASE WHEN f.transType='refund' THEN
+		f.transMoney*(a.bankTransAmount/a.merTransAmount) ELSE 0 END) AS
+		refundAmount,
+		SUM(CASE WHEN f.transType='dishonor' THEN
+		f.transMoney*(a.bankTransAmount/a.merTransAmount) ELSE 0 END) AS
+		disAmount,
+		f.checkDate as exceptionDate
+		FROM
+		gw_trans_info a LEFT JOIN gw_currency_info b ON a.currencyId=b.id
+		LEFT JOIN
+		gw_bank_info c ON b.bankId=c.id
+		LEFT JOIN check_trans_info_view d ON
+		a.tradeNo=d.tradeNo
+		LEFT JOIN gw_check_trans_info e ON
+		a.tradeNo=e.tradeNo AND e.settleType='sales'
+		LEFT JOIN
+		gw_trans_info_log f ON a.tradeNo=f.tradeNo AND f.status=2 AND
+		f.transType IN ('refund','dishonor')
+		
+		<include refid="Where_Trans_Checked_info" />
+		GROUP BY
+		a.id
+	</select>
+	<select id="queryTransCheckedCount" resultType="com.gateway.faffmgr.model.TransCheckedCount">
+		SELECT
+		bankCurrency as currency,
+		SUM(bankTransAmount) AS totalAmount,
+		SUM(salesSettleAmount) AS salesTotalAmount,
+		SUM(salesSettleFee) AS
+		salesTotalFee,
+		SUM(refundSettleAmount) refundSettleAmount,
+		SUM(disSettleAmount) disSettleAmount,
+		SUM(refundAmount)refundAmount,
+		SUM(disAmount)disAmount
+		FROM
+		(SELECT
+		a.bankTransAmount,
+		a.bankCurrency,
+		d.bankSettleCurrency,
+		d.bondSettleAmount,
+		d.disSettleAmount,
+		d.salesSettleAmount,
+		d.salesSettleFee,
+		d.refundSettleAmount,
+		a.transRefund,
+		a.transDishonor,
+		SUM(CASE WHEN
+		f.transType='refund' THEN
+		f.transMoney*(a.bankTransAmount/a.merTransAmount) ELSE 0 END) AS
+		refundAmount,
+		SUM(CASE WHEN f.transType='dishonor' THEN
+		f.transMoney*(a.bankTransAmount/a.merTransAmount) ELSE 0 END) AS
+		disAmount
+		FROM
+		gw_trans_info a LEFT JOIN gw_currency_info b ON a.currencyId=b.id
+		LEFT JOIN
+		gw_bank_info c ON b.bankId=c.id
+		LEFT JOIN check_trans_info_view d ON
+		a.tradeNo=d.tradeNo
+		LEFT JOIN gw_check_trans_info e ON
+		a.tradeNo=e.tradeNo AND e.settleType='sales'
+		LEFT JOIN
+		gw_trans_info_log f ON a.tradeNo=f.tradeNo AND f.status=2 AND
+		f.transType IN ('refund','dishonor')
+		<include refid="Where_Trans_Checked_info" />
+		GROUP BY a.id) AS t
+		GROUP BY bankCurrency
+	</select>
+	<select id="countTransCheckedInfoList" resultType="int">
+		select count(*) from (
+		SELECT
+		a.tradeNo
+		FROM
+		gw_trans_info a LEFT JOIN gw_currency_info b ON a.currencyId=b.id
+		LEFT JOIN
+		gw_bank_info c ON b.bankId=c.id
+		LEFT JOIN check_trans_info_view d ON
+		a.tradeNo=d.tradeNo
+		LEFT JOIN gw_check_trans_info e ON
+		a.tradeNo=e.tradeNo AND e.settleType='sales'
+		<include refid="Where_Trans_Checked_info" />
+		GROUP BY
+		a.id
+		)as t
+	</select>
+	<!-- 退款详情 -->
+	<select id="countRefundInfoByTradeNo" resultType="int">
+		SELECT
+		count(*)
+		FROM
+		gw_trans_info_log a LEFT JOIN gw_trans_info b
+		ON a.tradeNo=b.tradeNo
+		WHERE
+		a.tradeNo=#{condition.tradeNo}
+		and
+		a.transType=#{condition.transType}
+		AND
+		a.status=2
+	</select>
+	<select id="queryRefundInfoByTradeNo" resultType="com.gateway.faffmgr.model.RefundInfo">
+		SELECT
+		a.tradeNo,
+		b.merNo,
+		b.bankTransAmount,
+		b.bankCurrency AS
+		bankTransCurrency,
+		b.bankCurrency AS refundCurrency,
+		a.transMoney*(b.bankTransAmount/b.transAmount) AS refundAmount,
+		b.transDate,
+		a.checkDate AS refundDate,
+		a.checkBy AS operateBy
+		FROM
+		gw_trans_info_log a LEFT JOIN gw_trans_info b
+		ON a.tradeNo=b.tradeNo
+		WHERE
+		a.tradeNo=#{condition.tradeNo}
+		and
+		a.transType=#{condition.transType}
+		AND
+		a.status=2
+	</select>
+	<!-- 查询银行扣款详情 -->
+	<select id="querybankCutPaymentDescInfoByTradeNo" resultType="com.gateway.faffmgr.model.BankCutPaymentInfo">
+		SELECT
+		a.id,
+		b.merNo,
+		b.tradeNo,
+		b.bankCurrency,
+		b.bankTransAmount,
+		(
+		SELECT
+		SUM(a1.transMoney*(b1.bankTransAmount/b1.transAmount))
+		FROM
+		gw_trans_info_log a1 LEFT JOIN gw_trans_info b1
+		ON
+		a1.tradeNo=b1.tradeNo WHERE a1.tradeNo=a.tradeNo AND a1.status=2 AND
+		a1.transType='refund'
+		)AS refundAmount,
+		(
+		SELECT checkDate
+		FROM
+		gw_trans_info_log a1 LEFT JOIN gw_trans_info b1
+		ON
+		a1.tradeNo=b1.tradeNo WHERE a1.tradeNo=a.tradeNo AND a1.status=2 AND
+		a1.transType='refund' LIMIT 1
+		)AS refundDate,
+
+		(
+		SELECT SUM(a1.transMoney*(b1.bankTransAmount/b1.transAmount))
+		FROM
+		gw_trans_info_log a1 LEFT JOIN gw_trans_info b1
+		ON
+		a1.tradeNo=b1.tradeNo WHERE a1.tradeNo=a.tradeNo AND a1.status=2 AND
+		a1.transType='dishonor'
+		)AS disAmount,
+		(
+		SELECT checkDate
+		FROM
+		gw_trans_info_log a1 LEFT JOIN gw_trans_info b1
+		ON
+		a1.tradeNo=b1.tradeNo WHERE a1.tradeNo=a.tradeNo AND a1.status=2 AND
+		a1.transType='dishonor'
+		)AS disDate,
+		a.bankSettleAmount,
+		a.bankSettleCurrency,
+		a.settleDate,
+		a.createBy,
+		a.createDate,
+		b.transDate
+		FROM
+		gw_check_trans_info a LEFT JOIN gw_trans_info b ON a.tradeNo=b.tradeNo
+		where
+		a.tradeNo=#{condition.tradeNo}
+		and
+		a.settleType=#{condition.settleType}
+	</select>
+	<!-- 通过ID修改银行扣款金额 -->
+	<update id="updateBankCutAmount">
+		update gw_check_trans_info set
+		bankSettleAmount=#{amount}
+		where id=#{id}
+	</update>
+	<select id="queryIncomeInfoList" resultType="com.gateway.faffmgr.model.IncomeInfo">
+		SELECT
+		id,currencyId,
+		(select bankName from gw_bank_info where 
+		id=(select bankId from gw_currency_info where gw_currency_info.id=gw_income_info.currencyId)
+		)as bankName
+		,type,incomeDesc,currency,amount,incomeDate,remark,createBy,createDate,lastmodifyDate,lastModifyBy
+		FROM gw_income_info
+		<include refid="WHERE_INCOME_CHECK_INFO" />
+	</select>
+	<select id="queryIncomeInfoById" resultType="com.gateway.faffmgr.model.IncomeInfo">
+		SELECT
+		id,currencyId,
+		(select currencyName from gw_currency_info where gw_currency_info.id=gw_income_info.currencyId)
+		as currencyName
+		,type,incomeDesc,currency,amount,incomeDate,remark,createBy,createDate,lastmodifyDate,lastModifyBy
+		FROM gw_income_info
+		where id=#{id}
+	</select>
+	<update id="updateIncomeInfoById">
+		UPDATE gw_income_info set
+		currencyId=#{vo.currencyId},type=#{vo.type},incomeDesc=#{vo.incomeDesc},amount=#{vo.amount},currency=#{vo.currency},
+		incomeDate=#{vo.incomeDate},remark=#{vo.remark},lastmodifyDate=now(),lastModifyBy=#{vo.lastModifyBy}
+		where id=#{vo.id}
+	</update>
+	<insert id="saveIncomeInfo" useGeneratedKeys="true" keyProperty="vo.id">
+		INSERT into
+		gw_income_info(currencyId,type,incomeDesc,amount,currency,incomeDate,remark,createBy,createDate)
+		VALUES
+		(#{vo.currencyId},#{vo.type},#{vo.incomeDesc},#{vo.amount},#{vo.currency},#{vo.incomeDate},#{vo.remark},#{vo.createBy},now())
+	</insert>
+	<select id="queryIncomeInfoCount" resultType="java.lang.Integer">
+		SELECT count(*)
+		FROM gw_income_info
+		<include refid="WHERE_INCOME_CHECK_INFO" />
+	</select>
+	<select id="queryIncomeAmount" resultType="com.gateway.faffmgr.model.IncomeCapitalInfo">
+		SELECT currency,sum(amount) as incomeTotal,type
+		FROM gw_income_info
+		<include refid="WHERE_INCOME_AMOUNT_INFO" />
+		GROUP BY type,currency
+	</select>
+	<select id="RiskCapitalPoolInfoCount" resultType="int">
+	select count(*) from (
+	SELECT 
+	CONCAT(YEAR(moneyDate),'-',MONTH(moneyDate)) AS moneyDate,
+	currency,
+	SUM(CASE WHEN cashType IN (-15 ,-13 ,5 ,7) THEN amount ELSE 0 END)*-1 AS incomeAmount,
+	SUM(CASE WHEN cashType IN (6,8) THEN amount ELSE 0 END)*-1 AS outAmount,
+	SUM(CASE WHEN cashType IN (-15 ,-13 ,5 ,7) THEN amount ELSE 0 END)*-1-SUM(CASE WHEN cashType IN (6,8) THEN amount ELSE 0 END)*-1 AS totalAmount
+	FROM gw_merchant_account_access 
+	<include refid="Where_risk_capital_pool_info"/>
+	GROUP BY YEAR(moneyDate),MONTH(moneyDate),currency) as t 
+	</select>
+	<select id="RiskCapitalPoolInfo" resultType="com.gateway.faffmgr.model.RiskCapitalPoolInfo">
+		SELECT 
+		CONCAT(YEAR(moneyDate),'-',MONTH(moneyDate)) AS moneyDate,
+		currency,
+		SUM(CASE WHEN cashType IN (-15 ,-13 ,5 ,7) THEN amount ELSE 0 END)*-1 AS incomeAmount,
+		SUM(CASE WHEN cashType IN (6,8) THEN amount ELSE 0 END)*-1 AS outAmount,
+		SUM(CASE WHEN cashType IN (-15 ,-13 ,5 ,7) THEN amount ELSE 0 END)*-1-SUM(CASE WHEN cashType IN (6,8) THEN amount ELSE 0 END)*-1 AS totalAmount
+		FROM gw_merchant_account_access 
+		<include refid="Where_risk_capital_pool_info"/>
+		GROUP BY YEAR(moneyDate),MONTH(moneyDate),currency
+	
+	</select>
+	<select id="queryRiskCapitalPoolInfosTotal" resultType="com.gateway.faffmgr.model.RiskCapitalPoolInfo">
+		SELECT 
+		currency,
+		SUM(CASE WHEN cashType IN (-15 ,-13 ,5 ,7) THEN amount ELSE 0 END)*-1-SUM(CASE WHEN cashType IN (6,8) THEN amount ELSE 0 END)*-1 AS totalAmount
+		FROM gw_merchant_account_access 
+		<include refid="Where_risk_capital_pool_info"/>
+		GROUP BY currency
+	</select>
+	<sql id="Where_risk_capital_pool_info">
+	<where>
+		and cashType IN (-15 ,-13 ,5 ,7,6,8)
+		<if test="condition.year != null and condition.year != '' ">
+			and year(moneyDate)=#{condition.year}
+		</if>
+	</where>
+	</sql>
+	<select id="exportRiskCapitalPoolInfos" resultType="com.gateway.faffmgr.model.RiskCapitalPoolInfo">
+		SELECT 
+		#{condition.moneyDate} as moneyDate,
+		cashType,
+		(CASE WHEN cashType IN (-15 ,-13 ,5 ,7) THEN 0 ELSE 1 END) as type,
+		currency,
+		amount*-1 as amount,
+		moneyDate as incomeDate
+		FROM gw_merchant_account_access 
+		where 
+		 cashType IN (-15 ,-13 ,5 ,7,6,8)
+		 and 
+		 date_format(moneyDate,'%Y-%m')=#{condition.moneyDate}
+	</select>
+	<sql id="WHERE_BANKCOST_CHECK_INFO">
+		<where>
+			<if test="condition.startCreateDate!=null and condition.startCreateDate!=''">
+				<![CDATA[and a.createDate>=str_to_date(#{condition.startCreateDate}, '%Y-%m-%d %H:%i:%s')]]>
+			</if>
+			<if test="condition.endCreateDate!=null and condition.endCreateDate!=''">
+				<![CDATA[and a.createDate<= str_to_date(#{condition.endCreateDate}, '%Y-%m-%d %H:%i:%s')]]>
+			</if>
+			<if test="condition.costType!=null and condition.costType!=''">
+				and a.costType=#{condition.costType}
+			</if>
+			<if test="condition.createBy!=null and condition.createBy!=''">
+				and a.createBy=#{condition.createBy}
+			</if>
+			<if test="condition.currencyName!=null and condition.currencyName!=''">
+				and b.currencyName=#{condition.currencyName}
+			</if>
+			<if test="condition.bankName!=null and condition.bankName!='' and condition.bankName!='所有'">
+				and c.bankName=#{condition.bankName}
+			</if>
+			<if test="condition.type!=null and condition.type!=''">
+				and a.type=#{condition.type}
+			</if>
+		</where>
+	</sql>
+	<select id="queryBankCostInfoList" resultType="com.gateway.faffmgr.model.BankCostInfo">
+		SELECT a.merNo,a.terNo,a.id,a.costType,a.currencyId,a.type,a.count,a.currency,a.amount,a.remark,a.settleDate,a.createBy,a.createDate,a.lastModifyBy,a.lastModifyDate,b.currencyName,c.bankName
+		FROM gw_bank_cost_info a
+		LEFT JOIN gw_currency_info b ON b.id=a.currencyId
+		LEFT JOIN gw_bank_info c ON c.id=b.bankId
+		<include refid="WHERE_BANKCOST_CHECK_INFO"/>
+	</select>
+	<select id="queryBankCostInfoCount" resultType="java.lang.Integer">
+		SELECT count(*) FROM gw_bank_cost_info a
+		LEFT JOIN gw_currency_info b ON b.id=a.currencyId
+		LEFT JOIN gw_bank_info c ON c.id=b.bankId
+		<include refid="WHERE_BANKCOST_CHECK_INFO"/>
+	</select>
+	<select id="queryBankCostInfoById" resultType="com.gateway.faffmgr.model.BankCostInfo">
+		SELECT a.id,a.costType,a.currencyId,a.type,a.count,a.currency,a.amount,a.remark,a.settleDate,a.createBy,a.createDate,a.lastModifyBy,a.lastModifyDate,a.merNo,a.terNo,b.currencyName,c.bankName
+		FROM gw_bank_cost_info a
+		LEFT JOIN gw_currency_info b ON b.id=a.currencyId
+		LEFT JOIN gw_bank_info c ON c.id=b.bankId
+		WHERE a.id=#{id}
+	</select>
+	<insert id="saveBankCostInfo" useGeneratedKeys="true" keyProperty="vo.id">
+		INSERT INTO gw_bank_cost_info(
+			costType,
+			currencyId,
+			type,
+			count,
+			currency,
+			amount,
+			remark,
+			settleDate,
+			createBy,
+			createDate,
+			merNo,
+			terNo
+		)
+		VALUES
+		(
+			#{vo.costType},
+			#{vo.currencyId},
+			#{vo.type},
+			#{vo.count},
+			#{vo.currency},
+			#{vo.amount},
+			#{vo.remark},
+			#{vo.settleDate},
+			#{vo.createBy},
+			now(),
+			#{vo.merNo},
+			#{vo.terNo}
+		)
+	</insert>
+	<update id="updateBankCostInfoById">
+		UPDATE gw_bank_cost_info SET 
+			costType=#{vo.costType},
+			currencyId=#{vo.currencyId},
+			type=#{vo.type},
+			count=#{vo.count},
+			currency=#{vo.currency},
+			amount=#{vo.amount},
+			remark=#{vo.remark},
+			settleDate=#{vo.settleDate},
+			lastModifyBy=#{vo.lastModifyBy},
+			lastModifyDate=now(),
+			merNo=#{vo.merNo},
+			terNo=#{vo.terNo}
+		WHERE id=#{vo.id}
+	</update>
+	
+	<select id="queryCapitalFlowListCount" resultType="int">
+	select count(*) from (
+		SELECT 
+		cashDate
+		FROM 
+		(SELECT 
+		CONCAT(YEAR(settleDate),'-',MONTH(settleDate)) AS cashDate,
+		bankSettleCurrency AS currency,
+		SUM(CASE WHEN settleType='sales' THEN bankSettleAmount ELSE 0 END) AS incomeAmount,
+		SUM(CASE WHEN settleType IN ('dis','refund') THEN bankSettleAmount ELSE 0 END ) outAmount
+		FROM gw_check_trans_info
+		<where>
+			<if test="condition.year != null and condition.year != '' ">
+				and YEAR(settleDate)=#{condition.year}
+			</if>
+			<if test="condition.month != null and condition.month != '' ">
+				and MONTH(settleDate)=#{condition.month}
+			</if>
+		</where>
+		GROUP BY YEAR(settleDate),MONTH(settleDate),bankSettleCurrency
+		
+		UNION ALL 
+		SELECT 
+		CONCAT(YEAR(moneyDate),'-',MONTH(moneyDate)) AS cashDate,
+		currency,
+		0 AS incomeAmount,
+		SUM(amount) AS outAmount
+		FROM gw_merchant_account_access 
+		WHERE 
+		STATUS=5
+		AND
+		cashType IN (1,2) 
+			<if test="condition.year != null and condition.year != '' ">
+				and YEAR(moneyDate)=#{condition.year}
+			</if>
+			<if test="condition.month != null and condition.month != '' ">
+				and MONTH(moneyDate)=#{condition.month}
+			</if>
+		GROUP BY YEAR(moneyDate),MONTH(moneyDate),currency
+		UNION ALL 
+		SELECT 
+		CONCAT(YEAR(settleDate),'-',MONTH(settleDate)) AS cashDate,
+		currency,
+		0 AS incomeAmount,
+		SUM(amount)*-1 AS outAmount
+		FROM 
+		gw_bank_cost_info
+			<where>
+			<if test="condition.year != null and condition.year != '' ">
+				and YEAR(settleDate)=#{condition.year}
+			</if>
+			<if test="condition.month != null and condition.month != '' ">
+				and MONTH(settleDate)=#{condition.month}
+			</if>
+		</where>
+		GROUP BY YEAR(settleDate),MONTH(settleDate),currency
+		) AS t
+		GROUP BY cashDate,currency
+		ORDER BY cashDate DESC ) as m
+	</select>
+	<select id="queryCapitalFlowList" resultType="com.gateway.faffmgr.model.CapitalFlowInfo">
+		SELECT 
+		cashDate,
+		currency,
+		SUM(incomeAmount) AS incomeAmount,
+		SUM(outAmount) AS outAmount
+		FROM 
+		(SELECT 
+		CONCAT(YEAR(settleDate),'-',MONTH(settleDate)) AS cashDate,
+		bankSettleCurrency AS currency,
+		SUM(CASE WHEN settleType='sales' THEN bankSettleAmount ELSE 0 END) AS incomeAmount,
+		SUM(CASE WHEN settleType IN ('dis','refund') THEN bankSettleAmount ELSE 0 END ) outAmount
+		FROM gw_check_trans_info
+		<where>
+			<if test="condition.year != null and condition.year != '' ">
+				and YEAR(settleDate)=#{condition.year}
+			</if>
+			<if test="condition.month != null and condition.month != '' ">
+				and MONTH(settleDate)=#{condition.month}
+			</if>
+		</where>
+		GROUP BY YEAR(settleDate),MONTH(settleDate),bankSettleCurrency
+		
+		UNION ALL 
+		SELECT 
+		CONCAT(YEAR(moneyDate),'-',MONTH(moneyDate)) AS cashDate,
+		currency,
+		0 AS incomeAmount,
+		SUM(amount) AS outAmount
+		FROM gw_merchant_account_access 
+		WHERE 
+		STATUS=5
+		AND
+		cashType IN (1,2) 
+			<if test="condition.year != null and condition.year != '' ">
+				and YEAR(moneyDate)=#{condition.year}
+			</if>
+			<if test="condition.month != null and condition.month != '' ">
+				and MONTH(moneyDate)=#{condition.month}
+			</if>
+		GROUP BY YEAR(moneyDate),MONTH(moneyDate),currency
+		UNION ALL 
+		SELECT 
+		CONCAT(YEAR(settleDate),'-',MONTH(settleDate)) AS cashDate,
+		currency,
+		0 AS incomeAmount,
+		SUM(amount)*-1 AS outAmount
+		FROM 
+		gw_bank_cost_info
+			<where>
+			<if test="condition.year != null and condition.year != '' ">
+				and YEAR(settleDate)=#{condition.year}
+			</if>
+			<if test="condition.month != null and condition.month != '' ">
+				and MONTH(settleDate)=#{condition.month}
+			</if>
+		</where>
+		GROUP BY YEAR(settleDate),MONTH(settleDate),currency
+		) AS t
+		GROUP BY cashDate,currency
+		ORDER BY cashDate DESC 
+				
+	
+	</select>
+	
+	<select id="queryMerchantFeeInfoCount" resultType="int">
+		select count(*) from gw_merchant_fee_info a left join gw_currency_info b on a.currencyId=b.id
+		<include refid="Where_merchant_fee_info"/>
+	</select>
+	<sql id="Where_merchant_fee_info">
+		<where>
+			<if test="condition.incomeType != null and condition.incomeTyoe != '' ">
+				and a.incomeType=#{condition.incomeType}
+			</if>
+			<if test="condition.feeType != null and condition.feeType != '' ">
+				and a.feeType=#{condition.feeType}
+			</if>
+			<if test="condition.merNo != null and condition.merNo != '' ">
+				and a.merNo=#{condition.merNo}
+			</if>
+			<if test="condition.terNo != null and condition.terNo != '' ">
+				and a.terNo=#{condition.terNo}
+			</if>
+			<if test="condition.createBy != null and condition.createBy != '' ">
+				and a.createBy=#{condition.createBy}
+			</if>
+			<if test="condition.settleDateStart != null and condition.settleDateStart != '' ">
+				and a.settleDate >= '${condition.settleDateStart}'
+			</if>
+			<if test="condition.settleDateEnd != null and condition.settleDateEnd != '' ">
+				and a.settleDate &lt;= '${condition.settleDateEnd} 23:59:59'
+			</if>
+		</where>
+	</sql>
+	<select id="queryMerchantFeeInfoList" resultType="com.gateway.faffmgr.model.MerchantFeeInfo">
+		select a.*,b.currencyName from gw_merchant_fee_info a left join gw_currency_info b on a.currencyId=b.id 
+		<include refid="Where_merchant_fee_info"/>
+		order by a.id desc 
+	</select>
+	<select id="queryMerchantFeeInfoById" resultType="com.gateway.faffmgr.model.MerchantFeeInfo">
+		select a.*,b.currencyName from gw_merchant_fee_info a left join gw_currency_info b on a.currencyId=b.id where a.id=#{id}
+	</select>
+	<insert id="saveMerchantFeeInfo">
+		insert into gw_merchant_fee_info
+		(
+			merNo,
+			terNo,
+			incomeType,
+			feeType,
+			currency,
+			amount,
+			remark,
+			settleDate,
+			createBy,
+			createDate,
+			currencyId
+		)values(
+			#{merNo},
+			#{terNo},
+			#{incomeType},
+			#{feeType},
+			#{currency},
+			#{amount},
+			#{remark},
+			#{settleDate},
+			#{createBy},
+			now(),
+			#{currencyId}
+		)	
+	</insert>
+	<update id="updateMerchantFeeInfoById">
+		update 
+			gw_merchant_fee_info 
+		set
+			merNo=#{merNo},
+			terNo=#{terNo},
+			incomeType=#{incomeType},
+			feeType=#{feeType},
+			currency=#{currency},
+			amount=#{amount},
+			remark=#{remark},
+			settleDate=#{settleDate},
+			lastModifyBy=#{lastModifyBy},
+			lastModifyDate=now(),
+			currencyId=#{currencyId}
+	</update>
+	<!-- 支付利润核算 -->
+	<select id="queryPaymentProfitCount" resultType="int">
+		select count(*) from(
+		SELECT 
+		settleDate
+		FROM (
+		SELECT 
+		CONCAT(YEAR(transDate),'-',MONTH(transDate)) AS settleDate,
+		bankCurrency currency,
+		SUM(bankTransAmount-merSettleAmount+singleFee+merForAmount) AS incomeAmount,
+		0 AS outAmount
+		FROM 
+		gw_trans_info 
+		WHERE 
+		transType='sales'
+		AND 
+		respCode='00'
+		<if test="condition.year !=null and condition.year != '' ">
+			and year(transDate)=#{condition.year}
+		</if>
+		<if test="condition.month !=null and condition.month != '' ">
+			and month(transDate)=#{condition.month}
+		</if> 
+		<if test="condition.merNo !=null and condition.merNo != '' ">
+			and merNo=#{condition.merNo}
+		</if>
+		<if test="condition.terNo !=null and condition.terNo != '' ">
+			and terNo=#{condition.terNo}
+		</if>
+		<if test="condition.currencyId !=null and condition.currencyId != '' ">
+			and currencyId=#{condition.currencyId}
+		</if>
+		<if test="condition.bankId !=null and condition.bankId != '' and condition.bankId != 0 ">
+			and currencyId in (select id from gw_currency_info where bankId=#{condition.bankId})
+		</if>
+		GROUP BY 
+		YEAR(transDate),MONTH(transDate),bankCurrency
+		UNION ALL
+		SELECT 
+		CONCAT(YEAR(settleDate),'-',MONTH(settleDate)) AS settleDate,
+		currency,
+		SUM(CASE WHEN incomeType=0 THEN amount ELSE 0 END) AS incomeAmount,
+		SUM(CASE WHEN incomeType=1 THEN amount ELSE 0 END) AS outAmount
+		FROM 
+		gw_merchant_fee_info
+		<where>
+		<if test="condition.year !=null and condition.year != '' ">
+			and year(settleDate)=#{condition.year}
+		</if>
+		<if test="condition.month !=null and condition.month != '' ">
+			and month(settleDate)=#{condition.month}
+		</if> 
+		<if test="condition.merNo !=null and condition.merNo != '' ">
+			and merNo=#{condition.merNo}
+		</if>
+		<if test="condition.terNo !=null and condition.terNo != '' ">
+			and terNo=#{condition.terNo}
+		</if>
+		<if test="condition.currencyId !=null and condition.currencyId != '' ">
+			and currencyId=#{condition.currencyId}
+		</if>
+		<if test="condition.bankId !=null and condition.bankId != '' and condition.bankId != 0 ">
+			and currencyId in (select id from gw_currency_info where bankId=#{condition.bankId})
+		</if>
+		</where>
+		GROUP BY YEAR(settleDate),MONTH(settleDate),currency
+		UNION ALL
+		SELECT 
+		CONCAT(YEAR(a.settleDate),'-',MONTH(a.settleDate)) AS settleDate,
+		a.bankSettleCurrency AS currency,
+		0 AS incomeAmount,
+		SUM(a.bankFee) AS outAmount
+		FROM 
+		gw_check_trans_info a LEFT JOIN gw_trans_info b ON a.tradeNo=b.tradeNo
+		WHERE 
+		a.settleType='sales'
+		<if test="condition.year !=null and condition.year != '' ">
+			and year(a.settleDate)=#{condition.year}
+		</if>
+		<if test="condition.month !=null and condition.month != '' ">
+			and month(a.settleDate)=#{condition.month}
+		</if> 
+		<if test="condition.merNo !=null and condition.merNo != '' ">
+			and merNo=#{condition.merNo}
+		</if>
+		<if test="condition.terNo !=null and condition.terNo != '' ">
+			and terNo=#{condition.terNo}
+		</if>
+		<if test="condition.currencyId !=null and condition.currencyId != '' ">
+			and currencyId=#{condition.currencyId}
+		</if>
+		<if test="condition.bankId !=null and condition.bankId != '' and condition.bankId != 0 ">
+			and currencyId in (select id from gw_currency_info where bankId=#{condition.bankId})
+		</if>
+		GROUP BY YEAR(a.settleDate),MONTH(a.settleDate),bankSettleCurrency
+		UNION ALL
+		SELECT 
+		CONCAT(YEAR(settleDate),'-',MONTH(settleDate)) AS settleDate,
+		currency,
+		0 AS incomeAmount,
+		SUM(amount) AS outAmount
+		FROM 
+		gw_bank_cost_info
+		<where>
+		<if test="condition.year !=null and condition.year != '' ">
+			and year(settleDate)=#{condition.year}
+		</if>
+		<if test="condition.month !=null and condition.month != '' ">
+			and month(settleDate)=#{condition.month}
+		</if> 
+		<if test="condition.merNo !=null and condition.merNo != '' ">
+			and merNo=#{condition.merNo}
+		</if>
+		<if test="condition.terNo !=null and condition.terNo != '' ">
+			and terNo=#{condition.terNo}
+		</if>
+		<if test="condition.currencyId !=null and condition.currencyId != '' ">
+			and currencyId=#{condition.currencyId}
+		</if>
+		<if test="condition.bankId !=null and condition.bankId != '' and condition.bankId != 0 ">
+			and currencyId in (select id from gw_currency_info where bankId=#{condition.bankId})
+		</if>
+		</where>
+		GROUP BY YEAR(settleDate),MONTH(settleDate),currency) AS t
+		GROUP BY settleDate ,currency
+		ORDER BY settleDate) as t1
+	</select>
+	<select id="queryPaymentProfitList" resultType="com.gateway.faffmgr.model.CapitalFlowInfo" >
+		SELECT 
+		settleDate as cashDate,
+		currency,
+		sum(incomeAmount) as incomeAmount,
+		sum(outAmount) as outAmount
+		FROM (
+		SELECT 
+		CONCAT(YEAR(transDate),'-',MONTH(transDate)) AS settleDate,
+		bankCurrency currency,
+		SUM(bankTransAmount-merSettleAmount+singleFee+merForAmount) AS incomeAmount,
+		0 AS outAmount
+		FROM 
+		gw_trans_info 
+		WHERE 
+		transType='sales'
+		AND 
+		respCode='00'
+		<if test="condition.year !=null and condition.year != '' ">
+			and year(transDate)=#{condition.year}
+		</if>
+		<if test="condition.month !=null and condition.month != '' ">
+			and month(transDate)=#{condition.month}
+		</if> 
+		<if test="condition.merNo !=null and condition.merNo != '' ">
+			and merNo=#{condition.merNo}
+		</if>
+		<if test="condition.terNo !=null and condition.terNo != '' ">
+			and terNo=#{condition.terNo}
+		</if>
+		<if test="condition.currencyId !=null and condition.currencyId != '' ">
+			and currencyId=#{condition.currencyId}
+		</if>
+		<if test="condition.bankId !=null and condition.bankId != '' and condition.bankId != 0 ">
+			and currencyId in (select id from gw_currency_info where bankId=#{condition.bankId})
+		</if>
+		GROUP BY 
+		YEAR(transDate),MONTH(transDate),bankCurrency
+		UNION ALL
+		SELECT 
+		CONCAT(YEAR(settleDate),'-',MONTH(settleDate)) AS settleDate,
+		currency,
+		SUM(CASE WHEN incomeType=0 THEN amount ELSE 0 END) AS incomeAmount,
+		SUM(CASE WHEN incomeType=1 THEN amount ELSE 0 END) AS outAmount
+		FROM 
+		gw_merchant_fee_info
+		<where>
+		<if test="condition.year !=null and condition.year != '' ">
+			and year(settleDate)=#{condition.year}
+		</if>
+		<if test="condition.month !=null and condition.month != '' ">
+			and month(settleDate)=#{condition.month}
+		</if> 
+		<if test="condition.merNo !=null and condition.merNo != '' ">
+			and merNo=#{condition.merNo}
+		</if>
+		<if test="condition.terNo !=null and condition.terNo != '' ">
+			and terNo=#{condition.terNo}
+		</if>
+		<if test="condition.currencyId !=null and condition.currencyId != '' ">
+			and currencyId=#{condition.currencyId}
+		</if>
+		<if test="condition.bankId !=null and condition.bankId != '' and condition.bankId != 0 ">
+			and currencyId in (select id from gw_currency_info where bankId=#{condition.bankId})
+		</if>
+		</where>
+		GROUP BY YEAR(settleDate),MONTH(settleDate),currency
+		UNION ALL
+		SELECT 
+		CONCAT(YEAR(a.settleDate),'-',MONTH(a.settleDate)) AS settleDate,
+		a.bankSettleCurrency AS currency,
+		0 AS incomeAmount,
+		SUM(a.bankFee) AS outAmount
+		FROM 
+		gw_check_trans_info a LEFT JOIN gw_trans_info b ON a.tradeNo=b.tradeNo
+		WHERE 
+		a.settleType='sales'
+		<if test="condition.year !=null and condition.year != '' ">
+			and year(a.settleDate)=#{condition.year}
+		</if>
+		<if test="condition.month !=null and condition.month != '' ">
+			and month(a.settleDate)=#{condition.month}
+		</if> 
+		<if test="condition.merNo !=null and condition.merNo != '' ">
+			and merNo=#{condition.merNo}
+		</if>
+		<if test="condition.terNo !=null and condition.terNo != '' ">
+			and terNo=#{condition.terNo}
+		</if>
+		<if test="condition.currencyId !=null and condition.currencyId != '' ">
+			and currencyId=#{condition.currencyId}
+		</if>
+		<if test="condition.bankId !=null and condition.bankId != '' and condition.bankId != 0 ">
+			and currencyId in (select id from gw_currency_info where bankId=#{condition.bankId})
+		</if>
+		GROUP BY YEAR(a.settleDate),MONTH(a.settleDate),bankSettleCurrency
+		UNION ALL
+		SELECT 
+		CONCAT(YEAR(settleDate),'-',MONTH(settleDate)) AS settleDate,
+		currency,
+		0 AS incomeAmount,
+		SUM(amount) AS outAmount
+		FROM 
+		gw_bank_cost_info
+		<where>
+		<if test="condition.year !=null and condition.year != '' ">
+			and year(settleDate)=#{condition.year}
+		</if>
+		<if test="condition.month !=null and condition.month != '' ">
+			and month(settleDate)=#{condition.month}
+		</if> 
+		<if test="condition.merNo !=null and condition.merNo != '' ">
+			and merNo=#{condition.merNo}
+		</if>
+		<if test="condition.terNo !=null and condition.terNo != '' ">
+			and terNo=#{condition.terNo}
+		</if>
+		<if test="condition.currencyId !=null and condition.currencyId != '' ">
+			and currencyId=#{condition.currencyId}
+		</if>
+		<if test="condition.bankId !=null and condition.bankId != '' and condition.bankId != 0 ">
+			and currencyId in (select id from gw_currency_info where bankId=#{condition.bankId})
+		</if>
+		</where>
+		GROUP BY YEAR(settleDate),MONTH(settleDate),currency) AS t
+		GROUP BY settleDate ,currency
+		ORDER BY settleDate
+	</select>
+	
+	<select id="querySalesPerformanceInfo" resultType="com.gateway.faffmgr.model.SalesPerformanceInfo">
+		SELECT
+			f.*
+		FROM
+			(
+				SELECT
+					IFNULL(SUM(e.successCount),0) AS successCount,
+					IFNULL(SUM(e.successAmount),0) AS successAmount,
+					e.currency,
+					IFNULL(SUM(e.disAmount),0) AS disAmount,
+					IFNULL(SUM(e.disCount),0) AS disCount,
+					IFNULL(SUM(e.refundAmount),0) AS refundAmount,
+					IFNULL(SUM(e.refundCount),0) AS refundCount,
+					CONCAT(e.comYear,'-',e.comMonth) AS queryDate,
+					IFNULL(CONCAT((CASE WHEN SUM(e.successCount)=0 THEN '0.00' ELSE LEFT((SUM(e.disCount)/SUM(e.successCount))*100,5) END),'%'),'0.00%') AS disRate,
+					IFNULL(CONCAT((CASE WHEN SUM(e.successCount)=0 THEN '0.00' ELSE LEFT((SUM(e.refundCount)/SUM(e.successCount))*100,5) END),'%'),'0.00%') AS refundRate,
+					e.comYear,
+					e.comMonth,
+					e.sellName
+				FROM
+					(
+						<!-- 查询交易成功金额 -->
+						SELECT
+							SUM(CASE a.transType WHEN 'sales' THEN 1 ELSE 0 END) AS successCount,
+							SUM(CASE a.transType WHEN 'sales' THEN a.merSettleAmount ELSE 0 END) AS successAmount,
+							a.merSettleCurrency AS currency,
+							0 AS disAmount,
+							0 AS disCount,
+							SUM(CASE a.transType WHEN 'refund' THEN a.merSettleAmount ELSE 0 END) AS refundAmount,
+							SUM(CASE a.transType WHEN 'refund' THEN 1 ELSE 0 END) AS refundCount,
+							YEAR(a.transDate) AS comYear,
+							MONTH(a.transDate) AS comMonth,
+							c.realName AS sellName
+						FROM
+							gw_trans_info a
+							LEFT JOIN gw_sell_ref_merchant_info b ON FIND_IN_SET(a.merNo,b.merNo)
+							LEFT JOIN gw_sys_user_info c ON c.userName=b.userName AND c.systemId=1
+						WHERE
+							a.respCode='00'
+						<if test="condition.year!=null and condition.year!=''">
+							AND
+								YEAR(a.transDate)=#{condition.year}
+						</if>
+						<if test="condition.month!=null and condition.month!=''">
+							AND
+								MONTH(a.transDate)=#{condition.month}
+						</if>
+						AND
+							a.transType IN ('sales','refund')
+						<if test="condition.userName!=null and condition.userName!=''">
+							AND
+								c.realName=#{condition.userName}
+						</if>
+						<if test="condition.type != null and condition.type != ''">
+							and a.merNo in (${condition.userRefMerNo})
+						</if>
+						GROUP BY
+							c.realName,a.merSettleCurrency,YEAR(transDate),MONTH(transDate)
+						UNION ALL
+						<!-- 查询交易拒付金额 -->
+						SELECT
+							0 AS successCount,
+							0 AS successAmount,
+							a.merSettleCurrency AS currency,
+							SUM(a.merSettleAmount) AS disAmount,
+							COUNT(a.id) AS disCount,
+							0 AS refundAmount,
+							0 AS refundCount,
+							YEAR(b.complaintDate) AS comYear,
+							MONTH(b.complaintDate) AS comMonth,
+							d.realName AS sellName
+						FROM
+							gw_trans_info a
+							LEFT JOIN gw_trans_complaint_info b ON b.tradeNo=a.tradeNo
+							LEFT JOIN gw_sell_ref_merchant_info c ON FIND_IN_SET(a.merNo,c.merNo)
+							LEFT JOIN gw_sys_user_info d ON d.userName=c.userName AND d.systemId=1
+						WHERE
+							b.type=1 and b.isMerchantSee=0
+						<if test="condition.year!=null and condition.year!=''">
+							AND
+								YEAR(b.complaintDate)=#{condition.year}
+						</if>
+						<if test="condition.month!=null and condition.month!=''">
+							AND
+								MONTH(b.complaintDate)=#{condition.month}
+						</if>
+						<if test="condition.userName!=null and condition.userName!=''">
+							AND
+								d.realName=#{condition.userName}
+						</if>
+						<if test="condition.type != null and condition.type != ''">
+							and a.merNo in (${condition.userRefMerNo})
+						</if>
+						GROUP BY
+							d.realName,a.merSettleCurrency,YEAR(b.complaintDate),MONTH(b.complaintDate)
+					)
+				AS
+					e
+				GROUP BY
+					e.sellName,e.currency,e.comYear,e.comMonth
+				ORDER BY
+					CONCAT(e.comYear,'-',e.comMonth)
+				DESC
+			)
+		AS
+			f
+		#WHERE
+			#f.successAmount!=0
+	</select>
+	
+	<select id="querySalesPerformanceCount" resultType="java.lang.Integer">
+		SELECT
+			COUNT(*)
+		FROM
+			(
+				SELECT
+					e.currency,
+					SUM(e.successAmount) AS successAmount,
+					CONCAT(e.comYear,'-',e.comMonth) AS queryDate,
+					e.sellName
+				FROM
+					(
+						<!-- 查询交易成功金额 -->
+						SELECT
+							a.merSettleCurrency AS currency,
+							SUM(CASE a.transType WHEN 'sales' THEN a.merSettleAmount ELSE 0 END) AS successAmount,
+							YEAR(a.transDate) AS comYear,
+							MONTH(a.transDate) AS comMonth,
+							c.realName AS sellName
+						FROM
+							gw_trans_info a
+							LEFT JOIN gw_sell_ref_merchant_info b ON FIND_IN_SET(a.merNo,b.merNo)
+							LEFT JOIN gw_sys_user_info c ON c.userName=b.userName AND c.systemId=1
+						WHERE
+							a.respCode='00'
+						<if test="condition.year!=null and condition.year!=''">
+							AND
+								YEAR(a.transDate)=#{condition.year}
+						</if>
+						<if test="condition.month!=null and condition.month!=''">
+							AND
+								MONTH(a.transDate)=#{condition.month}
+						</if>
+						AND
+							a.transType IN ('sales','refund')
+						<if test="condition.userName!=null and condition.userName!=''">
+							AND
+								c.realName=#{condition.userName}
+						</if>
+						<if test="condition.type != null and condition.type != ''">
+							and a.merNo in (${condition.userRefMerNo})
+						</if>
+						GROUP BY
+							c.realName,a.merSettleCurrency,YEAR(transDate),MONTH(transDate)
+						UNION ALL
+						<!-- 查询交易拒付金额 -->
+						SELECT
+							a.merSettleCurrency AS currency,
+							0 AS successAmount,
+							YEAR(b.complaintDate) AS comYear,
+							MONTH(b.complaintDate) AS comMonth,
+							d.realName AS sellName
+						FROM
+							gw_trans_info a
+							LEFT JOIN gw_trans_complaint_info b ON b.tradeNo=a.tradeNo
+							LEFT JOIN gw_sell_ref_merchant_info c ON FIND_IN_SET(a.merNo,c.merNo)
+							LEFT JOIN gw_sys_user_info d ON d.userName=c.userName AND d.systemId=1
+						WHERE
+							b.type=1 and isMerchantSee=0
+						<if test="condition.year!=null and condition.year!=''">
+							AND
+								YEAR(b.complaintDate)=#{condition.year}
+						</if>
+						<if test="condition.month!=null and condition.month!=''">
+							AND
+								MONTH(b.complaintDate)=#{condition.month}
+						</if>
+						<if test="condition.userName!=null and condition.userName!=''">
+							AND
+								d.realName=#{condition.userName}
+						</if>
+						<if test="condition.type != null and condition.type != ''">
+							and a.merNo in (${condition.userRefMerNo})
+						</if>
+						GROUP BY
+							d.realName,a.merSettleCurrency,YEAR(b.complaintDate),MONTH(b.complaintDate)
+					)
+				AS
+					e
+				GROUP BY
+					e.sellName,e.currency,e.comYear,e.comMonth
+			)
+		AS
+			f
+		#WHERE
+		#	f.successAmount!=0
+	</select>
+	
+	<select id="queryExportSalesPerformanceInfo" resultType="com.gateway.faffmgr.model.SalesPerformanceInfo">
+		SELECT
+			h.*,
+			t.sales AS oldSellName,
+			t.enabled,
+			t.oaOrderNo,
+			t.industry,
+			IFNULL(l.disCountAmount,0) AS disCountAmount,
+			IFNULL(l.disCountCount,0) AS disCountCount,
+			IFNULL((CASE WHEN d.successCountCount=0 THEN '0.00%' ELSE (CONCAT(LEFT((l.disCountCount/d.successCountCount)*100,5),'%')) END),'0.00%') AS disCountRate,
+			k.productType
+		FROM
+			(
+				SELECT
+						e.merNo,
+						e.terNo,
+						IFNULL(SUM(e.successCount),0) AS successCount,
+						IFNULL(SUM(e.successAmount),0) AS successAmount,
+						IFNULL(SUM(e.poundage),0) AS poundage,
+						e.currency,
+						IFNULL(SUM(e.disAmount),0) AS disAmount,
+						IFNULL(SUM(e.disCount),0) AS disCount,
+						IFNULL(SUM(e.refundAmount),0) AS refundAmount,
+						IFNULL(SUM(e.refundCount),0) AS refundCount,
+						CONCAT(e.comYear,'-',e.comMonth) AS queryDate,
+						IFNULL(CONCAT((CASE WHEN SUM(e.successCount)=0 THEN '0.00' ELSE LEFT((SUM(e.disCount)/SUM(e.successCount))*100,5) END),'%'),'0.00%') AS disRate,
+						IFNULL(CONCAT((CASE WHEN SUM(e.successCount)=0 THEN '0.00' ELSE LEFT((SUM(e.refundCount)/SUM(e.successCount))*100,5) END),'%'),'0.00%') AS refundRate,
+						IFNULL(CONCAT((CASE WHEN SUM(e.successAmount)=0 THEN '0.00' ELSE LEFT((SUM(e.poundage)/SUM(e.successAmount))*100,5) END),'%'),'0.00%') AS poundageRate,
+						e.comYear,
+						e.comMonth,
+						e.sellName,
+						e.currencyName,
+						e.bankName
+					FROM
+						(
+							<!-- 查询交易成功,退款,手续费金额 -->
+							SELECT
+								a.merNo,
+								a.terNo,
+								SUM(CASE a.transType WHEN 'sales' THEN 1 ELSE 0 END) AS successCount,
+								SUM(CASE a.transType WHEN 'sales' THEN a.merSettleAmount ELSE 0 END) AS successAmount,
+								SUM(CASE a.transType WHEN 'sales' THEN a.merForAmount ELSE 0 END) AS poundage,
+								a.merSettleCurrency AS currency,
+								0 AS disAmount,
+								0 AS disCount,
+								SUM(CASE a.transType WHEN 'refund' THEN a.merSettleAmount ELSE 0 END) AS refundAmount,
+								SUM(CASE a.transType WHEN 'refund' THEN 1 ELSE 0 END) AS refundCount,
+								YEAR(a.transDate) AS comYear,
+								MONTH(a.transDate) AS comMonth,
+								c.realName AS sellName,
+								d.currencyName,
+								e.bankName
+							FROM
+								gw_trans_info a
+								LEFT JOIN gw_sell_ref_merchant_info b ON FIND_IN_SET(a.merNo,b.merNo)
+								LEFT JOIN gw_sys_user_info c ON c.userName=b.userName AND c.systemId=1
+								LEFT JOIN gw_currency_info d on a.currencyId=d.id
+								LEFT JOIN gw_bank_info e ON d.bankId=e.id 
+								<!-- LEFT JOIN card_bin_info f ON a.checkNo=f.checkNo -->
+							WHERE
+								a.respCode='00'
+							<if test="condition.year!=null and condition.year!=''">
+								AND
+									YEAR(a.transDate)=#{condition.year}
+							</if>
+							<if test="condition.month!=null and condition.month!=''">
+								AND
+									MONTH(a.transDate)=#{condition.month}
+							</if>
+							AND
+								a.transType IN ('sales','refund')
+							<if test="condition.userName!=null and condition.userName!=''">
+								AND
+									c.realName=#{condition.userName}
+							</if>
+							<if test="condition.currency!=null and condition.currency!=''">
+								AND
+									a.merSettleCurrency=#{condition.currency}
+							</if>
+							<if test="condition.type != null and condition.type != ''">
+								and a.merNo in (${condition.userRefMerNo})
+							</if>
+							<if test="condition.isEur != null and condition.isEur != '' ">
+								<choose>
+									<when test="condition.isEur == 0 "><!-- 欧元区 -->
+										and (
+										<!-- f.country_code in ('AT','EE','IE','BE','BG','IS','PL','DK','DE','FI','FR','NL','CZ','LV','LI','LT','LU','RO','MT','NO','PT','SE','CY','SK','SI','GR','HU','ES','IT','GB') -->
+										a.ipCountry in ('AT','EE','IE','BE','BG','IS','PL','DK','DE','FI','FR','NL','CZ','LV','LI','LT','LU','RO','MT','NO','PT','SE','CY','SK','SI','GR','HU','ES','IT','GB')
+										and e.id in (57,62,67,68,69,72,80,81,82,83,84,85,86,87,88,89,93,94,96,108)
+										)
+									</when>
+									<otherwise><!-- 非欧元区 -->
+										and (
+										<!-- f.country_code not in ('AT','EE','IE','BE','BG','IS','PL','DK','DE','FI','FR','NL','CZ','LV','LI','LT','LU','RO','MT','NO','PT','SE','CY','SK','SI','GR','HU','ES','IT','GB') -->
+										a.ipCountry not in ('AT','EE','IE','BE','BG','IS','PL','DK','DE','FI','FR','NL','CZ','LV','LI','LT','LU','RO','MT','NO','PT','SE','CY','SK','SI','GR','HU','ES','IT','GB')
+										or e.id not in (57,62,67,68,69,72,80,81,82,83,84,85,86,87,88,89,93,94,96,108)
+										)
+									</otherwise>
+								</choose>
+							</if>
+							GROUP BY
+								a.merNo,a.terNo,YEAR(transDate),MONTH(transDate),c.realName
+								<if test="condition.type == null or condition.type == ''">
+								,d.id
+								</if>
+							UNION ALL
+							<!-- 查询交易拒付金额 -->
+							SELECT
+								a.merNo,
+								a.terNo,
+								0 AS successCount,
+								0 AS successAmount,
+								0 AS poundage,
+								a.merSettleCurrency AS currency,
+								SUM(a.merSettleAmount) AS disAmount,
+								COUNT(a.id) AS disCount,
+								0 AS refundAmount,
+								0 AS refundCount,
+								YEAR(b.complaintDate) AS comYear,
+								MONTH(b.complaintDate) AS comMonth,
+								d.realName AS sellName,
+								g.currencyName,
+								e.bankName
+							FROM
+								gw_trans_info a
+								LEFT JOIN gw_trans_complaint_info b ON b.tradeNo=a.tradeNo
+								LEFT JOIN gw_sell_ref_merchant_info c ON FIND_IN_SET(a.merNo,c.merNo)
+								LEFT JOIN gw_sys_user_info d ON d.userName=c.userName AND d.systemId=1
+								LEFT JOIN gw_currency_info g on a.currencyId=g.id
+								LEFT JOIN gw_bank_info e on g.bankId=e.id 
+								<!-- LEFT JOIN card_bin_info f on a.checkNo=f.checkNo -->
+							WHERE
+								b.type=1 and b.isMerchantSee=0
+							<if test="condition.year!=null and condition.year!=''">
+								AND
+									YEAR(b.complaintDate)=#{condition.year}
+							</if>
+							<if test="condition.month!=null and condition.month!=''">
+								AND
+									MONTH(b.complaintDate)=#{condition.month}
+							</if>
+							<if test="condition.userName!=null and condition.userName!=''">
+								AND
+									d.realName=#{condition.userName}
+							</if>
+							<if test="condition.currency!=null and condition.currency!=''">
+								AND
+									a.merSettleCurrency=#{condition.currency}
+							</if>
+							<if test="condition.type != null and condition.type != ''">
+								and a.merNo in (${condition.userRefMerNo})
+							</if>
+							<if test="condition.isEur != null and condition.isEur != '' ">
+								<choose>
+									<when test="condition.isEur == 0 "><!-- 欧元区 -->
+										and (
+										<!-- f.country_code in ('AT','EE','IE','BE','BG','IS','PL','DK','DE','FI','FR','NL','CZ','LV','LI','LT','LU','RO','MT','NO','PT','SE','CY','SK','SI','GR','HU','ES','IT','GB') -->
+										a.ipCountry in ('AT','EE','IE','BE','BG','IS','PL','DK','DE','FI','FR','NL','CZ','LV','LI','LT','LU','RO','MT','NO','PT','SE','CY','SK','SI','GR','HU','ES','IT','GB')
+										and e.id in (57,62,67,68,69,72,80,81,82,83,84,85,86,87,88,89,93,94,96,108)
+										)
+									</when>
+									<otherwise><!-- 非欧元区 -->
+										and (
+										<!-- f.country_code not in ('AT','EE','IE','BE','BG','IS','PL','DK','DE','FI','FR','NL','CZ','LV','LI','LT','LU','RO','MT','NO','PT','SE','CY','SK','SI','GR','HU','ES','IT','GB') -->
+										a.ipCountry not in ('AT','EE','IE','BE','BG','IS','PL','DK','DE','FI','FR','NL','CZ','LV','LI','LT','LU','RO','MT','NO','PT','SE','CY','SK','SI','GR','HU','ES','IT','GB')
+										or e.id not in (57,62,67,68,69,72,80,81,82,83,84,85,86,87,88,89,93,94,96,108)
+										)
+									</otherwise>
+								</choose>
+							</if>
+							GROUP BY
+								a.merNo,a.terNo,YEAR(b.complaintDate),MONTH(b.complaintDate),d.realName
+								<if test="condition.type == null or condition.type == ''">
+								,g.id
+								</if>
+						)
+					AS
+						e
+					GROUP BY
+						e.merNo,e.terNo,e.currency,e.comYear,e.comMonth,e.sellName
+						<if test="condition.type == null or condition.type == ''">
+						,e.currencyName
+						</if>
+			)
+			AS
+				h
+			LEFT JOIN gw_merchant_info t ON t.merNo=h.merNo
+			LEFT JOIN (
+				SELECT
+					a.merNo,
+					a.terNo,
+					SUM(a.merSettleAmount) AS disCountAmount,
+					COUNT(a.id) AS disCountCount
+				FROM
+					gw_trans_info a
+					LEFT JOIN gw_trans_complaint_info b ON b.tradeNo=a.tradeNo
+				WHERE
+					b.type=1 and b.isMerchantSee=0
+					<if test="condition.type != null and condition.type != ''">
+						and a.merNo in (${condition.userRefMerNo})
+					</if>
+				GROUP BY
+					a.merNo,a.terNo
+			) l ON l.merNo=h.merNo AND l.terNo=h.terNo
+			LEFT JOIN (
+				SELECT 
+					COUNT(id) AS successCountCount,
+					merNo,
+					terNo
+				FROM
+					gw_trans_info
+				WHERE
+					transType='sales'
+				AND
+					respCode='00'
+				<if test="condition.type != null and condition.type != ''">
+					and merNo in (${condition.userRefMerNo})
+				</if>
+				GROUP BY merNo,terNo
+			) d ON d.merNo=h.merNo AND d.terNo=h.terNo
+			LEFT JOIN gw_merchant_terno_info k ON h.merNo=k.merNo AND h.terNo=k.terNo
+		#WHERE
+		#	h.successAmount!=0
+	</select>
+	
+</mapper>

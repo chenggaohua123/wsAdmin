@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="com.gateway.api.mapper.UserMgrDao">
+	<insert id="addPhoneUser">
+		insert into gw_sys_user_info 
+		(
+			userName,
+			password,
+			createTime,
+			createBy,
+			email,
+			phoneNo,
+			realName,
+			systemId,
+			verificationtype,
+			enabled,
+			agentNo,
+			shaKey
+		)
+		values
+		(
+			#{info.userName},
+			#{info.passWord},
+			SYSDATE(),
+			'API',
+			#{info.email},
+			#{info.phoneNo},			
+			#{info.realName},
+			#{info.systemId},			
+			0,
+			#{info.enabled},
+			#{info.agentNo},
+			#{info.shaKey}
+		)
+	</insert>
+	
+	<select id="queryUserInfoByPhoneNo" resultType="com.gateway.api.model.UserInfo">
+		select * from gw_sys_user_info where phoneNo = #{phoneNo} and systemId = 3 limit 1
+	</select>
+	
+	<select id="login" resultType="com.gateway.api.model.UserExtInfo">
+		SELECT
+			u.realName,
+			u.email,
+			u.enabled,
+			u.systemId,
+			u.shaKey,
+			u.userName,
+			u.phoneNo,
+			a.agentNo
+		FROM
+			gw_sys_user_info u
+		LEFT JOIN gw_user_rel_agent_info a ON u.id = a.userId
+		where u.phoneNo = #{info.phoneNo} and u.password = #{info.passWord} and u.userName = #{info.userName} and u.systemid = 3 limit 1
+	</select>
+	
+	<select id="queryTerInfoByPhoneNo" resultType="com.gateway.api.model.TerInfo">
+		SELECT
+			u.phoneNo,
+			t.merNo,
+			t.terName,
+			t.terNo,
+			t.serNo,
+			t.accountAddress,
+			t.accountName,
+			t.accountNo,
+			t.bluetoothName
+		FROM
+			gw_user_rel_merchant_info u
+		LEFT JOIN gw_merchant_terno_info t ON u.merNo = t.merNo
+		where u.phoneNo = #{phoneNo} and t.merNo is not null and t.terNo is not null
+	</select>
+	
+	<select id="queryMerchantInfoByPhoneNo" resultType="com.gateway.api.model.MerchantInfo">
+		SELECT
+			m.phoneNo,
+			m.merNo,
+			m.accountName,
+			m.accountAddress,
+			m.address,
+			m.merchantName,
+			m.IDCardNo,
+			m.type,
+			m.state,
+			m.countryCode,
+			m.city,
+			m.email,
+			m.industry
+		FROM
+			gw_user_rel_merchant_info ur
+		LEFT JOIN gw_merchant_info m ON ur.phoneNo = m.phoneNo
+		WHERE m.phoneNo = #{phoneNo} limit 1
+	</select>
+	
+	<select id="queryFunctionListByPhoneNo" resultType="String">
+		select functionId from gw_user_function_list_info where phoneNo = #{phoneNo}  
+	</select>
+	
+	<select id="queryHisLoginInfoByPhoneNo" resultType="com.gateway.api.model.LoginHisInfo">
+		select * from gw_user_his_login_info where phoneNo =#{phoneNo} order by lastLoginTime desc limit 1
+	</select>
+	
+	<select id="queryBusInfoByPhoneNo" resultType="com.gateway.api.model.BusInfo">
+		SELECT
+			b.*, m.industry,
+			m.city,
+			m.state AS province,
+			m.type AS merchantType,
+			m.email
+		FROM
+			gw_user_bus_info b
+		LEFT JOIN gw_merchant_info m ON b.phoneNo = m.phoneNo
+ 		where b.phoneNo =#{phoneNo} limit 1
+	</select>
+	
+	<insert id="addLogHisInfo">
+		insert into gw_user_his_login_info
+		(
+			phoneNo,
+			lastLoginTime,
+			lastLoginIP,
+			lastLoginAddress,
+			createBy
+		)
+		values
+		(
+			#{phoneNo},
+			SYSDATE(),
+			#{info.lastLoginIP},
+			#{info.lastLoginAddress},
+			'SYS'
+		)
+	</insert>
+	
+	<select id="queryMerchantInfoByPhone" resultType="com.gateway.api.model.MerchantInfo">
+		select * from gw_merchant_info where phoneNo = #{phoneNo} limit 1
+	</select>
+	
+	<update id="resetPass">
+		update gw_sys_user_info set password = #{info.passWord} where phoneNo = #{info.phoneNo} and systemId = 3
+	</update>
+	
+	<update id="updateMerchantInfo">
+		update gw_merchant_info set 
+		<if test="info.merchantName != null and info.merchantName != ''">
+			merchantName = #{info.merchantName},
+		</if>
+		<if test="info.countryCode != null and info.countryCode != ''">
+			countryCode = #{info.countryCode},
+		</if>
+		<if test="info.state != null and info.state != ''">
+			state = #{info.state},
+		</if>
+		<if test="info.city != null and info.city != ''">
+			city = #{info.city},
+		</if>
+		<if test="info.address != null and info.address != ''">
+			address = #{info.address},
+		</if>
+		<if test="info.email != null and info.email != ''">
+			email = #{info.email},
+		</if>
+		phoneNo = #{info.phoneNo}
+		where phoneNo = #{info.phoneNo}
+	</update>
+	
+	<update id="updateTerInfo">
+		update gw_merchant_terno_info set 
+			<if test="info.terName != null and info.terName != ''">
+				terName = #{info.terName},
+			</if>
+			<if test="info.bluetoothName != null and info.bluetoothName != ''">
+				bluetoothName = #{info.bluetoothName},
+			</if>
+			merNo = #{info.merNo},
+			terNo = #{info.terNo}
+			where merNo = #{info.merNo} and terNo = #{info.terNo}
+	</update>
+</mapper>
+

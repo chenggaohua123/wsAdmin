@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="com.gateway.report.transreport.mapper.TransReportDao">
+	<select id="transTotalList" resultType="com.gateway.report.transreport.model.TransTotal">
+		select 
+		<if test="condition.radType != null and condition.radType == 1">
+		 merNo,
+		</if>
+		<if test="condition.radType == null or condition.radType ==''">
+		merNo,terNo,
+		</if>
+		cardType,sum(transAmount) as transAmount,count(*) as count,date(transDate) as transDate  
+		from gw_trans_info t left join gw_transtype_info t1 on t.transType=t1.transType
+		<where>
+		     and respCode='00' and t1.settleflag !=0
+			<if test="condition.transDateStart != null and condition.transDateStart != ''">
+		      and transDate >= '${condition.transDateStart} 00:00:00'
+		    </if>
+		    <if test="condition.transDateEnd != null and condition.transDateEnd != ''">
+		      and transDate &lt;='${condition.transDateEnd} 23:59:59'
+		    </if>
+		    <if test="condition.merNo != null and condition.merNo != ''">
+		      and merNo =#{condition.merNo}
+		    </if>
+		    <if test="condition.terNo != null and condition.terNo != ''">
+		      and terNo =#{condition.terNo}
+		    </if>
+		    <if test="condition.cardType != null and condition.cardType != ''">
+		      and cardType =#{condition.cardType}
+		    </if>
+		</where>
+		group by 
+		<if test="condition.radType != null and condition.radType == 1">
+		 merNo,
+		</if>
+		<if test="condition.radType == null or condition.radType ==''">
+		merNo,terNo,
+		</if>
+		cardType,date(transDate)	
+		order by date(transDate) desc
+	</select>
+	
+	<select id="countTotal" resultType="int">
+	   select count(*) from (
+	      select 
+		<if test="condition.radType != null and condition.radType == 1">
+		 merNo,
+		</if>
+		<if test="condition.radType == null or condition.radType ==''">
+		merNo,terNo,
+		</if>
+		cardType,sum(transAmount) as transAmount,count(*) as count,date(transDate) as transDate  
+		from gw_trans_info t left join gw_transtype_info t1 on t.transType=t1.transType
+		  <where>
+			     and respCode='00' and t1.settleflag !=0
+				<if test="condition.transDateStart != null and condition.transDateStart != ''">
+			      and transDate >= '${condition.transDateStart} 00:00:00'
+			    </if>
+			    <if test="condition.transDateEnd != null and condition.transDateEnd != ''">
+			      and transDate &lt;='${condition.transDateEnd} 23:59:59'
+			    </if>
+			    <if test="condition.merNo != null and condition.merNo != ''">
+			      and merNo =#{condition.merNo}
+			    </if>
+			    <if test="condition.terNo != null and condition.terNo != ''">
+			      and terNo =#{condition.terNo}
+			    </if>
+			    <if test="condition.cardType != null and condition.cardType != ''">
+			      and cardType =#{condition.cardType}
+			    </if>
+			</where>
+		group by 
+		<if test="condition.radType != null and condition.radType == 1">
+		 merNo,
+		</if>
+		<if test="condition.radType == null or condition.radType ==''">
+		merNo,terNo,
+		</if>
+		cardType,date(transDate)	
+		order by date(transDate) desc
+	   ) as t
+	</select>
+	
+	
+	<select id="transCurrencyTotalList" resultType="com.gateway.report.transreport.model.TransTotal">
+		 select 
+		<if test="condition.radType != null and condition.radType == 1">
+		  t.merNo,
+		</if>
+		<if test="condition.radType != null and condition.radType == 2">
+		 t.currencyName,
+		</if>
+		<if test="condition.radType == null or condition.radType ==''">
+		 t.merNo,t.currencyName,
+		</if>
+		  t.terNo,t.transType,t.transAmount,t.maxForAmount,t.forAmount,t.transDate from (
+			SELECT t.merNo,t.terNo,t.transType,t.transAmount,c.currencyName,date(t.transDate) as transDate,
+			CASE WHEN (t.transAmount * ty.settleflag) * c.currencyRate > c.topAmount THEN	c.topAmount ELSE 0 END maxForAmount, 
+			CASE WHEN (t.transAmount * ty.settleflag * c.currencyRate) &lt; c.topAmount THEN 0 ELSE t.transAmount*c.currencyRate END forAmount
+			FROM gw_trans_info t
+			LEFT JOIN gw_currency_info c ON t.currencyId = c.id
+			LEFT JOIN gw_transtype_info ty ON t.transType = ty.transType
+			<where>
+			    and t.respCode='00' and ty.settleflag !=0
+				<if test="condition.transDateStart != null and condition.transDateStart != ''">
+			      and t.transDate >= '${condition.transDateStart} 00:00:00'
+			    </if>
+			    <if test="condition.transDateEnd != null and condition.transDateEnd != ''">
+			      and t.transDate &lt;='${condition.transDateEnd} 23:59:59'
+			    </if>
+			    <if test="condition.merNo != null and condition.merNo != ''">
+			      and t.merNo =#{condition.merNo}
+			    </if>
+			    <if test="condition.currencyName != null and condition.currencyName != ''">
+			      and c.currencyName =#{condition.currencyName}
+			    </if>
+			</where>
+		) t 
+		group by 
+		<if test="condition.radType != null and condition.radType == 1">
+		  t.merNo,
+		</if>
+		<if test="condition.radType != null and condition.radType == 2">
+		 t.currencyName,
+		</if>
+		<if test="condition.radType == null or condition.radType ==''">
+		 t.merNo,t.currencyName,
+		</if>
+		t.transDate
+		order by t.transDate desc
+	</select>
+	
+	<select id="countCurrency" resultType="int">
+	  select count(*) from (
+	       select 
+		<if test="condition.radType != null and condition.radType == 1">
+		  t.merNo,
+		</if>
+		<if test="condition.radType != null and condition.radType == 2">
+		 t.currencyName,
+		</if>
+		<if test="condition.radType == null or condition.radType ==''">
+		 t.merNo,t.currencyName,
+		</if>
+		  t.terNo,t.transType,t.transAmount,t.maxForAmount,t.forAmount,t.transDate from (
+			SELECT t.merNo,t.terNo,t.transType,t.transAmount,c.currencyName,date(t.transDate) as transDate,
+			CASE WHEN (t.transAmount * ty.settleflag) * c.currencyRate > c.topAmount THEN	c.topAmount ELSE 0 END maxForAmount, 
+			CASE WHEN (t.transAmount * ty.settleflag * c.currencyRate) &lt; c.topAmount THEN 0 ELSE t.transAmount*c.currencyRate END forAmount
+			FROM gw_trans_info t
+			LEFT JOIN gw_currency_info c ON t.currencyId = c.id
+			LEFT JOIN gw_transtype_info ty ON t.transType = ty.transType
+			<where>
+			    and t.respCode='00' and ty.settleflag !=0
+				<if test="condition.transDateStart != null and condition.transDateStart != ''">
+			      and t.transDate >= '${condition.transDateStart} 00:00:00'
+			    </if>
+			    <if test="condition.transDateEnd != null and condition.transDateEnd != ''">
+			      and t.transDate &lt;='${condition.transDateEnd} 23:59:59'
+			    </if>
+			    <if test="condition.merNo != null and condition.merNo != ''">
+			      and t.merNo =#{condition.merNo}
+			    </if>
+			    <if test="condition.currencyName != null and condition.currencyName != ''">
+			      and c.currencyName =#{condition.currencyName}
+			    </if>
+			</where>
+		) t 
+		group by 
+		<if test="condition.radType != null and condition.radType == 1">
+		  t.merNo,
+		</if>
+		<if test="condition.radType != null and condition.radType == 2">
+		 t.currencyName,
+		</if>
+		<if test="condition.radType == null or condition.radType ==''">
+		 t.merNo,t.currencyName,
+		</if>
+		t.transDate
+	  ) as t
+	  order by t.transDate desc
+	</select>
+	
+	
+	
+	<select id="queryMaxAmountTotal" resultType="com.gateway.report.transreport.model.MaxAmountTotal">
+      select t.currencyName,t.transDate,t.transAmount,t1.totalAmount  from(
+	      select c.currencyName,t1.currencyId,Date_format(t1.transDate,'%Y-%m') as transDate,sum(t1.transAmount) as transAmount
+	      from gw_risk_trans_info t left join  gw_trans_info t1 on t.tradeNo=t1.tradeNo 
+	      LEFT JOIN gw_currency_info c ON t1.currencyId = c.id
+		  LEFT JOIN gw_bank_info b ON c.bankId = b.id
+	      where t1.respCode='00' and riskType='AMOUNT_LIMIT'
+	      GROUP BY Date_format(t1.transDate,'%Y-%m'),t1.currencyId,c.currencyName
+	      ) t left join
+	      (
+			select c.currencyName,t.currencyId,Date_format(transDate,'%Y-%m') as transDate,sum(t.transAmount) as totalAmount from gw_trans_info t
+			left join gw_currency_info c on t.currencyId = c.id
+			left join gw_transtype_info t1 on t1.transType=t.transType
+			where  t.respCode='00' and t1.settleflag !=0
+			group by Date_format(transDate,'%Y-%m'),t.currencyId,c.currencyName
+       ) t1 on t.currencyId=t1.currencyId and t.transDate=t1.transDate and t.currencyName=t1.currencyName
+       <where>
+          <if test="condition.currencyName!=null and condition.currencyName!=''">
+            t.currencyName like  CONCAT(CONCAT('%', '${condition.currencyName}'),'%')
+          </if>
+       </where>
+        order by t.transDate desc
+	</select>
+	
+	<select id="countMaxAmountTotal" resultType="int">
+	 select count(*) from (
+	     select t.currencyName,t.transDate,t.transAmount,t1.totalAmount  from(
+	      select c.currencyName,t1.currencyId,Date_format(t1.transDate,'%Y-%m') as transDate,sum(t1.transAmount) as transAmount
+	      from gw_risk_trans_info t left join  gw_trans_info t1 on t.tradeNo=t1.tradeNo 
+	      LEFT JOIN gw_currency_info c ON t1.currencyId = c.id
+		  LEFT JOIN gw_bank_info b ON c.bankId = b.id
+	      where t1.respCode='00' and riskType='AMOUNT_LIMIT'
+	      GROUP BY Date_format(t1.transDate,'%Y-%m'),t1.currencyId,c.currencyName
+	      ) t left join
+	      (
+			select c.currencyName,t.currencyId,Date_format(transDate,'%Y-%m') as transDate,sum(t.transAmount) as totalAmount from gw_trans_info t
+			left join gw_currency_info c on t.currencyId = c.id
+			left join gw_transtype_info t1 on t1.transType=t.transType
+			where  t.respCode='00' and t1.settleflag !=0
+			group by Date_format(transDate,'%Y-%m'),t.currencyId,c.currencyName
+       ) t1 on t.currencyId=t1.currencyId and t.transDate=t1.transDate and t.currencyName=t1.currencyName
+	 ) as t
+	   <where>
+          <if test="condition.currencyName!=null and condition.currencyName!=''">
+            t.currencyName like  CONCAT(CONCAT('%', '${condition.currencyName}'),'%')
+          </if>
+       </where>
+      order by t.transDate desc
+	</select>
+	
+	<select id="queryDishonoeInfo" resultType="com.gateway.report.transreport.model.DishonoeTotal">
+		SELECT m.merNo,(SELECT DISTINCT count(t.id) from gw_trans_info t where t.merNo=m.merNo and t.transType='sales' and t.respCode='00' )totalNum ,
+		(SELECT DISTINCT count(t.id) from gw_trans_info t where t.merNo=m.merNo and t.transType='sales' and t.respCode='00' and t.transDishonor='1' )dishonoeNum ,
+		(SELECT DISTINCT count(t.id) from gw_trans_info t where t.merNo=m.merNo and t.transType='sales' and t.respCode='00'
+		 and MONTH(transDate)= #{condition.month} and year(transDate) = #{condition.year}) totalNumApril,
+		(SELECT DISTINCT count(t.id) from gw_trans_info t where t.merNo=m.merNo and t.transType='sales' and t.respCode='00' 
+		and t.transDishonor='1' and  MONTH(transDate)= #{condition.month} and year(transDate) = #{condition.year})dishonoeNumApril
+		from gw_merchant_info m where enabled=1 and reState=1 
+			<if test="condition.merNo!=null and condition.merNo!=''">
+				and m.merNo = #{condition.merNo}
+			</if>
+	</select>
+	
+	<select id="countDishonoeInfo" resultType="int">
+		SELECT count(m.merNo) from gw_merchant_info m where enabled=1 and reState=1 
+			<if test="condition.merNo!=null and condition.merNo!=''">
+				and m.merNo = #{condition.merNo}
+			</if>
+	</select>
+	
+</mapper>
+

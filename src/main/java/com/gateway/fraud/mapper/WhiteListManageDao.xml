@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.gateway.fraud.mapper.WhiteListManageDao" >
+	<select id="countWhiteListInfo" resultType="int">
+		select count(*) from gw_white_list
+		<include refid="Where_white_list"></include>
+	</select>
+	<sql id="Where_white_list">
+		<where>
+			<if test="condition.merNo != null and condition.merNo != ''">
+	 			and merNo =#{condition.merNo}
+	 		</if>
+	 		<if test="condition.terNo != null and condition.terNo != ''">
+	 			and terNo =#{condition.terNo}
+	 		</if>
+	 		<if test="condition.blackType != null and condition.blackType != ''">
+	 			and blackType =#{condition.blackType}
+	 		</if>
+	 		<if test="condition.blackText != null and condition.blackText != ''">
+	 			and blackText =#{condition.blackText}
+	 		</if>
+		</where>
+	</sql>
+	<select id="queryWhiteList" resultType="com.gateway.fraud.model.WhiteListInfo">
+		select id,
+		merNo,
+		terNo,
+		blackType,
+		blackText,
+		createdBy,
+		createDate,
+		lastUpdateBy,
+		lastUpdateDate,
+		enableFlag,
+		remark,
+		type
+	    from gw_white_list
+		<include refid="Where_white_list"></include>
+	</select>
+	
+	<insert id="addWhiteList">
+		insert into gw_white_list(
+		merNo,
+		terNo,
+		blackType,
+		blackText,
+		createdBy,
+		createDate,
+		lastUpdateBy,
+		lastUpdateDate,
+		enableFlag,
+		remark,
+		type
+		) values(
+		#{whiteListInfo.merNo},
+		#{whiteListInfo.terNo},
+		#{whiteListInfo.blackType},
+		#{whiteListInfo.blackText},
+		#{whiteListInfo.createdBy},
+		SYSDATE(),
+		#{whiteListInfo.lastUpdateBy},
+		SYSDATE(),
+		#{whiteListInfo.enableFlag},
+		#{whiteListInfo.remark},
+		#{whiteListInfo.type}
+		)
+	</insert>
+	
+	<delete id="delWhiteList">
+		delete from gw_white_list where id=#{id}
+	</delete>
+	
+	<update id="updateWhiteList">
+		update gw_white_list set
+		merNo=#{whiteListInfo.merNo},
+		terNo=#{whiteListInfo.terNo},
+		blackType=#{whiteListInfo.blackType},
+		blackText=#{whiteListInfo.blackText},
+		enableFlag=#{whiteListInfo.enableFlag},
+		remark=#{whiteListInfo.remark},
+		type=#{whiteListInfo.type}
+		where id=#{whiteListInfo.id}
+	</update>
+	
+	<select id="queryWhiteListById" resultType="com.gateway.fraud.model.WhiteListInfo">
+		select 
+		id,
+		merNo,
+		terNo,
+		blackType,
+		blackText,
+		createdBy,
+		createDate,
+		lastUpdateBy,
+		lastUpdateDate,
+		enableFlag,
+		remark,
+		type from gw_white_list where id=#{id}
+	</select>
+	
+	<select id="queryWhiteDupInfoCount" resultType="java.lang.Integer">
+		SELECT
+			COUNT(id)
+		FROM
+			gw_white_list
+		<where>
+			<if test="vo.blackText!=null and vo.blackText!=''">
+				AND
+					blackText=#{vo.blackText}
+			</if>
+			<if test="vo.merNo!=null and vo.merNo!=''">
+				AND
+					merNo=#{vo.merNo}
+			</if>
+			<if test="vo.terNo!=null and vo.terNo!=''">
+				AND
+					terNo=#{vo.terNo}
+			</if>
+		</where>
+	</select>
+</mapper>

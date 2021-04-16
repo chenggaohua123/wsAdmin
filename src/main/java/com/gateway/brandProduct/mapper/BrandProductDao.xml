@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="com.gateway.brandProduct.mapper.BrandProductDao">
+	
+	<select id="getBrandProductList" resultType="com.gateway.brandProduct.model.BrandProductInfo">
+		select id,bpname,type,createBy,createDate from gw_brand_product
+		<where>
+			<if test="condition.bpname != null and condition.bpname !=''">
+				and bpname = #{condition.bpname}
+			</if>
+			<if test="condition.type != null and condition.type !=''">
+				and type = #{condition.type}
+			</if>
+		</where>
+	</select>
+	<select id="countBrandProductList" resultType="int">
+		select count(*) from gw_brand_product
+		<where>
+			<if test="condition.bpname != null and condition.bpname !=''">
+				and bpname = #{condition.bpname}
+			</if>
+			<if test="condition.type != null and condition.type !=''">
+				and type = #{condition.type}
+			</if>
+		</where>
+	</select>
+	<insert id="addBrandProductInfo">
+		insert into gw_brand_product(
+			bpname,
+			type,
+			createBy,
+			createDate
+		)value(
+			#{brandProductInfo.bpname},
+			#{brandProductInfo.type},
+			#{brandProductInfo.createBy},
+			SYSDATE()
+		)
+	</insert>
+	
+	<select id="queryBrandProductById" resultType="com.gateway.brandProduct.model.BrandProductInfo">
+	
+		select id,bpname,type,createBy,createDate from gw_brand_product
+		where id=#{id}
+	</select>
+	
+	<update id="updatebrandProduct">
+		update gw_brand_product set
+		bpname=#{brandProductInfo.bpname},
+		type=#{brandProductInfo.type},
+		createDate=SYSDATE()
+		where id=#{brandProductInfo.id}
+	</update>
+	
+	<select id="queryBrandProductDup" resultType="int">
+		select count(*) from  gw_brand_product where bpname=#{info.bpname} 
+		<if test="info.id!=null and info.id != '' ">
+			and id!=#{info.id}
+		</if>
+	</select>
+	<delete id="deletebrandProductInfo">
+		delete from gw_brand_product where id=#{id}
+	</delete>
+</mapper>

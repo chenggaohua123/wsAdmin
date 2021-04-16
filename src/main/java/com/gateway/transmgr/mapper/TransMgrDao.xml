@@ -1,0 +1,1667 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="com.gateway.transmgr.mapper.TransMgrDao">
+
+	<insert id="insertTransInfo" parameterType="com.gateway.transmgr.model.TransInfo" >
+		insert into gw_trans_info
+		(
+			currencyId,
+			merTransAmount,
+			bankTransAmount,
+			merSettleAmount,
+			merForAmount,
+			transAmount,
+			transDate,
+			tradeNo,
+			merBusCurrency,
+			bankCurrency,
+			merSettleCurrency,
+			merNo,
+			terNo,
+			transType,
+			respCode,
+			checkToNo,
+			autoCode,
+			IPAddress,
+			email,
+			bondAmount,
+			respMsg,
+			orderNo,
+			ischecked,
+			disFee,
+			refundFee,
+			transRefundFeeStatus
+		)
+		values(
+			#{transInfo.currencyId},
+			#{transInfo.merTransAmount},
+			#{transInfo.bankTransAmount},
+			#{transInfo.merSettleAmount},
+			#{transInfo.merForAmount},
+			#{transInfo.transAmount},
+			now(),
+			#{transInfo.tradeNo},
+			#{transInfo.merBusCurrency},
+			#{transInfo.bankCurrency},
+			#{transInfo.merSettleCurrency},
+			#{transInfo.merNo},
+			#{transInfo.terNo},
+			#{transInfo.transType},
+			#{transInfo.respCode},
+			#{transInfo.checkToNo},
+			#{transInfo.autoCode},
+			#{transInfo.IPAddress},
+			#{transInfo.email},
+			#{transInfo.bondAmount},
+			#{transInfo.respMsg},
+			#{transInfo.orderNo},
+			#{transInfo.ischecked},
+			#{transInfo.disFee},
+			#{transInfo.refundFee},
+			#{transInfo.transRefundFeeStatus}
+		)
+	</insert>
+
+	<sql id="Where_Clause_Mul_Trans_Info">
+		<where>
+			<if test="condition.merNo != null and condition.merNo != '' ">
+			 and 	a.merNo=#{condition.merNo}
+			</if>
+			<if test="condition.tradeNo != null and condition.tradeNo != '' ">
+			 and 	a.tradeNo=#{condition.tradeNo}
+			</if>
+			<if test="condition.orderNo != null and condition.orderNo != '' ">
+			 and 	a.orderNo=#{condition.orderNo}
+			</if>
+			<if test="condition.respCode != null and condition.respCode != '' ">
+			 and 	a.respCode='${condition.respCode}'
+			</if>
+			<if test="condition.transDateStart != null and condition.transDateStart != ''">
+		     and a.transDate >= '${condition.transDateStart} 00:00:00'
+		    </if>
+		    <if test="condition.transDateEnd != null and condition.transDateEnd != ''">
+		      and a.transDate &lt;='${condition.transDateEnd} 23:59:59'
+		    </if>
+			<if test="condition.merURL != null and condition.merURL != '' ">
+			 and 	b.merURL=#{condition.merURL}
+			</if>
+			<if test="condition.currencyName != null and condition.currencyName != '' ">
+			 and 	c.id=#{condition.currencyName}
+			</if>
+			<if test="condition.email != null and condition.email != '' ">
+			 and 	a.email=#{condition.email}
+			</if>
+			<if test="condition.cardStart != null and condition.cardStart != '' ">
+			 and 	a.checkNo=#{condition.cardStart}
+			</if>
+			<if test="condition.cardEnd != null and condition.cardEnd != '' ">
+			 and 	a.last=#{condition.cardEnd}
+			</if>
+			<if test="condition.ipAddress != null and condition.ipAddress != '' ">
+			 and 	a.ipAddress=#{condition.ipAddress}
+			</if>
+			<if test="condition.bankName != null and condition.bankName != '' ">
+			 and 	d.id=#{condition.bankName}
+			</if>
+		</where>
+	</sql>
+	<sql id="Where_Clause_Trans_Info">
+		<where>
+				<choose>
+		<when test="cr.condition.transType == 'test' ">
+			and t.transType ='test'
+		</when>
+		<otherwise>
+		and t.transType ='sales'
+		</otherwise>
+		</choose>
+			<if test="cr.condition.isSell != null and cr.condition.isSell != '' ">
+				and t.merNo in (${cr.condition.userRefMerNo})
+			</if>
+			<if test="cr.condition.riskFilter == null or cr.condition.riskFilter == ''">
+				and t.respMsg not like '%high risk%'
+			</if>
+			<if test="cr.condition.tradeNo != null and cr.condition.tradeNo != ''">
+			  and	 t.tradeNo = #{cr.condition.tradeNo}
+			</if>
+			<if test="cr.condition.orderNo != null and cr.condition.orderNo != ''">
+			  and t.orderNo = #{cr.condition.orderNo}
+			</if>
+			<if test="cr.condition.email != null and cr.condition.email != ''">
+			  and	 t.email = #{cr.condition.email}
+			</if>
+			<if test="cr.condition.cardStart !=null and cr.condition.cardStart !=''">
+			  and t.checkNo = #{cr.condition.cardStart}
+			</if>
+			<if test="cr.condition.cardEnd !=null and cr.condition.cardEnd !=''">
+			  and t.last = #{cr.condition.cardEnd}
+			</if>
+			<if test="cr.condition.webInfo != null and cr.condition.webInfo != ''">
+			  and	 t.webInfo = #{cr.condition.webInfo}
+			</if>
+			<if test="cr.condition.payWebSite != null and cr.condition.payWebSite != ''">
+			  and	 t.payWebSite = #{cr.condition.payWebSite}
+			</if>
+			<if test="cr.condition.cardType != null and cr.condition.cardType != ''">
+			  and	 t.cardType = #{cr.condition.cardType}
+			</if>
+			<if test="cr.condition.bankName != null and cr.condition.bankName != ''">
+			  and c.currencyName = #{cr.condition.bankName}
+			</if>
+			<if test="cr.condition.transDishonor != null and cr.condition.transDishonor != ''">
+			  and	 t.transDishonor = #{cr.condition.transDishonor}
+			</if>
+			<if test="cr.condition.transFrozen != null and cr.condition.transFrozen != ''">
+			  and t.transFrozen = #{cr.condition.transFrozen}
+			</if>
+			<if test="cr.condition.transRefund != null and cr.condition.transRefund != ''">
+			  and t.transRefund = #{cr.condition.transRefund}
+			</if>
+			<if test="cr.condition.grPerName != null and cr.condition.grPerName != ''">
+			  and	 h.grPerName = #{cr.condition.grPerName}
+			</if>
+			<if test="cr.condition.grphoneNumber != null and cr.condition.grphoneNumber != ''">
+			  and	 h.grphoneNumber = #{cr.condition.grphoneNumber}
+			</if>
+			<if test="cr.condition.ipAddress != null and cr.condition.ipAddress != ''">
+			  and	 t.IPAddress = #{cr.condition.ipAddress}
+			</if>
+		
+			<if test="cr.condition.relNo !=null and cr.condition.relNo !=''">
+			  and  t.rcr.condition.relNo}
+			</if>
+			<if test="cr.condition.merNo !=null and cr.condition.merNo !=''">
+			  and  t.merNo = #{cr.condition.merNo}
+			</if>
+			<if test="cr.condition.terNo !=null and cr.condition.terNo !=''">
+			  and  t.terNo = #{cr.condition.terNo}
+			</if>
+			<if test="cr.condition.respCode == '00'">
+			  and  t.respCode = #{cr.condition.respCode}
+			</if>
+			<if test="cr.condition.respCode == '0000'">
+			  and  t.respCode = #{cr.condition.respCode}
+			</if>
+			<if test="cr.condition.respCode == '01'">
+			  and  (t.respCode &lt;> '00'  or t.respCode is null)
+			</if>
+			<if test="cr.condition.transType !=null and cr.condition.transType !=''">
+			  and  t.transType=#{cr.condition.transType}
+			</if>
+			<if test="cr.condition.transDateStart != null and cr.condition.transDateStart != ''">
+		     	and transDate >= '${cr.condition.transDateStart}'
+		    </if>
+		    <if test="cr.condition.transDateEnd != null and cr.condition.transDateEnd != ''">
+		      	and transDate &lt;='${cr.condition.transDateEnd}'
+		    </if>	
+			<if test="cr.condition.settleDateStart != null and cr.condition.settleDateStart != ''">
+		    	 and settleDate >= '${cr.condition.settleDateStart} 00:00:00'
+		    </if>
+		    <if test="cr.condition.settleDateEnd != null and cr.condition.settleDateEnd != ''">
+		     	 and settleDate &lt;='${cr.condition.settleDateEnd} 23:59:59.999'
+		    </if>
+		    <if test="cr.condition.batchNo != null and cr.condition.batchNo != '' ">
+			   <choose>
+			    	<when test="cr.condition.batchNo == 1">
+			    		and t.batchNo is not null
+			    	</when>
+			    	<otherwise>
+			    		and t.batchNo is null
+			    	</otherwise>
+			    </choose>
+		    </if>
+		    <if test="cr.condition.ischecked !=null and cr.condition.ischecked !=''">
+		    	and ischecked=#{cr.condition.ischecked}
+		    </if>
+		    <if test="cr.condition.access != null and cr.condition.access  != ''">
+		    	and access =#{cr.condition.access}
+		    </if>
+		    <if test="cr.condition.currencyId != null and  cr.condition.currencyId != '' ">
+		    	and t.currencyId=#{cr.condition.currencyId}
+		    </if>
+		    <if test="cr.condition.bankId != null and  cr.condition.bankId != '' and cr.condition.bankId != 0 ">
+		    	and b.id=#{cr.condition.bankId}
+		    </if>
+		    
+		    <if test="cr.condition.industry != null and cr.condition.industry != '' ">
+		    	and t.merNo in (
+		    	select merNo from gw_merchant_info where industry=#{cr.condition.industry}
+		    	)
+		    </if>
+		    <if test="cr.condition.merchantType != null and cr.condition.merchantType != '' ">
+		    	and t.merNo in (
+		    	select merNo from gw_merchant_info where type=#{cr.condition.merchantType}
+		    	)
+		    </if>
+		    <if test="cr.condition.grAddress != null and  cr.condition.grAddress != '' ">
+		    	and h.grAddress=#{cr.condition.grAddress}
+		    </if>
+		  	<if test="cr.condition.cardAddress != null and  cr.condition.cardAddress != '' ">
+		    	and h.cardAddress=#{cr.condition.cardAddress}
+		    </if>
+		    </where>
+	</sql>
+	
+	<sql id="Where_Clause_Trans_Record_Info">
+		<where>
+			<if test="condition.tradeNo != null and condition.tradeNo != ''">
+			  and	 tradeNo = #{condition.tradeNo}
+			</if>
+			<if test="condition.merNo !=null and condition.merNo !=''">
+			  and  merNo = #{condition.merNo}
+			</if>
+			<if test="condition.terNo !=null and condition.terNo !=''">
+			  and terNo = #{condition.terNo}
+			</if>
+			<if test="condition.orderNo !=null and condition.orderNo !=''">
+			  and orderNo = #{condition.orderNo}
+			</if>
+			<if test="condition.merURL !=null and condition.merURL !=''">
+			  and merURL like CONCAT(CONCAT('%', '${condition.merURL}'),'%')
+			</if>
+			<if test="condition.description !=null and condition.description !=''">
+			  and description like CONCAT(CONCAT('%', '${condition.description}'),'%')
+			</if>
+			<if test="condition.transDateStart != null and condition.transDateStart != ''">
+		     and enterTime >= '${condition.transDateStart} 00:00:00'
+		    </if>
+		    <if test="condition.transDateEnd != null and condition.transDateEnd != ''">
+		      and enterTime &lt;='${condition.transDateEnd} 23:59:59.999'
+		    </if>	
+		     <if test="condition.type != null and condition.type != '' ">
+					and merNo in (select merNo from gw_merchant_info where type=#{condition.type})
+			</if>
+			<if test="condition.startDate != null and condition.startDate != '' ">
+					and enterTime >= '${condition.startDate} 00:00:00'
+			</if>
+			<if test="condition.endDate != null and condition.endDate != '' ">
+				and enterTime &lt;='${condition.endDate} 23:59:59'
+			</if>
+			<if test="condition.merWebsite != null and condition.merWebsite != '' ">
+					and merURL like '%${condition.merWebsite}%'
+				</if>
+				<if test="condition.type != null and condition.type != '' ">
+					and merNo in(select merNo from gw_merchant_info where type =#{condition.type})
+				</if>
+		</where>
+	</sql>
+	
+	<sql id="Where_Clause_Bank_Settle_Detail">
+		<where>
+			<if test="condition.checkSucceed != null and condition.checkSucceed != '' and condition.checkSucceed != '100'">
+				and checkSucceed = #{condition.checkSucceed}
+			</if>
+			<if test="condition.checkSucceed == '100'">
+				and checkSucceed != 1
+			</if>
+			<if test="condition.batchNo != null and condition.batchNo != ''">
+				and batchNo = #{condition.batchNo}
+			</if>
+			<if test="condition.merNo != null and condition.merNo != ''">
+				and merchantNo = #{condition.merNo}
+			</if>
+			<if test="condition.terNo != null and condition.terNo != ''">
+				and terNo = #{condition.terNo}
+			</if>
+			<if test="condition.refNo != null and condition.refNo != ''">
+				and refNo = #{condition.refNo}
+			</if>
+			<if test="condition.settleDateStart != null and condition.settleDateStart != ''">
+				and settleDate >= '${condition.settleDateStart} 00:00:00'
+			</if>
+			<if test="condition.settleDateEnd != null and condition.settleDateEnd != ''">
+				and settleDate &lt;= '${condition.settleDateEnd} 00:00:00'
+			</if>
+			
+		</where>
+	</sql>
+	
+	<sql id="Where_Clause_Trans_transType_Info">
+		<where>
+			<if test="condition.tradeNo != null and condition.tradeNo != ''">
+			  and	tradeNo = #{condition.tradeNo}
+			</if>
+			<if test="condition.relNo !=null and condition.relNo !=''">
+			  and  relNo = #{condition.relNo}
+			</if>
+			<if test="condition.transType !=null and condition.transType !=''">
+			  and  transType=#{condition.transType}
+			</if>
+		</where>
+	</sql>
+	<select id="getTransList" resultType="com.gateway.transmgr.model.TransInfo">
+				SELECT
+					t.tradeNo,
+					t.merBusCurrency,
+					t.merTransAmount,
+					t.bankCurrency,
+					t.bankTransAmount,
+					t.merSettleCurrency,
+					t.merSettleAmount,
+					t.merNo,
+					t.terNo,
+					t.cardType,
+					t.respMsg,
+					t.transDate,
+					t.respCode,
+					t.checkNo,
+					t.middle,
+					t.last,
+					t.email,
+					t.ischecked,
+					t.orderNo,
+					c.currencyName,
+					t.ipAddress,
+					t.payWebSite,
+					t.autoCode
+				FROM
+					gw_trans_info t 
+				LEFT JOIN gw_currency_info c ON t.currencyId = c.id
+				LEFT JOIN gw_bank_info b ON c.bankId = b.id
+				left join gw_trans_order_info h on h.tradeNo=t.tradeNo
+				<include refid="Where_Clause_Trans_Info"/>
+		order by transDate desc
+	</select>
+	
+	<select id="exportTransList" resultType="com.gateway.transmgr.model.TransInfo">
+				SELECT
+					t.id,
+					t.tradeNo,
+					t.relNo,
+					t.merBusCurrency,
+					t.merTransAmount,
+					t.bankCurrency,
+					t.bankTransAmount,
+					t.merSettleCurrency,
+					t.merSettleAmount,
+					t.merNo,
+					t.terNo,
+					t.cardType,
+					t.cardName,
+					t.bankName,
+					t.agentNo,
+					t.parentAgentNo,
+					t.transDate,
+					t.settleBatchNo,
+					t.settleDate,
+					t.batchNo,
+					t.posNo,
+					t.currencyId,
+					t.singleFee,
+					t.merForAmount,
+					t.transType,
+					t.respCode,
+					t.checkToNo,
+					t.bankRefNo,
+					t.bankPosNo,
+					t.bankBatchNo,
+					t.autoCode,
+					t.bankTransDate,
+					t.bankTransTime,
+					t.checkedBatchNo,
+					t.transAmount,
+					t.IPAddress,
+					t.checkNo,
+					t.middle,
+					t.last,
+					t.email,
+					t.respMsg,
+					t.bondAmount,
+					t.ischecked,
+					t.rvfId,
+					t.isRefund,
+					t.isDishonor,
+					t.isFrozen,
+					t.isThaw,
+					t.orderNo,
+					t.access,
+					t.bondBatchNo,
+					t.payWebsite as payWebsite,
+					t.transStatus,
+					t.transDishonor,
+					t.transFrozen,
+					t.transThaw,
+					t.transRefund,
+					t.webInfo,
+					t.riskScore,
+					t.ipCountry,
+					c.currencyName,
+					t.acquirer,
+					b.bankName as acquiringBank,
+					m.merchantName,
+					h.cardFullName,
+					h.cardCountry,
+					h.cardState,
+					h.cardAddress,
+					h.grphoneNumber,
+					h.grPerName,
+					h.grState,
+					h.grEmail,
+					h.grCountry,
+					h.grZipCode,
+					h.grAddress ,
+					k.trackNo,
+					k.iogistics,
+			   (CASE WHEN  SUM(CASE d.transType WHEN 'refund' THEN d.transMoney ELSE 0 END)>0 THEN 1 ELSE 0 END) refundStatus,
+				FORMAT(SUM(CASE d.transType WHEN 'refund' THEN d.transMoney ELSE 0 END),2) AS refundAmount,
+				(CASE WHEN  SUM(CASE d.transType WHEN 'dishonor' THEN d.transMoney ELSE 0 END)>0 THEN 1 ELSE 0 END) dishonorStatus,
+				FORMAT(SUM(CASE d.transType WHEN 'dishonor' THEN d.transMoney ELSE 0 END),2) AS dishonorAmount,
+				(CASE WHEN  SUM(CASE d.transType WHEN 'frozen' THEN d.transMoney WHEN 'thaw' THEN d.transMoney*(-1) ELSE  0 END)>0 THEN 1 ELSE 0 END) frozenStatus,
+				FORMAT(SUM(CASE d.transType WHEN 'frozen' THEN d.transMoney WHEN 'thaw' THEN d.transMoney*(-1) ELSE  0 END),2) AS frozenAmount,
+				(SELECT GROUP_CONCAT(CONCAT(f.goodsName,',',f.quantity,',',f.goodsPrice)) AS goodsInfo
+						FROM gw_trans_goods_info f WHERE f.tradeNo=t.tradeNo
+					) goodsInfo
+				FROM
+					gw_trans_info t  left join gw_trans_info_log d ON t.tradeNo=d.tradeNo AND d.status=2
+				LEFT JOIN gw_currency_info c ON t.currencyId = c.id
+				LEFT JOIN gw_bank_info b ON c.bankId = b.id
+				left join gw_merchant_info m on m.merNo=t.merNo
+				left join gw_trans_order_info h on h.tradeNo=t.tradeNo
+				left join gw_GoodsPress k on k.tradeNo=t.tradeNo 
+				<include refid="Where_Clause_Trans_Info"/>
+			group by t.id
+		order by t.id asc
+	</select>
+	
+	<select id="queryTransListByTradeNo" resultType="com.gateway.transmgr.model.TransInfo">
+				SELECT
+					t.id,
+					t.tradeNo,
+					t.relNo,
+					t.merBusCurrency,
+					t.merTransAmount,
+					t.bankCurrency,
+					t.bankTransAmount,
+					t.merSettleCurrency,
+					t.merSettleAmount,
+					t.merNo,
+					t.terNo,
+					t.cardType,
+					t.cardName,
+					t.bankName,
+					t.agentNo,
+					t.parentAgentNo,
+					t.transDate,
+					t.settleBatchNo,
+					t.settleDate,
+					t.batchNo,
+					t.posNo,
+					t.currencyId,
+					t.singleFee,
+					t.merForAmount,
+					t.transType,
+					t.respCode,
+					t.checkToNo,
+					t.bankRefNo,
+					t.bankPosNo,
+					t.bankBatchNo,
+					t.autoCode,
+					t.bankTransDate,
+					t.bankTransTime,
+					t.checkedBatchNo,
+					t.transAmount,
+					t.IPAddress,
+					t.checkNo,
+					t.middle,
+					t.last,
+					t.email,
+					t.respMsg,
+					t.bondAmount,
+					t.ischecked,
+					t.rvfId,
+					t.isRefund,
+					t.isDishonor,
+					t.isFrozen,
+					t.isThaw,
+					t.orderNo,
+					t.access,
+					t.bondBatchNo,
+					t.payWebsite as payWebsite,
+					t.transStatus,
+					t.transDishonor,
+					t.transFrozen,
+					t.transThaw,
+					t.transRefund,
+					t.webInfo,
+					t.riskScore,
+					t.ipCountry,
+					c.currencyName,
+					t.acquirer,
+					b.bankName as acquiringBank,
+					m.merchantName,
+					t.autoCode,
+					h.cardCountry,
+					h.cardState,
+					h.cardAddress,
+					h.grphoneNumber,
+					h.grPerName,
+					h.cardFullName,
+					h.grState,
+					h.grEmail,
+					h.grCountry,
+					h.grZipCode,
+					h.grAddress ,
+					k.trackNo,
+					k.iogistics,
+					t.bankRealAmount,
+					t.bankRealCurrency,
+					t.bankRealRate,
+			   (CASE WHEN  SUM(CASE d.transType WHEN 'refund' THEN d.transMoney ELSE 0 END)>0 THEN 1 ELSE 0 END) refundStatus,
+				FORMAT(SUM(CASE d.transType WHEN 'refund' THEN d.transMoney ELSE 0 END),2) AS refundAmount,
+				(CASE WHEN  SUM(CASE d.transType WHEN 'dishonor' THEN d.transMoney ELSE 0 END)>0 THEN 1 ELSE 0 END) dishonorStatus,
+				FORMAT(SUM(CASE d.transType WHEN 'dishonor' THEN d.transMoney ELSE 0 END),2) AS dishonorAmount,
+				(CASE WHEN  SUM(CASE d.transType WHEN 'frozen' THEN d.transMoney WHEN 'thaw' THEN d.transMoney*(-1) ELSE  0 END)>0 THEN 1 ELSE 0 END) frozenStatus,
+				FORMAT(SUM(CASE d.transType WHEN 'frozen' THEN d.transMoney WHEN 'thaw' THEN d.transMoney*(-1) ELSE  0 END),2) AS frozenAmount
+				FROM
+					gw_trans_info t  left join gw_trans_info_log d ON t.tradeNo=d.tradeNo AND d.status=2
+				LEFT JOIN gw_currency_info c ON t.currencyId = c.id
+				LEFT JOIN gw_bank_info b ON c.bankId = b.id
+				left join gw_merchant_info m on m.merNo=t.merNo
+				left join gw_trans_order_info h on h.tradeNo=t.tradeNo
+				left join gw_GoodsPress k on k.tradeNo=t.tradeNo 
+				where t.tradeNo=#{tradeNo}
+			group by t.tradeNo
+	</select>
+	<select id="queryGoodsInfoByTradeNo" resultType="com.gateway.transmgr.model.GoodsInfo">
+		select * from gw_trans_goods_info where tradeNo=#{tradeNo}
+	</select>
+	<select id="countTransList" resultType="int">
+		select count(*)  from(
+				SELECT
+					t.id
+				FROM
+					gw_trans_info t
+				LEFT JOIN gw_currency_info c ON t.currencyId = c.id
+				LEFT JOIN gw_bank_info b ON c.bankId = b.id
+				left join gw_trans_order_info h on h.tradeNo=t.tradeNo 
+				<include refid="Where_Clause_Trans_Info"/>
+		) as q
+		
+	</select>
+	
+	<select id="queryTransDetailByTradeNo" resultType="com.gateway.transmgr.model.TransInfo">
+		SELECT
+			t.*,
+			c.currencyName,
+			b.bankName as acquiringBank,
+			f.*,
+			d.*
+		FROM
+			gw_trans_info t
+		LEFT JOIN gw_currency_info c ON t.currencyId = c.id
+		LEFT JOIN gw_bank_info b ON c.bankId = b.id
+   		LEFT JOIN gw_GoodsPress f on f.tradeNo=t.tradeNo
+		LEFT JOIN gw_trans_order_info d on d.tradeNo=t.tradeNo
+		where t.tradeNo = #{tradeNo}
+	</select>
+	
+	<select id="queryTransDetailByRelNo" resultType="com.gateway.transmgr.model.TransInfo">
+		SELECT
+			t.*,
+			c.currencyName,
+			b.bankName as acquiringBank
+		FROM
+			gw_trans_info t
+		LEFT JOIN gw_currency_info c ON t.currencyId = c.id
+		LEFT JOIN gw_bank_info b ON c.bankId = b.id
+		where t.relNo = #{relNo}
+	</select>
+	
+	<sql id="Where_Clause_SettleTrans_Info">
+		<where>
+			<if test="condition.tradeNo != null and condition.tradeNo != ''">
+			  and t.tradeNo = #{condition.tradeNo}
+			</if>
+			<if test="condition.relNo !=null and condition.relNo !=''">
+			   and t.relNo = #{condition.relNo}
+			</if>
+			<if test="condition.transType !=null and condition.transType !=''">
+			   and t.transType=#{condition.transType}
+			</if>
+			<if test="condition.transDateStart != null and condition.transDateStart != ''">
+		     and transDate >= '${condition.transDateStart} 00:00:00'
+		    </if>
+		    <if test="condition.transDateEnd != null and condition.transDateEnd != ''">
+		      and transDate &lt;='${condition.transDateEnd} 23:59:59'
+		    </if>	
+			<if test="condition.settleDateStart != null and condition.settleDateStart != ''">
+		     and settleDate >= '${condition.settleDateStart} 00:00:00'
+		    </if>
+		    <if test="condition.settleDateEnd != null and condition.settleDateEnd != ''">
+		      and settleDate &lt;='${condition.settleDateEnd} 23:59:59'
+		    </if>	
+			<if test="condition.terNo != null and condition.terNo != ''">
+             and  t.terNo=#{condition.terNo}
+           </if>
+           <if test="condition.merNo != null and condition.merNo != ''">
+             and  t.merNo=#{condition.merNo}
+           </if>
+		</where>
+	</sql>
+	
+	<select id="getSettleTransList" resultType="com.gateway.transmgr.model.SettleTransInfo">
+	  select 
+	       t.*,
+			c.currencyName,
+			b.bankName as acquiringBank
+	 from gw_settle_trans_info t
+	    LEFT JOIN gw_currency_info c ON t.currencyId = c.id
+		LEFT JOIN gw_bank_info b ON c.bankId = b.id
+	  <include refid="Where_Clause_SettleTrans_Info"/>
+	  order by t.transDate desc
+	</select>
+	
+	<select id="getSettleTransAmount" resultType="com.gateway.transmgr.model.SettleTransInfo">
+		SELECT SUM(transAmount) as total ,t.transType
+		FROM
+			gw_settle_trans_info t
+		LEFT JOIN gw_currency_info c ON t.currencyId = c.id
+		LEFT JOIN gw_bank_info b ON c.bankId = b.id
+		LEFT JOIN gw_transtype_info ty on ty.transType = t.transType
+	  	<include refid="Where_Clause_SettleTrans_Info"/>
+		group by t.transType
+	</select>
+	
+	<select id="countSettleTransList" resultType="int">
+		SELECT
+			count(*)
+		FROM
+			gw_settle_trans_info t
+	    LEFT JOIN gw_currency_info c ON t.currencyId = c.id
+		LEFT JOIN gw_bank_info b ON c.bankId = b.id
+		<include refid="Where_Clause_SettleTrans_Info"/>
+	</select>
+	
+	<select id="querySettleTransDetailByTradeNo" resultType="com.gateway.transmgr.model.SettleTransInfo">
+		SELECT
+			t.*,
+			c.currencyName,
+			b.bankName as acquiringBank
+		FROM
+			gw_settle_trans_info t
+		LEFT JOIN gw_currency_info c ON t.currencyId = c.id
+		LEFT JOIN gw_bank_info b ON c.bankId = b.id
+		where t.tradeNo = #{tradeNo}
+	</select>
+	
+	<select id="getTransAmountList" resultType="com.gateway.transmgr.model.TransInfo">
+		SELECT SUM(transAmount) as total ,t.transType
+		FROM
+			<!-- gw_trans_info t
+		LEFT JOIN gw_currency_info c ON t.currencyId = c.id
+		LEFT JOIN gw_bank_info b ON c.bankId = b.id
+		LEFT JOIN gw_transtype_info ty on ty.transType = t.transType -->
+		
+		gw_trans_info t 
+		LEFT JOIN gw_currency_info c ON t.currencyId = c.id
+			LEFT JOIN gw_bank_info b ON c.bankId = b.id
+			left join gw_trans_order_info h on h.tradeNo=t.tradeNo 
+		<include refid="Where_Clause_Trans_Info"/>
+		group by t.transType
+		
+		
+	</select>
+	
+	<select id="countTransAmountList" resultType="int">
+	 	SELECT count(transAmount) from gw_trans_info
+	</select>
+	
+	
+	<select id="querySettleTransDetailByRelNo" resultType="com.gateway.transmgr.model.SettleTransInfo">
+		SELECT
+			t.*,
+			c.currencyName,
+			b.bankName
+		FROM
+			gw_settle_trans_info t
+		LEFT JOIN gw_currency_info c ON t.currencyId = c.id
+		LEFT JOIN gw_bank_info b ON c.bankId = b.id
+		where t.relNo = #{relNo}
+	</select>
+	
+	<select id="queryTransSignInfoByTradeNo" resultType="com.gateway.api.model.PicInfo">
+		select * from gw_pic_info where tradeNo = #{tradeNo} limit 1
+	</select>
+	
+	<select id="queryGwTransInfo" resultType="com.gateway.transmgr.model.TransInfo">
+	   select * from gw_trans_info where tradeNo=#{tradeNo}
+	</select>
+	<insert id="saveBankSettleDetail">
+		insert into gw_bank_settle_detail 
+		(
+			settleDate,
+			merchantNo,
+			terNo,
+			msgType,
+			pscode,
+			cardNo,
+			transAmount,
+			posNo,
+			transDate,
+			serviceCode,
+			transtypecode,
+			isuingBank,
+			refNo,
+			oriPosNo,
+			oriRefNo,
+			oriTransDate,
+			forAmount,
+			batchNo
+		) 
+		values 
+		(
+			#{info.settleDate},
+			#{info.merchantNo},
+			#{info.terNo},
+			#{info.msgType},
+			#{info.pscode},
+			#{info.cardNo},
+			#{info.transAmount},
+			#{info.posNo},
+			#{info.transDate},
+			#{info.serviceCode},
+			#{info.transtypecode},
+			#{info.isuingBank},
+			#{info.refNo},
+			#{info.oriPosNo},
+			#{info.oriRefNo},
+			#{info.oriTransDate},
+			#{info.forAmount},
+			#{info.batchNo}
+		)
+		
+	</insert>
+	<select id="getBankSettleMaxBatchNo" resultType="int">
+		select IFNULL(max(batchNo),0) from gw_bank_settle_detail
+	</select>
+	
+	<select id="queryBankSettleDetail" resultType="com.gateway.transmgr.model.BankSettleDetail">
+		select * from gw_bank_settle_detail 
+		<include refid="Where_Clause_Bank_Settle_Detail"/>
+		order by settleDate desc
+	</select>
+	
+	<select id="countBankSettleDetail" resultType="int">
+		select count(*) from gw_bank_settle_detail 
+		<include refid="Where_Clause_Bank_Settle_Detail"/>
+		order by settleDate desc
+	</select>
+	
+	<update id="updateCheckStatusSucceed">
+		update gw_bank_settle_detail set checkSucceed = 1 where id in
+		<foreach collection="ids" item="id" open="(" close=")" separator=",">
+			#{id}
+		</foreach>
+	</update>
+	
+	<select id="queryCurrencyInfoByMerNoAndTerNo" resultType="com.gateway.bankmgr.model.CurrencyInfo">
+		select * from gw_currency_info where merchantNo = #{merNo} and terNo = #{terNo}
+	</select>
+	
+	<select id="queryTransRecordInfo" resultType="com.gateway.transmgr.model.TransRecordInfo">
+		select * from gw_Trade_order_record
+		<include refid="Where_Clause_Trans_Record_Info"/>
+		order by id DESC
+		
+	</select>
+	<select id="countTransRecordInfo" resultType="int">
+		select count(*) from gw_Trade_order_record
+		<include refid="Where_Clause_Trans_Record_Info"/>
+		order by id DESC
+	</select>
+	
+	<select id="queryTransCountInfo" resultType="com.gateway.transmgr.model.TransCount">
+		<!-- SELECT count(*) countTrans,(
+			SELECT count(*) from gw_trans_info t 
+			<include refid="Where_Clause_Trans_Info"/>
+			and respCode='00'
+		) successTrans from gw_trans_info t 
+		<include refid="Where_Clause_Trans_Info"/> -->
+		
+		
+		select count(*) countTrans,sum(case respCode when '00' then 1 else 0 end ) successTrans from (
+			select respCode from  gw_trans_info t 
+				LEFT JOIN gw_currency_info c ON t.currencyId = c.id
+				LEFT JOIN gw_bank_info b ON c.bankId = b.id
+				left join gw_trans_order_info h on h.tradeNo=t.tradeNo 
+			<include refid="Where_Clause_Trans_Info"/>
+		
+			) q
+	</select>
+	
+	<select id="queryGroupCountInfo" parameterType="com.gateway.transmgr.model.TransCountModel" resultType="com.gateway.transmgr.model.TransCountModel">
+		${info.sql} 
+		
+		(select t.merSettleCurrency,t.merSettleAmount,t.bankCurrency,t.bankTransAmount,t.transType,t.respCode,t.merTransAmount,t.merBusCurrency from  gw_trans_info t 
+				<!--  left join gw_trans_info_log d ON t.tradeNo=d.tradeNo AND d.status=2-->
+				LEFT JOIN gw_currency_info c ON t.currencyId = c.id
+				LEFT JOIN gw_bank_info b ON c.bankId = b.id
+				left join gw_merchant_info m on m.merNo=t.merNo
+				left join gw_trans_order_info h on h.tradeNo=t.tradeNo 
+				<!-- left join gw_GoodsPress k on k.tradeNo=t.tradeNo -->
+			<include refid="Where_Clause_Trans_Info"/>
+		
+			<!--  -group by t.tradeNo-->) q
+		${info.where}  
+	</select>
+	
+	<select id="queryMulTransInfo" resultType="com.gateway.transmgr.model.MulTransInfo">
+		SELECT
+			a.merNo,
+			a.tradeNo,
+			a.orderNo,
+			a.ipAddress,
+			a.transDate,
+			a.respCode,
+			a.respMsg,
+			a.merBusCurrency,
+			a.merTransAmount,
+			c.currencyName,
+			b.merURL,
+			a.checkNo,
+			a.last,
+			a.email
+		FROM 
+			gw_trans_info a LEFT JOIN gw_Trade_order_record b ON a.tradeNo=b.tradeNo
+			LEFT JOIN gw_currency_info c ON a.currencyId=c.id
+			LEFT JOIN gw_bank_info d ON c.bankId=d.id 
+		<include refid="Where_Clause_Mul_Trans_Info"/>
+		order by  a.transDate desc 
+	</select>
+	<select id="countMulTransInfo" resultType="int">
+		SELECT
+			count(a.tradeNo)
+		FROM 
+			gw_trans_info a LEFT JOIN gw_Trade_order_record b ON a.tradeNo=b.tradeNo
+			LEFT JOIN gw_currency_info c ON a.currencyId=c.id 
+			LEFT JOIN gw_bank_info d ON c.bankId=d.id
+		<include refid="Where_Clause_Mul_Trans_Info"/>
+	</select>
+	
+	
+	<select id="queryTransInfo" resultType="com.gateway.transmgr.model.TransDetailInfo">
+	select t.*,
+			GROUP_CONCAT(CONCAT(g.goodsName,',',g.quantity,',',g.goodsPrice)) AS goodsInfoByte
+		FROM
+			(SELECT 
+				a.tradeNo,
+				a.orderNo,
+				a.transDate,
+				a.merBusCurrency,
+				FORMAT(a.merTransAmount,2) as merTransAmount,
+				a.bankCurrency,
+				FORMAT(a.bankTransAmount,2) as bankTransAmount,
+				a.merSettleCurrency,
+				FORMAT(a.merSettleAmount,2) as merSettleAmount,
+				FORMAT(a.merForAmount,2) as merForAmount,
+				FORMAT(a.bondAmount,2) as bondAmount,
+				FORMAT(a.singleFee,2) as singleFee,
+				a.cardType,
+				a.riskScore,
+				a.respCode,
+				a.respMsg,
+				a.terNo,
+				a.merNo,
+				a.checkNo,
+				a.middle,
+				a.last,
+				a.checkToNo,
+				c.acquirer,
+				a.payWebSite,
+				a.email,
+				b.grPerName,
+				b.grphoneNumber,
+				a.ipAddress,
+				b.grCountry,
+				b.grState,
+				b.grCity,
+				b.grAddress,
+				b.grZipCode,
+				b.cardCountry,	
+				b.cardState,
+				b.cardCity,
+				b.cardAddress,
+				b.cardZipCode,
+				b.cardFullName,
+				b.cardFullPhone,
+				b.cardEmail,
+				f.trackNo,
+				f.iogistics,
+				a.webInfo,
+				a.ischecked,
+				a.batchNo,
+				a.access,
+				c.currencyName,
+				(CASE WHEN  SUM(CASE d.transType WHEN 'refund' THEN d.transMoney ELSE 0 END)>0 THEN 1 ELSE 0 END) refundStatus,
+				FORMAT(SUM(CASE d.transType WHEN 'refund' THEN d.transMoney ELSE 0 END),2) AS refundAmount,
+				(CASE WHEN  SUM(CASE d.transType WHEN 'dishonor' THEN d.transMoney ELSE 0 END)>0 THEN 1 ELSE 0 END) dishonorStatus,
+				FORMAT(SUM(CASE d.transType WHEN 'dishonor' THEN d.transMoney ELSE 0 END),2) AS dishonorAmount,
+				(CASE WHEN  SUM(CASE d.transType WHEN 'frozen' THEN d.transMoney WHEN 'thaw' THEN d.transMoney*(-1) ELSE  0 END)>0 THEN 1 ELSE 0 END) frozenStatus,
+				FORMAT(SUM(CASE d.transType WHEN 'frozen' THEN d.transMoney WHEN 'thaw' THEN d.transMoney*(-1) ELSE  0 END),2) AS frozenAmount,
+				max(d.checkDate) exceptionDate
+			FROM 
+				gw_trans_info a LEFT JOIN gw_trans_info_log d ON a.tradeNo=d.tradeNo AND d.status=2
+				LEFT JOIN gw_currency_info c ON a.currencyId=c.id
+				LEFT JOIN gw_trans_order_info b ON a.tradeNo=b.tradeNo
+				LEFT JOIN gw_GoodsPress f ON a.tradeNo=f.tradeNo
+			where a.tradeNo=#{TradeNo}
+			GROUP BY 
+				a.tradeNo) AS t LEFT JOIN gw_trans_goods_info g ON t.tradeNo=g.tradeNo
+			GROUP BY  t.tradeNo order by t.transDate DESC
+	</select>
+	<select id="queryTransInfoByTradeNos" resultType="com.gateway.transmgr.model.TransDetailInfo">
+	
+	SELECT
+					t.id,
+					t.tradeNo,
+					t.relNo,
+					t.merBusCurrency,
+					t.merTransAmount,
+					t.bankCurrency,
+					t.bankTransAmount,
+					t.merSettleCurrency,
+					t.merSettleAmount,
+					t.merNo,
+					t.terNo,
+					t.cardType,
+					t.cardName,
+					t.bankName,
+					t.agentNo,
+					t.parentAgentNo,
+					t.transDate,
+					t.settleBatchNo,
+					t.settleDate,
+					t.batchNo,
+					t.posNo,
+					t.currencyId,
+					t.singleFee,
+					t.merForAmount,
+					t.transType,
+					t.respCode,
+					t.checkToNo,
+					t.bankRefNo,
+					t.bankPosNo,
+					t.bankBatchNo,
+					t.autoCode,
+					t.bankTransDate,
+					t.bankTransTime,
+					t.checkedBatchNo,
+					t.transAmount,
+					t.IPAddress,
+					t.checkNo,
+					t.middle,
+					t.last,
+					t.email,
+					t.respMsg,
+					t.bondAmount,
+					t.ischecked,
+					t.rvfId,
+					t.isRefund,
+					t.isDishonor,
+					t.isFrozen,
+					t.isThaw,
+					t.orderNo,
+					t.access,
+					t.bondBatchNo,
+					t.payWebsite as payWebsite,
+					t.transStatus,
+					t.transDishonor,
+					t.transFrozen,
+					t.transThaw,
+					t.transRefund,
+					t.webInfo,
+					t.riskScore,
+					t.ipCountry,
+					c.currencyName,
+					c.acquirer,
+					b.bankName as acquiringBank,
+					m.merchantName,
+					h.cardFullName,
+					h.cardFullPhone,
+					h.cardCountry,
+					h.cardState,
+					h.cardAddress,
+					h.grphoneNumber,
+					h.grPerName,
+					h.grState,
+					h.grEmail,
+					h.grCountry,
+					h.grZipCode,
+					h.grAddress ,
+					k.trackNo,
+					k.iogistics,
+					t.acquirer,
+					(SELECT CPDDate FROM gw_trans_complaint_info r where r.tradeNo=t.tradeNo and type=1 limit 1) as CPDDate,  
+			   (CASE WHEN  SUM(CASE d.transType WHEN 'refund' THEN d.transMoney ELSE 0 END)>0 THEN 1 ELSE 0 END) refundStatus,
+				FORMAT(SUM(CASE d.transType WHEN 'refund' THEN d.transMoney ELSE 0 END),2) AS refundAmount,
+				(CASE WHEN  SUM(CASE d.transType WHEN 'dishonor' THEN d.transMoney ELSE 0 END)>0 THEN 1 ELSE 0 END) dishonorStatus,
+				FORMAT(SUM(CASE d.transType WHEN 'dishonor' THEN d.transMoney ELSE 0 END),2) AS dishonorAmount,
+				(CASE WHEN  SUM(CASE d.transType WHEN 'frozen' THEN d.transMoney WHEN 'thaw' THEN d.transMoney*(-1) ELSE  0 END)>0 THEN 1 ELSE 0 END) frozenStatus,
+				FORMAT(SUM(CASE d.transType WHEN 'frozen' THEN d.transMoney WHEN 'thaw' THEN d.transMoney*(-1) ELSE  0 END),2) AS frozenAmount,
+				(SELECT GROUP_CONCAT(CONCAT(f.goodsName,',',f.quantity,',',f.goodsPrice)) AS goodsInfo
+						FROM gw_trans_goods_info f WHERE f.tradeNo=t.tradeNo
+					) goodsInfoByte,
+					max(d.checkDate) exceptionDate,
+				(case when tc.tradeNo is not null then 1 else 0 end) as isFake
+				FROM
+					gw_trans_info t  left join gw_trans_info_log d ON t.tradeNo=d.tradeNo AND d.status=2
+				LEFT JOIN gw_currency_info c ON t.currencyId = c.id
+				LEFT JOIN gw_bank_info b ON c.bankId = b.id
+				left join gw_merchant_info m on m.merNo=t.merNo
+				left join gw_trans_order_info h on h.tradeNo=t.tradeNo
+				left join gw_GoodsPress k on k.tradeNo=t.tradeNo 
+				left join gw_trans_complaint_info tc on tc.tradeNo=t.tradeNo and tc.type=3
+				where t.tradeNo in(
+				<foreach collection="tradeNos" item="tradeNo" separator=",">
+					#{tradeNo}
+				</foreach>
+				)
+			group by t.id
+		order by t.id asc
+	<!-- select t.*,
+			GROUP_CONCAT(CONCAT(g.goodsName,',',g.quantity,',',g.goodsPrice)) AS goodsInfoByte
+		FROM
+			(SELECT 
+				a.tradeNo,
+				a.orderNo,
+				a.transDate,
+				a.merBusCurrency,
+				FORMAT(a.merTransAmount,2) as merTransAmount,
+				a.bankCurrency,
+				FORMAT(a.bankTransAmount,2) as bankTransAmount,
+				a.merSettleCurrency,
+				FORMAT(a.merSettleAmount,2) as merSettleAmount,
+				FORMAT(a.merForAmount,2) as merForAmount,
+				FORMAT(a.bondAmount,2) as bondAmount,
+				FORMAT(a.singleFee,2) as singleFee,
+				a.cardType,
+				a.riskScore,
+				a.respCode,
+				a.respMsg,
+				a.terNo,
+				a.merNo,
+				a.checkNo,
+				a.middle,
+				a.last,
+				a.checkToNo,
+				c.acquirer,
+				a.payWebSite,
+				a.email,
+				b.grPerName,
+				b.grphoneNumber,
+				a.ipAddress,
+				b.grCountry,
+				b.grState,
+				b.grCity,
+				b.grAddress,
+				b.grZipCode,
+				b.cardCountry,	
+				b.cardState,
+				b.cardCity,
+				b.cardAddress,
+				b.cardZipCode,
+				b.cardFullName,
+				b.cardFullPhone,
+				b.cardEmail,
+				f.trackNo,
+				f.iogistics,
+				a.webInfo,
+				a.ischecked,
+				a.batchNo,
+				a.access,
+				c.currencyName,
+				(CASE WHEN  SUM(CASE d.transType WHEN 'refund' THEN d.transMoney ELSE 0 END)>0 THEN 1 ELSE 0 END) refundStatus,
+				FORMAT(SUM(CASE d.transType WHEN 'refund' THEN d.transMoney ELSE 0 END),2) AS refundAmount,
+				(CASE WHEN  SUM(CASE d.transType WHEN 'dishonor' THEN d.transMoney ELSE 0 END)>0 THEN 1 ELSE 0 END) dishonorStatus,
+				FORMAT(SUM(CASE d.transType WHEN 'dishonor' THEN d.transMoney ELSE 0 END),2) AS dishonorAmount,
+				(CASE WHEN  SUM(CASE d.transType WHEN 'frozen' THEN d.transMoney WHEN 'thaw' THEN d.transMoney*(-1) ELSE  0 END)>0 THEN 1 ELSE 0 END) frozenStatus,
+				FORMAT(SUM(CASE d.transType WHEN 'frozen' THEN d.transMoney WHEN 'thaw' THEN d.transMoney*(-1) ELSE  0 END),2) AS frozenAmount,
+				max(d.checkDate) exceptionDate
+			FROM 
+				gw_trans_info a LEFT JOIN gw_trans_info_log d ON a.tradeNo=d.tradeNo AND d.status=2
+				LEFT JOIN gw_currency_info c ON a.currencyId=c.id
+				LEFT JOIN gw_trans_order_info b ON a.tradeNo=b.tradeNo
+				LEFT JOIN gw_GoodsPress f ON a.tradeNo=f.tradeNo
+			where a.tradeNo in(
+				<foreach collection="tradeNos" item="tradeNo" separator=",">
+					#{tradeNo}
+				</foreach>
+			)
+			GROUP BY 
+				a.id) AS t LEFT JOIN gw_trans_goods_info g ON t.tradeNo=g.tradeNo
+			GROUP BY  t.tradeNo order by t.transDate DESC -->
+	</select>
+	<select id="queryTransByType" resultType="com.gateway.transmgr.model.TransInfo">
+	  	SELECT
+			t.*,
+			c.currencyName,
+			b.bankName as acquiringBank,
+			f.*,
+			d.*
+		FROM
+			gw_trans_info t
+		LEFT JOIN gw_currency_info c ON t.currencyId = c.id
+		LEFT JOIN gw_bank_info b ON c.bankId = b.id
+   		LEFT JOIN gw_GoodsPress f on f.tradeNo=t.tradeNo
+		LEFT JOIN gw_trans_order_info d on d.tradeNo=t.tradeNo
+		<where>
+			<if test="condition.email != null and condition.email!=''">
+			  and t.email = #{condition.email}
+			</if>
+			
+			<if test="condition.IPAddress != null and condition.IPAddress!='' ">
+			  and t.IPAddress = #{condition.IPAddress}
+			</if>
+			<if test="condition.checkNo != null and condition.checkNo!='' ">
+			  and t.checkNo = #{condition.checkNo}
+			</if>
+			<if test="condition.last != null and condition.last!='' ">
+			  and t.last = #{condition.last}
+			</if>
+			<if test="condition.tradeNo != null and condition.tradeNo != '' ">
+				and t.checkToNo=(select checkToNo from gw_trans_info where tradeNo =#{condition.tradeNo})
+			</if>
+		</where>
+		
+		
+	</select>
+	<!-- 根据类型导出数据 -->
+	<select id="exportTransByType" resultType="com.gateway.transmgr.model.TransInfo">
+	select q.* ,GROUP_CONCAT(CONCAT(f.goodsName,',',f.quantity,',',f.goodsPrice)) as goodsInfo from(
+				SELECT
+					t.id,
+					t.tradeNo,
+					t.relNo,
+					t.merBusCurrency,
+					t.merTransAmount,
+					t.bankCurrency,
+					t.bankTransAmount,
+					t.merSettleCurrency,
+					t.merSettleAmount,
+					t.merNo,
+					t.terNo,
+					t.cardType,
+					t.cardName,
+					t.bankName,
+					t.agentNo,
+					t.parentAgentNo,
+					t.transDate,
+					t.settleBatchNo,
+					t.settleDate,
+					t.batchNo,
+					t.posNo,
+					t.currencyId,
+					t.singleFee,
+					t.merForAmount,
+					t.transType,
+					t.respCode,
+					t.checkToNo,
+					t.bankRefNo,
+					t.bankPosNo,
+					t.bankBatchNo,
+					t.autoCode,
+					t.bankTransDate,
+					t.bankTransTime,
+					t.checkedBatchNo,
+					t.transAmount,
+					t.IPAddress,
+					t.checkNo,
+					t.middle,
+					t.last,
+					t.email,
+					t.respMsg,
+					t.bondAmount,
+					t.ischecked,
+					t.rvfId,
+					t.isRefund,
+					t.isDishonor,
+					t.isFrozen,
+					t.isThaw,
+					t.orderNo,
+					t.access,
+					t.bondBatchNo,
+					t.payWebSite,
+					t.transStatus,
+					t.transDishonor,
+					t.transFrozen,
+					t.transThaw,
+					t.transRefund,
+					t.webInfo,
+					t.riskScore,
+					t.ipCountry,
+					c.currencyName,
+					b.bankName as acquiringBank,
+					m.merchantName,
+					
+					h.cardCountry,
+					h.cardState,
+					h.cardAddress,
+					h.grphoneNumber,
+					h.grPerName,
+					h.grEmail,
+					h.grCountry,
+					h.grZipCode,
+					h.grAddress,
+			    (CASE WHEN  SUM(CASE d.transType WHEN 'refund' THEN d.transMoney ELSE 0 END)>0 THEN 1 ELSE 0 END) refundStatus,
+				FORMAT(SUM(CASE d.transType WHEN 'refund' THEN d.transMoney ELSE 0 END),2) AS refundAmount,
+				(CASE WHEN  SUM(CASE d.transType WHEN 'dishonor' THEN d.transMoney ELSE 0 END)>0 THEN 1 ELSE 0 END) dishonorStatus,
+				FORMAT(SUM(CASE d.transType WHEN 'dishonor' THEN d.transMoney ELSE 0 END),2) AS dishonorAmount,
+				(CASE WHEN  SUM(CASE d.transType WHEN 'frozen' THEN d.transMoney WHEN 'thaw' THEN d.transMoney*(-1) ELSE  0 END)>0 THEN 1 ELSE 0 END) frozenStatus,
+				FORMAT(SUM(CASE d.transType WHEN 'frozen' THEN d.transMoney WHEN 'thaw' THEN d.transMoney*(-1) ELSE  0 END),2) AS frozenAmount
+				FROM
+					gw_trans_info t left join gw_trans_info_log d ON t.tradeNo=d.tradeNo AND d.status=2
+				LEFT JOIN gw_currency_info c ON t.currencyId = c.id
+				LEFT JOIN gw_bank_info b ON c.bankId = b.id
+				left join gw_merchant_info m on m.merNo=t.merNo
+				left join gw_trans_order_info h on h.tradeNo=t.tradeNo 
+				left join gw_GoodsPress k on k.tradeNo=t.tradeNo
+		
+			    where t.id=#{id}
+		
+			group by t.tradeNo
+		) as q
+		left join gw_trans_goods_info f on f.tradeNo=q.tradeNo
+		group by q.tradeNo
+		order by transDate desc;
+		
+	</select>
+	
+	<update id="batchAcceptCheckUpdateById">
+		update gw_trans_info set ischecked=1 ,respCode='00',respMsg='Success' where
+		id in 
+		<foreach collection="ids" item="id" open="(" close=")" separator=",">
+			#{id}
+		</foreach>
+	</update>
+	
+	<select id="checkAcceptDate" resultType="int">
+		select count(*) from  gw_trans_info where id =#{id} and ischecked = 1
+	</select>
+	<select id="checkDuplicateTrans" resultType="string">
+		select tradeNo from gw_trans_info where checkToNo in
+		(
+			select checkToNo from gw_trans_info 
+			where tradeNo in(
+			<foreach collection="list" item="t" separator=",">
+				#{t.tradeNo}
+			</foreach>
+			)
+			group by checkToNo 
+			having count(checkToNo)>1
+		)
+	</select>
+	
+	<sql id="Where_trans_log_info">
+		<where>
+			<if test="condition.tradeNo != null and condition.tradeNo != ''">
+			  and	tradeNo = #{condition.tradeNo}
+			</if>
+			<if test="condition.merNo !=null and condition.merNo !=''">
+			  and  merNo = #{condition.merNo}
+			</if>
+			<if test="condition.terNo !=null and condition.terNo !=''">
+			  and terNo = #{condition.terNo}
+			</if>
+			<if test="condition.orderNo !=null and condition.orderNo !=''">
+			  and orderNo = #{condition.orderNo}
+			</if>
+			<if test="condition.merURL !=null and condition.merURL !=''">
+			  and merMgrURL like CONCAT(CONCAT('%', '${condition.merURL}'),'%')
+			</if>
+			<if test="condition.transDateStart != null and condition.transDateStart != ''">
+		     and transDate >= '${condition.transDateStart} 00:00:00'
+		    </if>
+		    <if test="condition.transDateEnd != null and condition.transDateEnd != ''">
+		      and transDate &lt;='${condition.transDateEnd} 23:59:59.999'
+		    </if>	
+		</where>
+	</sql>
+	<select id="countTransLogInfo" resultType="int">
+		select count(*) from gw_trans_log_info
+		<include refid="Where_trans_log_info"/>
+	</select>
+	<select id="queryTransLogInfo" resultType="com.gateway.transmgr.model.TransLogInfo">
+		select * from gw_trans_log_info
+		<include refid="Where_trans_log_info"/>
+		order by id desc 
+	</select>
+	<select id="queryCardBinInfoByBin" resultType="com.gateway.sysmgr.model.CardBinInfo">
+		select * from card_bin_info where bin=#{bin} limit 1
+	</select>
+	
+	<sql id="Where_Trans_Callback_Info">
+		<where>
+			<if test="cr.condition.uploadDateStart!=null and cr.condition.uploadDateStart!=''">
+				AND
+					a.uploadDate &gt;= CONCAT(#{cr.condition.uploadDateStart}, ' 00:00:00')
+			</if>
+			<if test="cr.condition.uploadDateEnd!=null and cr.condition.uploadDateEnd!=''">
+				AND
+					a.uploadDate &lt;= CONCAT(#{cr.condition.uploadDateEnd}, ' 23:59:59')
+			</if>
+			<if test="cr.condition.transRefund!=null and cr.condition.transRefund!=''">
+				AND
+					b.transRefund=#{cr.condition.transRefund}
+			</if>
+			<if test="cr.condition.transDishonor!=null and cr.condition.transDishonor!=''">
+				AND
+					b.transDishonor=#{cr.condition.transDishonor}
+			</if>
+			<if test="cr.condition.transFrozen!=null and cr.condition.transFrozen!=''">
+				AND
+					b.transFrozen=#{cr.condition.transFrozen}
+			</if>
+			<if test="cr.condition.payWebSite!=null and cr.condition.payWebSite!=''">
+				AND
+					b.payWebSite=#{cr.condition.payWebSite}
+			</if>
+			<if test="cr.condition.tradeNo!=null and cr.condition.tradeNo!=''">
+				AND
+					b.tradeNo=#{cr.condition.tradeNo}
+			</if>
+			<if test="cr.condition.merNo!=null and cr.condition.merNo!=''">
+				AND
+					b.merNo=#{cr.condition.merNo}
+			</if>
+			<if test="cr.condition.terNo!=null and cr.condition.terNo!=''">
+				AND
+					b.terNo=#{cr.condition.terNo}
+			</if>
+			<if test="cr.condition.email!=null and cr.condition.email!=''">
+				AND
+					b.email=#{cr.condition.email}
+			</if>
+			<if test="cr.condition.orderNo!=null and cr.condition.orderNo!=''">
+				AND
+					b.orderNo=#{cr.condition.orderNo}
+			</if>
+			<if test="cr.condition.emailModel!=null and cr.condition.emailModel!=''">
+				AND
+					a.emailModel=#{cr.condition.emailModel}
+			</if>
+			<if test="cr.condition.sendEmail!=null and cr.condition.sendEmail!=''">
+				AND
+					a.sendEmail=CONCAT(#{cr.condition.sendEmail},'@bringallpay.net')
+			</if>
+			<if test="cr.condition.sendStatus!=null and cr.condition.sendStatus!=''">
+				AND
+					a.sendStatus=#{cr.condition.sendStatus}
+			</if>
+		</where>
+	</sql>
+	
+	<select id="queryTransCallbackInfoList" resultType="com.gateway.transmgr.model.TransCallbackInfo">
+		SELECT
+			a.id,
+			a.tradeNo,
+			a.sendEmail,
+			a.emailModel,
+			a.uploadDate,
+			a.uploadBy,
+			a.sendStatus,
+			a.sendTime,
+			b.merNo,
+			b.terNo,
+			b.orderNo,
+			b.email,
+			b.transDate,
+			b.payWebSite,
+			b.transRefund,
+			b.transDishonor,
+			b.transFrozen
+		FROM
+			gw_trans_callback a
+			LEFT JOIN gw_trans_info b ON a.tradeNo=b.tradeNo
+		<include refid="Where_Trans_Callback_Info"/>
+		ORDER BY
+			a.uploadDate
+		DESC
+	</select>
+	
+	<select id="queryTransCallbackInfoCount" resultType="java.lang.Integer">
+		SELECT
+			COUNT(a.id)
+		FROM
+			gw_trans_callback a
+			LEFT JOIN gw_trans_info b ON a.tradeNo=b.tradeNo
+		<include refid="Where_Trans_Callback_Info"/>
+	</select>
+	
+	<insert id="saveTransCallbackInfo" useGeneratedKeys="true" keyProperty="vo.id">
+		INSERT INTO
+			gw_trans_callback
+			(
+				tradeNo,
+				sendEmail,
+				emailModel,
+				sendStatus,
+				uploadBy,
+				uploadDate
+			)
+		VALUES
+			(
+				#{vo.tradeNo},
+				#{vo.sendEmail},
+				#{vo.emailModel},
+				#{vo.sendStatus},
+				#{vo.uploadBy},
+				NOW()
+			)
+	</insert>
+	
+	<sql id="Where_White_Dishoner_Info">
+		WHERE
+			IF(b.blackType='IP',a.IPAddress=b.blackText,(IF(b.blackType='email',a.email=b.blackText,IF(b.blackType='cardNo',a.checkToNo=b.checkNo,FALSE))))
+		<if test="condition.dateStart!=null and condition.dateStart!=''">
+			AND
+				a.transDate &gt;= CONCAT(#{condition.dateStart},' 00:00:00')
+		</if>
+		<if test="condition.dateEnd!=null and condition.dateEnd!=''">
+			AND
+				a.transDate &lt;= CONCAT(#{condition.dateEnd},' 23:59:59')
+		</if>
+		<if test="condition.disCreateDateStart!=null and condition.disCreateDateStart!=''">
+			AND
+				c.complaintDate &gt;= CONCAT(#{condition.disCreateDateStart},' 00:00:00')
+		</if>
+		<if test="condition.disCreateDateEnd!=null and condition.disCreateDateEnd!=''">
+			AND
+				c.complaintDate &lt;= CONCAT(#{condition.disCreateDateEnd},' 23:59:59')
+		</if>
+		<if test="condition.fakeCreateDateStart!=null and condition.fakeCreateDateStart!=''">
+			AND
+				d.complaintDate &gt;= CONCAT(#{condition.fakeCreateDateStart},' 00:00:00')
+		</if>
+		<if test="condition.fakeCreateDateEnd!=null and condition.fakeCreateDateEnd!=''">
+			AND
+				d.complaintDate &lt;= CONCAT(#{condition.fakeCreateDateEnd},' 23:59:59')
+		</if>
+		<!-- 
+		<if test="condition.type!=null and condition.type!=''">
+			AND
+				c.type=#{condition.type}
+		</if>
+		 -->
+		<if test="condition.blackText!=null and condition.blackText!=''">
+			AND
+				b.blackText=#{condition.blackText}
+		</if>
+		<if test="condition.merNo!=null and condition.merNo!=''">
+			AND
+				b.merNo=#{condition.merNo}
+		</if>
+		<if test="condition.terNo!=null and condition.terNo!=''">
+			AND
+				b.terNo=#{condition.terNo}
+		</if>
+		<if test="condition.tradeNo!=null and condition.tradeNo!=''">
+			AND
+				a.tradeNo=#{condition.tradeNo}
+		</if>
+	</sql>
+	
+	<select id="queryWhiteTransDishonorCount" resultType="java.lang.Integer">
+		SELECT
+			COUNT(e.ids)
+		FROM
+			(
+				SELECT
+					COUNT(a.tradeNo) AS ids
+				FROM
+					gw_trans_info a
+					LEFT JOIN gw_white_list b ON b.merNo=a.merNo AND b.terNo=a.terNo
+					LEFT JOIN gw_trans_complaint_info c ON c.tradeNo=a.tradeNo AND c.type=1
+					LEFT JOIN gw_trans_complaint_info d ON d.tradeNo=a.tradeNo AND d.type=3
+					<include refid="Where_White_Dishoner_Info"/>
+				GROUP BY
+					a.merNo,a.terNo,a.tradeNo
+			)
+		AS
+			e
+	</select>
+	
+	<select id="queryWhiteTransDishonorInfoList" resultType="com.gateway.transmgr.model.WhiteDishonorInfo">
+		SELECT
+			a.tradeNo,
+			a.merNo,
+			a.terNo,
+			a.respCode,
+			a.respMsg,
+			c.createdDate AS disCreatedDate,
+			d.createdDate AS fakeCreatedDate,
+			GROUP_CONCAT(DISTINCT b.id) AS whiteIds,
+			GROUP_CONCAT(DISTINCT b.blackText) AS blackTexts
+		FROM
+			gw_trans_info a
+			LEFT JOIN gw_white_list b ON b.merNo=a.merNo AND b.terNo=a.terNo
+			LEFT JOIN gw_trans_complaint_info c ON c.tradeNo=a.tradeNo AND c.type=1
+			LEFT JOIN gw_trans_complaint_info d ON d.tradeNo=a.tradeNo AND d.type=3
+			<include refid="Where_White_Dishoner_Info"/>
+		GROUP BY
+			a.merNo,a.terNo,a.tradeNo
+		ORDER BY
+			c.createdDate
+		DESC
+	</select>
+	
+	<select id="queryWhiteInfoListByIds" resultType="com.gateway.fraud.model.WhiteListInfo">
+		SELECT
+			id,
+			blackType,
+			merNo,
+			terNo,
+			createdBy,
+			createDate,
+			lastUpdateBy,
+			lastUpdateDate,
+			enableFlag,
+			remark,
+			blackText,
+			type,
+			checkNo
+		FROM
+			gw_white_list
+		WHERE
+			FIND_IN_SET(id,#{whiteIds})
+	</select>
+	
+	<select id="querWhiteNotEncryptCheckNoInfoList" resultType="com.gateway.fraud.model.WhiteListInfo">
+		SELECT
+			id,
+			blackType,
+			merNo,
+			terNo,
+			createdBy,
+			createDate,
+			lastUpdateBy,
+			lastUpdateDate,
+			enableFlag,
+			remark,
+			blackText,
+			type,
+			checkNo
+		FROM
+			gw_white_list
+		WHERE
+			blackType="cardNo"
+		AND
+			blackText IS NOT NULL
+		AND
+			checkNo IS NULL
+	</select>
+	
+	<update id="updateWhiteCheckNoInfo">
+		UPDATE
+			gw_white_list
+		SET
+			checkNo=#{vo.checkNo}
+		WHERE
+			id=#{vo.id}
+		AND
+			checkNo IS NULL
+	</update>
+	<select id="queryTradeNosByIds" resultType="string">
+		select tradeNo from gw_trans_info where id in 
+		<foreach collection="ids" item="id" open="(" close=")" separator=",">
+			#{id}
+		</foreach>
+	</select>
+	<insert id="insertTransChangeInfo">
+	insert into gw_trans_change_info(
+		tradeNo,
+		createDate,
+		createBy,
+		type
+	)values(
+		#{tradeNo},
+		now(),
+		#{name},
+		#{type}
+	)
+		
+	</insert>
+	
+	<select id="queryTransChangeInfoCount" resultType="int">
+		select count(*) from gw_trans_change_info a left join gw_trans_info b on a.tradeNo=b.tradeNo
+		<include refid="Where_trans_change_Info"/>		
+		order by a.id desc 
+	</select>
+	<sql id="Where_trans_change_Info">
+		<where>
+			<if test="condition.transDateStart != null and condition.transDateStart!= '' ">
+				and a.createDate>=#{condition.transDateStart}
+			</if>
+			<if test="condition.transDateEnd !=null and condition.transDateEnd != '' ">
+				and a.createDate&lt;=concat(#{condition.transDateEnd},' 23:59:59.999')
+			</if>
+			<if test="condition.merNo != null and condition.merNo != '' ">
+				and b.merNo=#{condition.merNo}
+			</if>
+			<if test="condition.terNo != null and condition.terNo != '' ">
+				and b.terNo=#{condition.terNo}
+			</if>
+			<if test="condition.tradeNo != null and condition.tradeNo != '' ">
+				and a.tradeNo=#{condition.tradeNo}
+			</if>
+			<if test="condition.type != null and condition.type != '' ">
+				and a.type=#{condition.type}
+			</if>
+		</where>
+	</sql>
+	<select id="queryTransChangeInfoList" resultType="com.gateway.transmgr.model.TransChangeInfo">
+		select a.*,
+			b.merNo,
+			b.terNo,
+			b.transDate
+		from gw_trans_change_info a left join gw_trans_info b on a.tradeNo=b.tradeNo
+		<include refid="Where_trans_change_Info"/>		
+		order by a.id desc 
+	</select>
+	
+	
+	<update id="updateAutoCodeByTradeNo">
+		update gw_trans_info set autoCode=#{autoCode} where tradeNo=#{tradeNo}
+	</update>
+</mapper>
+

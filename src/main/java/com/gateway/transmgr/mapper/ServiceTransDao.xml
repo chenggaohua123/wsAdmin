@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="com.gateway.transmgr.mapper.ServiceTransDao">
+	<sql id="WHERE_SERVICE_TRANS_INFO">
+		<where>
+			and a.transType='sales'
+			<if test="condition.merNo !=null and condition.merNo !=''">
+			  and a.merNo =#{condition.merNo}
+			</if>
+			<if test="condition.terNo !=null and condition.terNo !=''">
+			  and a.terNo =#{condition.terNo}
+			</if>
+			<if test="condition.orderNo !=null and condition.orderNo !=''">
+			  and a.orderNo like CONCAT(CONCAT('%', '${condition.orderNo}'),'%')
+			</if>
+			<if test="condition.payWebSite !=null and condition.payWebSite !=''">
+			  and a.payWebSite like CONCAT(CONCAT('%', '${condition.payWebSite}'),'%')
+			</if>
+			<if test="condition.tradeNo !=null and condition.tradeNo !=''">
+			  and a.tradeNo like CONCAT(CONCAT('%', '${condition.tradeNo}'),'%')
+			</if>
+			<if test="condition.respCode !=null and condition.respCode !=''">
+			  and a.respCode = #{condition.respCode}
+			</if>
+			<if test="condition.transDateStart != null and condition.transDateStart != ''">
+		     and a.transDate >= '${condition.transDateStart} 00:00:00'
+		    </if>
+		    <if test="condition.transDateEnd != null and condition.transDateEnd != ''">
+		      and a.transDate &lt;='${condition.transDateEnd} 23:59:59'
+		    </if>
+			<if test="condition.ischecked !=null and condition.ischecked !=''">
+			  and a.ischecked = #{condition.ischecked}
+			</if>
+			<if test="condition.email !=null and condition.email !=''">
+			  and a.email like CONCAT(CONCAT('%', '${condition.email}'),'%')
+			</if>
+			<if test="condition.ipAddress !=null and condition.ipAddress !=''">
+			  and a.ipAddress like CONCAT(CONCAT('%', '${condition.ipAddress}'),'%')
+			</if>
+			<if test="condition.cardFullName !=null and condition.cardFullName !=''">
+			  and b.cardFullName like CONCAT(CONCAT('%', '${condition.cardFullName}'),'%')
+			</if>
+			<if test="condition.cardFullPhone !=null and condition.cardFullPhone !=''">
+			  and b.cardFullPhone like CONCAT(CONCAT('%', '${condition.cardFullPhone}'),'%')
+			</if>
+			<if test="condition.cardType !=null and condition.cardType !=''">
+			  and a.cardType = #{condition.cardType}
+			</if>
+			<if test="condition.currencyName !=null and condition.currencyName !=''">
+			  and c.currencyName like CONCAT(CONCAT('%', '${condition.currencyName}'),'%')
+			</if>
+			<if test="condition.cardStart !=null and condition.cardStart !=''">
+			  and a.checkNo = #{condition.cardStart}
+			</if>
+			<if test="condition.cardEnd !=null and condition.cardEnd !=''">
+			  and a.last = #{condition.cardEnd}
+			</if>
+			<if test="condition.transRefund !=null and condition.transRefund !=''">
+			  and a.transRefund = #{condition.transRefund}
+			</if>
+			<if test="condition.transDishonor !=null and condition.transDishonor !=''">
+			  and a.transDishonor = #{condition.transDishonor}
+			</if>
+			<if test="condition.transFrozen !=null and condition.transFrozen !=''">
+			  and a.transFrozen = #{condition.transFrozen}
+			</if>
+			<if test="condition.isSettle !=null and condition.isSettle !=''">
+				<if test="condition.isSettle == '0'">
+					a.batchNo is null 
+				</if>
+				<if test="condition.isSettle == '1'">
+					a.batchNo is not null 
+				</if>
+			</if>
+		</where>
+	</sql>
+
+	<select id="countServiceTransList" resultType="int">
+		SELECT 
+				count(a.tradeNo)
+			FROM 
+				gw_trans_info a
+				LEFT JOIN gw_currency_info c ON a.currencyId=c.id
+				LEFT JOIN gw_trans_order_info b ON a.tradeNo=b.tradeNo
+			<include refid="WHERE_SERVICE_TRANS_INFO"/>
+	</select>
+
+	<select id="queryServiceTransList" resultType="com.gateway.transmgr.model.TransInfo">
+		SELECT 	
+				a.id,
+				a.merNo,
+				a.tradeNo,
+				a.orderNo,
+				a.transDate,
+				a.merBusCurrency,
+				a.merTransAmount as merTransAmount,
+				a.merSettleCurrency,
+				a.merSettleAmount as merSettleAmount,
+				a.cardType,
+				a.checkNo,
+				a.last,
+				a.ipAddress,
+				a.email,
+				a.respCode,
+				a.respMsg,
+				a.payWebsite,
+				a.webInfo,
+				a.ischecked
+			FROM 
+				gw_trans_info a 
+				LEFT JOIN gw_currency_info c ON a.currencyId=c.id
+				LEFT JOIN gw_trans_order_info b ON a.tradeNo=b.tradeNo
+			<include refid="WHERE_SERVICE_TRANS_INFO"/>
+			order by a.transDate DESC
+	</select>
+</mapper>
+

@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+		http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+		http://www.springframework.org/schema/context 
+		http://www.springframework.org/schema/context/spring-context-3.0.xsd
+		http://www.springframework.org/schema/mvc 
+		http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd
+		http://www.springframework.org/schema/aop
+		http://www.springframework.org/schema/aop/spring-aop.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.0.xsd">
+
+	<!-- spring mvc -->
+	<!-- web mvc configuration -->
+	<!-- view resolver 视图解析器 -->
+	<bean
+		class="org.springframework.web.servlet.view.InternalResourceViewResolver"
+		p:viewClass="org.springframework.web.servlet.view.JstlView" 
+		p:prefix="/WEB-INF/jsp/"
+		p:suffix=".jsp" />
+	
+	<!-- 扫描web包，应用Spring的注解 @Controller -->
+	<context:component-scan base-package="com.gateway" />
+	<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="mposdataSource" />
+    </bean>
+    <bean id="transactionBakManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="mposBakdataSource" />
+    </bean>
+	<tx:annotation-driven transaction-manager="transactionManager" />
+	
+	<tx:annotation-driven transaction-manager="transactionBakManager" />
+	<!-- MVC Annotation Driven -->
+	<bean
+		class="org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerAdapter">
+		<property name="messageConverters">
+			<list>
+				<bean id="utf8StringHttpMessageConverter" class="org.springframework.http.converter.StringHttpMessageConverter">
+					<property name="supportedMediaTypes">
+						<list>
+							<value>text/plain;charset=UTF-8</value>
+						</list>
+					</property>
+				</bean>
+				
+				<bean id="jacksonMessageConverter" class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+			        <!-- 解决 HttpMediaTypeNotAcceptableException: Could not find acceptable representation -->
+			        <property name="supportedMediaTypes">
+			            <list>
+			                <value>text/html;charset=UTF-8</value>
+			            </list>
+			        </property>
+    			</bean>
+			</list>
+		</property>
+	</bean>
+
+	<mvc:annotation-driven conversion-service="conversionService" />
+	<bean id="conversionService"
+		class="org.springframework.format.support.FormattingConversionServiceFactoryBean">
+		<property name="converters">
+			<list>
+				<bean class="com.gateway.common.framework.spring.StringToDateConverter" />
+			</list>
+		</property>
+	</bean>
+	
+	<bean id="exceptionResolver"
+		class="org.springframework.web.servlet.handler.SimpleMappingExceptionResolver">
+		<property name="exceptionMappings">
+			<props>
+				<prop key="com.gateway.common.excetion.ServiceRuntimeException">ServiceRuntimeException</prop> 
+				<prop key="com.gateway.common.excetion.ServiceException">ServiceException</prop>
+			</props>
+		</property>
+	</bean>
+
+	<!-- CommonsMultipartResolver -->
+
+	<bean id="multipartResolver"
+		class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+		<property name="maxUploadSize" value="1024000000"></property>
+	</bean>
+
+	<!-- MessageResolve -->
+	<bean id="messageSource"
+		class="org.springframework.context.support.ResourceBundleMessageSource">
+		<property name="basenames">
+			<list>
+				<value>res.web.messages</value>
+			</list>
+		</property>
+	</bean>
+	<bean id="localeResolver" class="org.springframework.web.servlet.i18n.CookieLocaleResolver" 
+		p:cookieName="clientLanguage"
+		p:cookieMaxAge="10000"
+		p:cookiePath="/"
+		p:defaultLocale="zh"/>
+		
+	<mvc:interceptors>
+		<bean id="localeChangeInterceptor" class="org.springframework.web.servlet.i18n.LocaleChangeInterceptor" />
+		 <mvc:interceptor>
+		    <mvc:mapping path="/api/**"/>
+		    <bean class="com.gateway.common.adapter.web.interceptor.ApiValidateInterceptor"/>
+		  </mvc:interceptor>
+	</mvc:interceptors>
+	<mvc:resources mapping="/dwz/**" location="/dwz/" cache-period="31536000"/>
+	
+	  <!--@Value注解的配置文件-->
+    <context:property-placeholder location="classpath:application.properties" ignore-unresolvable="true"/>
+</beans> 

@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="com.gateway.vipsalesmgr.mapper.VipSalesMgrDao">
+
+	<sql id="Where_Caluse_VipSales_Info">
+		<where>
+			<if test="condition.createdDateStart!=null and condition.createdDateStart!=''">
+				AND
+					a.createDate &gt;= CONCAT(#{condition.createdDateStart},' 00:00:00')
+			</if>
+			<if test="condition.createdDateEnd!=null and condition.createdDateEnd!=''">
+				AND
+					a.createDate &lt;= CONCAT(#{condition.createdDateEnd},' 23:59:59')
+			</if>
+			<if test="condition.updateDateStart!=null and condition.updateDateStart!=''">
+				AND
+					a.lastModifyDate &gt;= CONCAT(#{condition.updateDateStart},' 00:00:00')
+			</if>
+			<if test="condition.updateDateEnd!=null and condition.updateDateEnd!=''">
+				AND
+					a.lastModifyDate &lt;= CONCAT(#{condition.updateDateEnd},' 23:59:59')
+			</if>
+			<if test="condition.merNo!=null and condition.merNo!=''">
+				AND
+					a.merNo=#{condition.merNo}
+			</if>
+			<if test="condition.terNo!=null and condition.terNo!=''">
+				AND
+					a.terNo=#{condition.terNo}
+			</if>
+			<if test="condition.cardSix!=null and condition.cardSix!=''">
+				AND
+					a.start=#{condition.cardSix}
+			</if>
+			<if test="condition.cardfour!=null and condition.cardfour!=''">
+				AND
+					a.end=#{condition.cardfour}
+			</if>
+			<if test="condition.name!=null and condition.name!=''">
+				AND
+					a.name=#{condition.name}
+			</if>
+			<if test="condition.email!=null and condition.email!=''">
+				AND
+					a.email=#{condition.email}
+			</if>
+			<if test="condition.uniqueID!=null and condition.uniqueID!=''">
+				AND
+					a.uniqueID=#{condition.uniqueID}
+			</if>
+		</where>
+	</sql>
+	
+	<select id="queryVipSalesInfoList" resultType="com.gateway.vipsalesmgr.model.VipSalesInfo">
+		SELECT
+			a.id,
+			a.merNo,
+			a.terNo,
+			a.salesFlag,
+			a.start,
+			a.cv,
+			a.m,
+			a.y,
+			a.name,
+			a.bankName,
+			a.billAddress,
+			a.billCity,
+			a.billState,
+			a.billCountry,
+			a.cycleType,
+			a.salesCycle,
+			a.email,
+			a.uniqueID,
+			a.createDate,
+			a.lastModifyDate,
+			a.enabled,
+			a.currency,
+			a.amount,
+			a.end,
+			a.mid,
+			a.isRisk,
+			a.phone,
+			a.website
+		FROM
+			gw_vip_sales_info a
+		<include refid="Where_Caluse_VipSales_Info"/>
+	</select>
+	
+	<select id="queryVipSalesCount" resultType="java.lang.Integer">
+		SELECT
+			COUNT(a.id)
+		FROM
+			gw_vip_sales_info a
+		<include refid="Where_Caluse_VipSales_Info"/>
+	</select>
+	
+	<select id="queryVipSalesLogInfoList" resultType="com.gateway.vipsalesmgr.model.VipSalesLogInfo">
+		SELECT
+			id,
+			merNo,
+			terNo,
+			salesFlag,
+			start,
+			cv,
+			m,
+			y,
+			name,
+			bankName,
+			billAddress,
+			billCity,
+			billState,
+			billCountry,
+			cycleType,
+			salesCycle,
+			email,
+			uniqueID,
+			createDate,
+			lastModifyDate,
+			enabled,
+			operated,
+			currency,
+			amount,
+			end,
+			mid,
+			phone,
+			website
+		FROM
+			gw_vip_sales_info_log
+		WHERE
+			uniqueID=#{condition.uniqueID}
+	</select>
+	
+	<select id="queryVipSalesLogCount" resultType="java.lang.Integer">
+		SELECT
+			COUNT(id)
+		FROM
+			gw_vip_sales_info_log
+		WHERE
+			uniqueID=#{condition.uniqueID}
+	</select>
+	
+	<select id="queryVipSalesLogInfoListByUniqueID" resultType="com.gateway.vipsalesmgr.model.VipSalesLogInfo">
+		SELECT
+			id,
+			merNo,
+			terNo,
+			salesFlag,
+			start,
+			cv,
+			m,
+			y,
+			name,
+			bankName,
+			billAddress,
+			billCity,
+			billState,
+			billCountry,
+			cycleType,
+			salesCycle,
+			email,
+			uniqueID,
+			createDate,
+			lastModifyDate,
+			enabled,
+			operated,
+			currency,
+			amount,
+			end,
+			mid,
+			phone,
+			website
+		FROM
+			gw_vip_sales_info_log
+		WHERE
+			uniqueID=#{uniqueID}
+	</select>
+	
+	<sql id="Where_Caluse_VipSalesConsume_Info">
+		<where>
+			<if test="condition.transDateStart!=null and condition.transDateStart!=''">
+				AND
+					c.transDate &gt;= CONCAT(#{condition.transDateStart},' 00:00:00')
+			</if>
+			<if test="condition.transDateEnd!=null and condition.transDateEnd!=''">
+				AND
+					c.transDate &lt;= CONCAT(#{condition.transDateEnd},' 23:59:59')
+			</if>
+			<if test="condition.merNo!=null and condition.merNo!=''">
+				AND
+					a.merNo=#{condition.merNo}
+			</if>
+			<if test="condition.terNo!=null and condition.terNo!=''">
+				AND
+					a.terNo=#{condition.terNo}
+			</if>
+			<if test="condition.cardSix!=null and condition.cardSix!=''">
+				AND
+					a.start=#{condition.cardSix}
+			</if>
+			<if test="condition.cardfour!=null and condition.cardfour!=''">
+				AND
+					a.end=#{condition.cardfour}
+			</if>
+			<if test="condition.name!=null and condition.name!=''">
+				AND
+					a.name=#{condition.name}
+			</if>
+			<if test="condition.email!=null and condition.email!=''">
+				AND
+					a.email=#{condition.email}
+			</if>
+			<if test="condition.uniqueID!=null and condition.uniqueID!=''">
+				AND
+					a.uniqueID=#{condition.uniqueID}
+			</if>
+			<if test="condition.tradeNo!=null and condition.tradeNo!=''">
+				AND
+					b.tradeNo=#{condition.tradeNo}
+			</if>
+			<if test="condition.respCode!=null and condition.respCode!=''">
+				<if test="condition.respCode!='00'">
+					AND
+						c.respCode!='00'
+				</if>
+				<if test="condition.respCode=='00'">
+					AND
+						c.respCode='00'
+				</if>
+			</if>
+		</where>
+	</sql>
+	
+	<select id="queryVipSalesConsumeCount" resultType="java.lang.Integer">
+		SELECT
+			COUNT(a.id)
+		FROM
+			gw_vip_trans_info b
+			LEFT JOIN gw_vip_sales_info a ON b.uniqueID=a.uniqueID
+			LEFT JOIN gw_trans_info c ON c.tradeNo=b.tradeNo
+		<include refid="Where_Caluse_VipSalesConsume_Info"/>
+	</select>
+	
+	<select id="queryVipSalesConsumeInfoList" resultType="com.gateway.vipsalesmgr.model.VipSalesConsumeInfo">
+		SELECT
+			c.id,
+			a.merNo,
+			a.terNo,
+			a.start,
+			a.end,
+			a.name,
+			a.email,
+			a.uniqueID,
+			a.currency,
+			a.amount,
+			c.respCode,
+			c.transDate,
+			c.respMsg,
+			b.tradeNo,
+			a.phone,
+			a.website
+		FROM
+			gw_vip_trans_info b
+			LEFT JOIN gw_vip_sales_info a ON b.uniqueID=a.uniqueID
+			LEFT JOIN gw_trans_info c ON c.tradeNo=b.tradeNo
+		<include refid="Where_Caluse_VipSalesConsume_Info"/>
+	</select>
+	
+</mapper>
+

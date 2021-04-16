@@ -1,0 +1,758 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="com.gateway.sysmgr.mapper.SysMgrDao">
+	<sql id="Where_Clause_UserInfo">
+		<where>
+			<if test="condition.userName != null and condition.userName != ''">
+			   and  u.userName = #{condition.userName}
+			</if>
+			<if test="condition.realName != null and condition.realName != ''">
+			   and  u.realName = #{condition.realName}
+			</if>
+			<if test="condition.phoneNo != null and condition.phoneNo !=''">
+			   and  u.phoneNo = #{condition.phoneNo}
+			</if>
+			<if test="condition.enabled != null and condition.enabled !=''">
+			    and u.enabled =#{condition.enabled}
+			</if>
+			<if test="condition.email != null and condition.email !=''">
+			    and u.email =#{condition.email} 
+			</if>
+			<if test="condition.verificationType != null and condition.verificationType !=''">
+			    and u.verificationType=#{condition.verificationType} 
+			</if>
+		</where>
+		order by u.createTime desc
+	</sql>
+	
+	<sql id="Where_Clause_RoleInfo">
+		<where>
+			<if test="condition.roleName != null and condition.roleName != ''">
+			 	and roleName = #{condition.roleName}
+			</if>
+			<if test="condition.systemId != null and condition.systemId != ''">
+			  	and systemId = #{condition.systemId}
+			</if>
+			<if test="condition.enabled != null and condition.enabled != ''">
+			 	and enabled = #{condition.enabled}
+			</if>
+			<if test="condition.createBy != null and condition.createBy != ''">
+			 	and createBy = #{condition.createBy}
+			</if>
+		</where>
+	</sql>
+	
+	<sql id="Where_Clause_Menu_info">
+		<where>
+			<if test="condition.systemId != null and condition.systemId != ''">
+				  and systemId = #{condition.systemId}
+			</if>
+		</where>
+	</sql>
+	
+	<sql id="Where_Clause_BaseDate_Info">
+		<where>
+			<if test="condition.tableName != null and condition.tableName != ''">
+				and tableName = #{condition.tableName}
+			</if>
+		</where>
+	</sql>
+	
+	<select id="queryUserMenuByUserId" resultType="com.gateway.sysmgr.model.MenuInfo">
+		SELECT DISTINCT
+			m.*
+		FROM
+			gw_sys_menu m
+		LEFT JOIN gw_sys_role_ref_menu_info rm ON m.menuNo = rm.menuNo
+		LEFT JOIN gw_sys_role_ref_user_info ru ON rm.roleId = ru.roleId
+		LEFT JOIN gw_sys_user_info u ON ru.userId = u.id
+		<where>
+			and u.id = #{user.id}
+			and flag = 1
+		</where>
+		order by orderBy asc
+	</select>
+	
+	
+	<select id="queryMenuList" resultType="com.gateway.sysmgr.model.MenuInfo">
+		Select * from gw_sys_menu
+		<include refid="Where_Clause_Menu_info"/>
+		order by orderBy
+	</select>
+	
+	<select id="queryUserList" resultType="com.gateway.loginmgr.model.UserInfo">
+		select u.*  from gw_sys_user_info u
+		<!-- left join gw_user_ref_merchant_terno_info ra on u.id = ra.userId -->
+		<!-- left join gw_user_rel_agent_info ra on u.id = ra.userId
+		left join gw_user_rel_merchant_info rm on u.phoneNo = rm.phoneNo -->
+		<include refid="Where_Clause_UserInfo"/>
+	</select>
+	<select id="countUserList" resultType="int">
+		select count(*) from gw_sys_user_info u
+		<!-- left join gw_user_ref_merchant_terno_info ra on u.id = ra.userId -->
+		<!-- left join gw_user_rel_agent_info ra on u.id = ra.userId
+		left join gw_user_rel_merchant_info rm on u.phoneNo = rm.phoneNo -->
+		<include refid="Where_Clause_UserInfo"/>
+	</select>
+	
+	<select id="queryRoleById" resultType="com.gateway.sysmgr.model.RoleInfo">
+	  select * from gw_sys_role_info where id= #{id}
+	</select>
+	
+	<select id="queryPageRole" resultType="com.gateway.sysmgr.model.RoleInfo">
+		select * from gw_sys_role_info
+		<include refid="Where_Clause_RoleInfo"/>
+	</select>
+	<select id="countRoleInfo" resultType="int">
+		select count(*) from gw_sys_role_info
+		<include refid="Where_Clause_RoleInfo"/>
+	</select>
+	
+	<select id="queryPitchRole" resultType="com.gateway.sysmgr.model.RoleInfo">
+	    select * from gw_sys_role_ref_user_info  where userId=#{userId}
+	</select>
+	
+	<insert id="addUserInfo">
+	     insert into gw_sys_user_info
+	     (
+	       userName,
+	       passWord,
+	       createTime,
+	       createBy,
+	       email,
+	       phoneNo,
+	       realName,
+	       seed,
+	       verificationType,
+	       verificationCode,
+	       enabled,
+	       address,
+	       systemId
+	     )
+	     values
+	     (
+	       #{info.userName},
+	       #{info.passWord},
+	       SYSDATE(),
+	       #{info.createBy},
+	       #{info.email},
+	       #{info.phoneNo},
+	       #{info.realName},
+	       #{info.seed},
+	       #{info.verificationType},
+	       #{info.verificationCode},
+	       #{info.enabled},
+	       #{info.address},
+	       #{info.systemId}
+	     )
+	</insert>
+	
+	
+	<select id="queryUserInfoById" resultType="com.gateway.loginmgr.model.UserInfo">
+	  select * from gw_sys_user_info where id=#{id}
+	</select>
+	
+	<update id="updateUserPassword">
+	  update gw_sys_user_info set passWord=#{info.passWord} where id=#{info.id}
+	</update>
+	
+	<update id="updateUserInfo">
+	   update gw_sys_user_info set 
+	       userName=#{info.userName},
+	       <if test="info.passWord!=null and info.passWord!=''">
+	         passWord=#{info.passWord},
+	       </if>
+	       createTime=SYSDATE(),
+	       createBy=#{info.createBy},
+	       email=#{info.email},
+	       phoneNo=#{info.phoneNo},
+	       realName=#{info.realName},
+	       seed=#{info.seed},
+	       verificationType=#{info.verificationType},
+	       verificationCode=#{info.verificationCode},
+	       enabled=#{info.enabled},
+	       address=#{info.address},
+	       systemId=#{info.systemId}
+	       where id=#{info.id}
+	</update>
+	
+	<insert id="addSysRoleInfo">
+	   insert into gw_sys_role_info
+	     (
+	       systemId,
+	       roleName,
+	       createDate,
+	       createBy,
+	       enabled
+	     )
+	     values
+	     (
+	       #{info.systemId},
+	       #{info.roleName},
+	       SYSDATE(),
+	       #{info.createBy},
+	       #{info.enabled}
+	     )
+	</insert>
+	
+	<update id="updateRoleInfo">
+	   update gw_sys_role_info set 
+	       systemId=#{info.systemId},
+	       roleName=#{info.roleName},
+	       createDate=SYSDATE(),
+	       createBy=#{info.createBy},
+	       enabled=#{info.enabled}
+	       where id=#{info.id}
+	</update>
+	
+	<insert id="saveMenuToRole">
+		insert into gw_sys_role_ref_menu_info (roleId,menuNo) values 
+		<foreach collection="menus"  item="menuNo" separator=",">
+			(#{roleId},#{menuNo})
+		</foreach>
+	</insert>
+	
+	<delete id="deleteRoleMenuByRoleId">
+		delete from gw_sys_role_ref_menu_info where roleId = #{roleId}
+	</delete>
+	
+	<select id="queryMenuNoByRoleId" resultType="com.gateway.sysmgr.model.RoleRefMenuInfo">
+		select * from gw_sys_role_ref_menu_info where roleid = #{roleId}
+	</select>
+	
+	<select id="queryMaxMenuNo" resultType="int">
+		select max(menuNo)+1 from gw_sys_menu
+	</select>
+	
+	<insert id="addMenuInfo">
+		insert into gw_sys_menu 
+		(
+			menuNo,
+			menuName,
+			parentNo,
+			menuType,
+			flag,
+			createTime,
+			systemId,
+			actionName,
+			orderBy
+		) 
+		values
+		(
+			#{menu.menuNo},
+			#{menu.menuName},
+			#{menu.parentNo},
+			#{menu.menuType},
+			#{menu.flag},
+			SYSDATE(),
+			#{menu.systemId},
+			#{menu.actionName},
+			#{menu.orderBy}
+		)
+	</insert>
+	
+	<delete id="deleteRoleUserByUserId">
+	   delete from gw_sys_role_ref_user_info where userId=${userId}
+	</delete>
+	
+	<insert id="addRoleRefUserInfo">
+	   insert into gw_sys_role_ref_user_info (roleId,userId) values 
+		<foreach collection="roleIds"  item="roleId" separator=",">
+			(#{roleId},#{userId})
+		</foreach>
+	</insert>
+	
+	<select id="getBaseDataList" resultType="com.gateway.sysmgr.model.BaseDataInfo">
+		select * from gw_base_table_data_info
+		<include refid="Where_Clause_BaseDate_Info"/>
+	
+	</select>
+	
+	<select id="countBaseDataList" resultType="int">
+		select count(*) from gw_base_table_data_info
+		<include refid="Where_Clause_BaseDate_Info"/>
+	</select>
+	
+	<insert id="addBaseDataInfo">
+		insert into gw_base_table_data_info 
+		(
+			tableName,
+			columnKeyName,
+			columnVauleName,
+			createDate,
+			createBy,
+			columnKey,
+			columnvalue,
+			remark
+		)
+		values
+		(
+			#{info.tableName},
+			#{info.columnKeyName},
+			#{info.columnVauleName},
+			SYSDATE(),
+			#{info.createBy},
+			#{info.columnKey},
+			#{info.columnvalue},
+			#{info.remark}
+		)
+	</insert>
+	
+	<select id="queryBaseDataInfoById" resultType="com.gateway.sysmgr.model.BaseDataInfo">
+		select * from gw_base_table_data_info where id = #{id}
+	</select>
+	
+	<update id="updateBaseDateInfo">
+		update gw_base_table_data_info 
+		set tableName = #{info.tableName},
+		 columnKeyName = #{info.columnKeyName},
+		 columnVauleName = #{info.columnVauleName},
+		 createDate = SYSDATE(),
+		 createBy = #{info.createBy},
+		 columnKey = #{info.columnKey},
+		 columnvalue = #{info.columnvalue},
+		 remark = #{info.remark}
+		where id = #{info.id}
+	</update>
+	
+	<select id="queryBaseDataListByTableName" resultType="com.gateway.sysmgr.model.BaseDataInfo">
+		select ${columnKeyName} as columnKey,
+		${columnVauleName} as columnvalue ,
+		'${columnKeyName}' as columnKeyName,
+		'${columnVauleName}' as columnVauleName
+		from ${tableName} 
+	</select>
+	
+	<select id="querySysUserInfoBusInfo" resultType="com.gateway.loginmgr.model.UserInfo">
+	  select u.*,b.* from gw_sys_user_info  u 
+	  left join gw_user_bus_info b on u.phoneNo=b.phoneNo 
+	  where u.id=#{id}
+	</select>
+	
+	<select id="queryGwPicInfo" resultType="com.gateway.sysmgr.model.GwPicInfo">
+	   select picType from gw_pic_info where phoneNo=#{phoneNo} and picType &lt;> 'orderSign'
+	</select>
+	
+	<select id="ajaxGwPicInfo" resultType="com.gateway.sysmgr.model.GwPicInfo">
+	   select * from gw_pic_info where phoneNo=#{phoneNo} and picType = #{picType}
+	</select>
+	
+	<insert id="addUserRelAgent">
+	   insert into gw_user_rel_agent_info 
+	   (
+	   agentNo,
+	   userId,
+	   createBy,
+	   createDate
+	   )
+	   values
+	   (
+	    #{info.agentNo},
+	    #{info.userId},
+	    #{info.createBy},
+	    SYSDATE()
+	   )
+	</insert>
+	
+	<select id="queryUserRelAgent" resultType="com.gateway.sysmgr.model.UserRelAgent">
+	  select * from gw_user_rel_agent_info where userId=#{id} 
+	</select>
+	<select id="queryUserInfoByMerNo" resultType="com.gateway.loginmgr.model.UserInfo">
+		select * from gw_sys_user_info where merNo = #{merNo}
+	</select>
+	<insert id="addSendEmailReqInfo">
+		insert into gw_email_send_info
+		(
+			tradeNo,
+			merNo,
+			terNo,
+			sendTypeId,
+			status
+		)
+		values
+		(
+			#{info.tradeNo},
+			#{info.merNo},
+			#{info.terNo},
+			#{info.sendTypeId},
+			#{info.status}
+		)
+	</insert>
+	<select id="getBankRespMsgMgrInfo" resultType="com.gateway.sysmgr.model.BankRespMsgMgrInfo">
+		select * from gw_bank_respmsg_mgr_info
+		<include refid="Where_Bank_RespMsg_Mgr"/>
+		 order by id desc 
+	</select>
+	<sql id="Where_Bank_RespMsg_Mgr">
+		<where>
+			<if test="condition.bankRespMsg != null and condition.bankRespMsg != '' ">
+				and bankRespMsg =#{condition.bankRespMsg}
+			</if>
+			<if test="condition.respMsg != null and condition.respMsg != '' ">
+				and respMsg =#{condition.respMsg}
+			</if>
+		</where>
+	</sql>
+	<select id="countBankRespMsgMgrInfo" resultType="int">
+		select count(id) from gw_bank_respmsg_mgr_info 
+		<include refid="Where_Bank_RespMsg_Mgr"/>
+	</select>
+	<insert id="addBankRespMsgMgrInfo">
+		insert into gw_bank_respmsg_mgr_info(
+			bankRespMsg,
+			respMsg,
+			remark,
+			suggest,
+			createBy,
+			createDate
+		)values(
+			#{bankRespMsg},
+			#{respMsg},
+			#{remark},
+			#{suggest},
+			#{createBy},
+			now()
+		)
+	</insert>
+	<update id="updateBankRespMsgMgrInfo">
+		update gw_bank_respmsg_mgr_info 
+		set 
+			bankRespMsg=#{bankRespMsg},
+			respMsg=#{respMsg},
+			remark=#{remark},
+			suggest=#{suggest},
+			lastModify=#{lastModify},
+			lastModifyDate=now()
+		where 
+			id=#{id}
+	</update>
+	<select id="queryBankRespMsgMgrInfoById" resultType="com.gateway.sysmgr.model.BankRespMsgMgrInfo">
+		select * from gw_bank_respmsg_mgr_info
+		where id=#{id}
+	</select>
+	<select id="countBankRealRespMsg" resultType="int">
+		select count(*) from gw_trans_info t
+		LEFT JOIN gw_currency_info c ON t.currencyId = c.id
+		LEFT JOIN gw_bank_info b ON c.bankId = b.id
+		<include refid="Where_bank_real_respMsg"/>
+	</select>
+	<sql id="Where_bank_real_respMsg">
+		<where>
+			and t.transType='sales'
+			<if test="condition.startDate != null and condition.startDate != ''">
+				and t.transDate>=CONCAT(#{condition.startDate},' 00:00:00')
+			</if>
+			<if test="condition.endDate != null and condition.endDate != ''">
+				and t.transDate&lt;=CONCAT(#{condition.endDate},' 23:59:59')
+			</if>
+			<if test="condition.tradeNo != null and condition.tradeNo != '' ">
+				and t.tradeNo=#{condition.tradeNo}
+			</if>
+			<if test="condition.orderNo != null and condition.orderNo != '' ">
+				and t.orderNo=#{condition.orderNo}
+			</if>
+			<if test="condition.merNo != null and condition.merNo != '' ">
+				and t.merNo=#{condition.merNo}
+			</if>
+			<if test="condition.terNo != null and condition.terNo != '' ">
+				and t.terNo=#{condition.terNo}
+			</if>
+			<if test="condition.bankId != null and condition.bankId != 0">
+				and b.id=#{condition.bankId}
+			</if>
+			<if test="condition.currencyId != null and condition.currencyId != ''">
+				and c.id=#{condition.currencyId}
+			</if>
+		</where>
+	</sql>
+	<select id="queryBankRealRespMsg" resultType="com.gateway.sysmgr.model.TransInfo">
+		 select 
+			t.tradeNo,
+			t.orderNo,
+			t.merNo,
+			t.terNo,
+			t.merBusCurrency,
+			t.merTransAmount,
+			t.respCode,
+			t.respMsg,
+			t.bankRespMsg,
+			t.transDate,
+			c.currencyName,
+			b.bankName
+			
+		 from gw_trans_info t
+		 LEFT JOIN gw_currency_info c ON t.currencyId = c.id
+		LEFT JOIN gw_bank_info b ON c.bankId = b.id
+		<include refid="Where_bank_real_respMsg"/>
+		order by t.id desc
+	</select>
+	<select id="countCheckToNoInfo" resultType="int">
+		SELECT count(*) FROM gw_check_to_no_info
+		<include refid="Where_Check_to_No_info"/>
+	</select>
+	<sql id="Where_Check_to_No_info">
+		<where>
+			<if test="condition.checkToNo !=null and condition.checkToNo != '' ">
+				and checkToNo=#{condition.checkToNo}
+			</if>
+			<if test="condition.merNo !=null and condition.merNo != '' ">
+				and merNo=#{condition.merNo}
+			</if>
+			<if test="condition.terNo !=null and condition.terNo != '' ">
+				and terNo=#{condition.terNo}
+			</if>
+		</where>
+	</sql>
+	<select id="queryCheckToNoInfo" resultType="com.gateway.sysmgr.model.CheckToNoInfo">
+		SELECT * FROM gw_check_to_no_info
+		<include refid="Where_Check_to_No_info"/>
+		order by id desc 
+	</select>
+	<insert id="addCheckToNoInfo">
+		insert into gw_check_to_no_info(
+			merNo,
+			terNo,
+			checkToNo,
+			checkNo,
+			middle,
+			last,
+			c,
+			y,
+			m,
+			floor,
+			ceil,
+			balance,
+			count,
+			successCount,
+			currency,
+			enabled,
+			countLimit
+		)values(
+			#{merNo},
+			#{terNo},
+			#{checkToNo},
+			#{checkNo},
+			#{middle},
+			#{last},
+			#{c},
+			#{y},
+			#{m},
+			#{floor},
+			#{ceil},
+			#{balance},
+			0,
+			0,
+			#{currency},
+			#{enabled},
+			#{countLimit}
+		)
+	</insert>
+	<update id="updateCheckToNoInfo">
+		update gw_check_to_no_info 
+		set 
+			merNo=#{merNo},
+			terNo=#{terNo},
+			checkToNo=#{checkToNo},
+			checkNo=#{checkNo},
+			middle=#{middle},
+			last=#{last},
+			c=#{c},
+			y=#{y},
+			m=#{m},
+			floor=#{floor},
+			ceil=#{ceil},
+			balance=#{balance},
+			currency=#{currency},
+			enabled=#{enabled},
+			countLimit=#{countLimit}
+		where id=#{id}
+	</update>
+	<select id="queryCheckToNoInfoById" resultType="com.gateway.sysmgr.model.CheckToNoInfo">
+		SELECT * FROM gw_check_to_no_info where id=#{id}
+	</select>
+	<update id="updateCardPayLimitByMerNoAndTerNo">
+		update gw_check_to_no_info 
+		set countLimit=#{countLimit}
+		where 
+		merNo=#{merNo}
+		and terNo=#{terNo}
+	</update>
+	<select id="countCardBinInfo" resultType="int">
+		select count(*) from card_bin_info 
+		
+		<include refid="Where_Card_Bin_Caluse"/>
+	</select>
+	<sql id="Where_Card_Bin_Caluse">
+		<where>
+			<!--  #and brand =Vendor AND country_code=Country AND card_type=`type` AND bank IS NOT NULL AND proBank IS NOT NULL
+			#and (brand is not null or Vendor is not null )
+			-->
+			<if test="condition.bin != null and condition.bin != '' ">
+				and bin=#{condition.bin}
+			</if>
+			<if test="condition.brand != null and condition.brand != '' ">
+				and brand=#{condition.brand}
+			</if>
+			<if test="condition.country_code != null and condition.country_code != '' ">
+				and country_code=#{condition.country_code}
+			</if>
+		</where>
+	</sql>
+	<select id="queryCardBinInfo" resultType="com.gateway.sysmgr.model.CardBinInfo">
+		select * from card_bin_info 
+		<include refid="Where_Card_Bin_Caluse"/>
+	</select>
+	
+	<select id="queryCardBinInfoById" resultType="com.gateway.sysmgr.model.CardBinInfo">
+		SELECT
+			id,
+			bin,
+			bank,
+			brand,
+			sub_brand,
+			country_code,
+			country_name,
+			card_type,
+			card_category,
+			latitude,
+			longitude,
+			Country AS country,
+			Vendor as vendor,
+			Type as type,
+			Level as level,
+			proBank,
+			isSearch
+		FROM
+			card_bin_info
+		WHERE
+			id=#{vo.id}
+	</select>
+	
+	<insert id="saveCardBinInfo" useGeneratedKeys="true" keyProperty="vo.id">
+		INSERT INTO
+			card_bin_info
+			(
+				bin,
+				bank,
+				brand,
+				sub_brand,
+				country_code,
+				country_name,
+				card_type,
+				card_category,
+				latitude,
+				longitude,
+				Country,
+				Vendor,
+				Type,
+				Level,
+				proBank,
+				isSearch
+			)
+		VALUES
+			(
+				#{vo.bin},
+				#{vo.bank},
+				#{vo.brand},
+				#{vo.sub_brand},
+				#{vo.country_code},
+				#{vo.country_name},
+				#{vo.card_type},
+				#{vo.card_category},
+				#{vo.latitude},
+				#{vo.longitude},
+				#{vo.country},
+				#{vo.vendor},
+				#{vo.type},
+				#{vo.level},
+				#{vo.proBank},
+				#{vo.isSearch}
+			)
+	</insert>
+	
+	<update id="updateCardBinInfoById">
+		UPDATE
+			card_bin_info
+		SET
+		<choose>
+			<when test="vo.bank != null  and vo.bank != '' ">
+				bin=#{vo.bin},
+				bank=#{vo.bank},
+				brand=#{vo.brand},
+				sub_brand=#{vo.sub_brand},
+				country_code=#{vo.country_code},
+				country_name=#{vo.country_name},
+				card_type=#{vo.card_type},
+				card_category=#{vo.card_category},
+				latitude=#{vo.latitude},
+				longitude=#{vo.longitude},
+				Country=#{vo.country},
+				Vendor=#{vo.vendor},
+				Type=#{vo.type},
+				Level=#{vo.level},
+				proBank=#{vo.proBank},
+				isSearch=#{vo.isSearch}
+			</when>
+			<otherwise>
+				country_code=#{vo.country_code},
+				Country=#{vo.country}
+			
+			</otherwise>
+		</choose>
+		WHERE
+			<choose>
+			<when test="vo.id != null and vo.id != '' ">
+				id=#{vo.id}
+			</when>
+			<otherwise>
+				bin=#{vo.bin}
+			</otherwise>
+		</choose>
+	</update>
+	
+	<select id="queryCardBinInfoByBin" resultType="java.lang.Integer">
+		SELECT
+			COUNT(id)
+		FROM
+			card_bin_info
+		WHERE
+			bin=#{vo.bin}
+	</select>
+	<update id="updateCardBinSHAByBin">
+		update card_bin_info set checkNo=#{binSHA} where id=#{id}
+	</update>
+	<select id="queryCardBinInfoByBinSHAIsNull" resultType="com.gateway.sysmgr.model.CardBinInfo">
+		select * from  card_bin_info WHERE checkNo IS  NULL 
+	</select>
+	
+	<select id="queryCardBinInfoByBinNumber" resultType="com.gateway.sysmgr.model.CardBinInfo">
+		SELECT 
+			cc_bin_number_brand vendor,
+			cc_bin_number `bin`,
+			cc_bin_number_geo country,
+			cc_bin_number_org proBank,
+			cc_bin_number_type `type` 
+		FROM 
+			gw_threadmetrix_result_info 
+		WHERE 
+			cc_bin_number=#{bin}
+		ORDER BY id DESC LIMIT 1
+	</select>
+	
+	<select id="queryCardBinInfoByTradeNo" resultType="com.gateway.sysmgr.model.CardBinInfo">
+		SELECT 
+			a.binCountry country,
+			c.bin,
+			c.id
+		FROM 
+			gw_maxmind_result_info a left join 
+			gw_trans_info b on a.tradeNo=b.tradeNo
+			left join card_bin_info c on b.checkNo=c.checkNo
+		WHERE 
+			a.tradeNo=#{tradeNo}
+		ORDER BY id DESC LIMIT 1
+	
+	</select>
+</mapper>
+
